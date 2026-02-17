@@ -291,14 +291,15 @@
 
   /* Glitch effects */
   @keyframes screen-tear {
-    0% { clip-path: inset(0 0 95% 0); }
-    25% { clip-path: inset(30% 0 50% 0); }
-    50% { clip-path: inset(60% 0 20% 0); }
-    75% { clip-path: inset(10% 0 70% 0); }
-    100% { clip-path: inset(0 0 95% 0); }
+    0% { clip-path: inset(0 0 0 0); }
+    20% { clip-path: inset(30% 0 50% 0); }
+    40% { clip-path: inset(60% 0 20% 0); }
+    60% { clip-path: inset(10% 0 70% 0); }
+    80% { clip-path: inset(40% 0 40% 0); }
+    100% { clip-path: inset(0 0 0 0); }
   }
   .glitch-tear {
-    animation: screen-tear 0.15s steps(4) !important;
+    animation: screen-tear 0.15s steps(4) forwards !important;
   }
   .glitch-invert {
     filter: invert(1) hue-rotate(180deg) !important;
@@ -316,17 +317,20 @@
   /* Back link */
   .back {
     position: fixed;
-    top: 0.5rem;
+    bottom: 0.75rem;
     right: 0.75rem;
     font-family: 'Courier New', monospace;
     font-size: 0.6rem;
-    color: #333;
+    color: #555;
     text-decoration: none;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     z-index: 10001;
+    background: rgba(0,0,0,0.7);
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #333;
   }
-  .back:hover { color: #ff00ff; }
+  .back:hover { color: #ff00ff; border-color: #ff00ff; }
 
   /* Responsive */
   @media (max-width: 768px) {
@@ -399,6 +403,7 @@ const S = {
   tokens: 0,
   bootDone: false,
   glitchTimer: null,
+  glitching: false,
   idleHue: 0,
 };
 
@@ -1181,38 +1186,49 @@ function scheduleNextGlitch() {
 }
 
 function triggerRandomGlitch() {
+  // Don't glitch while streaming or already glitching
+  if (S.streaming || S.glitching) return;
+  S.glitching = true;
   const effects = [glitchScreenTear, glitchTextCorrupt, glitchColorInvert, glitchFaceFlicker, glitchCharBleed];
   pickRandom(effects)();
+}
+
+function glitchDone(delay) {
+  setTimeout(() => { S.glitching = false; }, delay || 200);
 }
 
 function glitchScreenTear() {
   const main = document.getElementById('main');
   main.classList.add('glitch-tear');
-  setTimeout(() => main.classList.remove('glitch-tear'), 150);
+  setTimeout(() => {
+    main.classList.remove('glitch-tear');
+    main.style.clipPath = '';
+    glitchDone(50);
+  }, 150);
 }
 
 function glitchTextCorrupt() {
   const msgs = $chatLog.querySelectorAll('.msg-bot .msg-text');
-  if (msgs.length === 0) return;
+  if (msgs.length === 0) { glitchDone(0); return; }
   const last = msgs[msgs.length - 1];
   const orig = last.textContent;
   const corrupted = orig.split('').map(ch =>
     Math.random() < 0.15 ? String.fromCharCode(33 + Math.floor(Math.random() * 93)) : ch
   ).join('');
   last.textContent = corrupted;
-  setTimeout(() => { last.textContent = orig; }, 150);
+  setTimeout(() => { last.textContent = orig; glitchDone(50); }, 150);
 }
 
 function glitchColorInvert() {
   document.body.classList.add('glitch-invert');
-  setTimeout(() => document.body.classList.remove('glitch-invert'), 100);
+  setTimeout(() => { document.body.classList.remove('glitch-invert'); glitchDone(50); }, 100);
 }
 
 function glitchFaceFlicker() {
   const origIdx = S.charIdx;
   S.charIdx = (origIdx + 1 + Math.floor(Math.random() * 2)) % 3;
   renderFace();
-  setTimeout(() => { S.charIdx = origIdx; renderFace(); }, 200);
+  setTimeout(() => { S.charIdx = origIdx; renderFace(); glitchDone(50); }, 200);
 }
 
 function glitchCharBleed() {
@@ -1226,7 +1242,7 @@ function glitchCharBleed() {
   div.textContent = '> ' + fragment;
   $chatLog.appendChild(div);
   $chatLog.scrollTop = $chatLog.scrollHeight;
-  setTimeout(() => { div.remove(); }, 800);
+  setTimeout(() => { div.remove(); glitchDone(50); }, 800);
 }
 
 // ===== HUD & CONTROLS =====
