@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaporwave Sunset // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.3);
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #ff00ff; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let time = 0;
+
+function draw() {
+  const horizon = H * 0.55;
+
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
+  skyGrad.addColorStop(0, '#0a001a');
+  skyGrad.addColorStop(0.3, '#1a0033');
+  skyGrad.addColorStop(0.6, '#330055');
+  skyGrad.addColorStop(0.8, '#660066');
+  skyGrad.addColorStop(1, '#ff6b9d');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, horizon);
+
+  // Sun
+  const sunX = W / 2;
+  const sunY = horizon - H * 0.08;
+  const sunR = Math.min(W, H) * 0.12;
+
+  // Sun glow
+  const glowGrad = ctx.createRadialGradient(sunX, sunY, sunR * 0.5, sunX, sunY, sunR * 3);
+  glowGrad.addColorStop(0, 'rgba(255, 100, 150, 0.4)');
+  glowGrad.addColorStop(0.5, 'rgba(255, 50, 100, 0.1)');
+  glowGrad.addColorStop(1, 'rgba(255, 0, 100, 0)');
+  ctx.fillStyle = glowGrad;
+  ctx.fillRect(0, 0, W, horizon);
+
+  // Sun body with horizontal stripe cutouts
+  const sunGrad = ctx.createLinearGradient(sunX, sunY - sunR, sunX, sunY + sunR);
+  sunGrad.addColorStop(0, '#ffdd44');
+  sunGrad.addColorStop(0.3, '#ffaa33');
+  sunGrad.addColorStop(0.5, '#ff6633');
+  sunGrad.addColorStop(0.7, '#ff3366');
+  sunGrad.addColorStop(1, '#ff0066');
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+  ctx.clip();
+
+  ctx.fillStyle = sunGrad;
+  ctx.fillRect(sunX - sunR, sunY - sunR, sunR * 2, sunR * 2);
+
+  // Horizontal slice lines through the sun (retro effect)
+  ctx.fillStyle = '#0a001a';
+  const stripeCount = 8;
+  for (let i = 0; i < stripeCount; i++) {
+    const progress = i / stripeCount;
+    const yy = sunY + (progress * sunR * 1.2) - sunR * 0.1;
+    const thickness = progress * 5 + 1;
+    ctx.fillRect(sunX - sunR, yy, sunR * 2, thickness);
+  }
+  ctx.restore();
+
+  // Stars
+  ctx.save();
+  const starSeed = 42;
+  let rng = starSeed;
+  function pseudoRandom() {
+    rng = (rng * 16807 + 0) % 2147483647;
+    return rng / 2147483647;
+  }
+  for (let i = 0; i < 120; i++) {
+    const sx = pseudoRandom() * W;
+    const sy = pseudoRandom() * horizon * 0.7;
+    const brightness = pseudoRandom();
+    const twinkle = Math.sin(time * 2 + i * 1.7) * 0.3 + 0.7;
+    ctx.fillStyle = `rgba(255,255,255,${brightness * twinkle * 0.8})`;
+    ctx.fillRect(sx, sy, 1.5, 1.5);
+  }
+  ctx.restore();
+
+  // Ground (below horizon)
+  const groundGrad = ctx.createLinearGradient(0, horizon, 0, H);
+  groundGrad.addColorStop(0, '#1a0033');
+  groundGrad.addColorStop(0.1, '#110022');
+  groundGrad.addColorStop(1, '#050010');
+  ctx.fillStyle = groundGrad;
+  ctx.fillRect(0, horizon, W, H - horizon);
+
+  // Perspective grid
+  ctx.strokeStyle = 'rgba(255, 0, 255, 0.4)';
+  ctx.lineWidth = 1;
+
+  // Vertical grid lines (converging at horizon vanishing point)
+  const numVLines = 30;
+  const spacing = W / (numVLines / 2);
+  for (let i = -numVLines; i <= numVLines; i++) {
+    const bottomX = W / 2 + i * spacing;
+    ctx.beginPath();
+    ctx.moveTo(W / 2, horizon);
+    ctx.lineTo(bottomX, H);
+    ctx.stroke();
+  }
+
+  // Horizontal grid lines with perspective (scrolling)
+  const numHLines = 20;
+  const scrollOffset = (time * 0.3) % 1;
+  for (let i = 0; i < numHLines; i++) {
+    const t = (i + scrollOffset) / numHLines;
+    // Exponential distribution for perspective
+    const perspT = t * t;
+    const y = horizon + perspT * (H - horizon);
+    const alpha = 0.15 + perspT * 0.5;
+    ctx.strokeStyle = `rgba(255, 0, 255, ${alpha})`;
+    ctx.lineWidth = 0.5 + perspT * 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  // Reflection of sun on ground
+  ctx.save();
+  ctx.globalAlpha = 0.15;
+  const reflGrad = ctx.createLinearGradient(W / 2 - sunR * 0.5, horizon, W / 2 + sunR * 0.5, horizon);
+  reflGrad.addColorStop(0, 'transparent');
+  reflGrad.addColorStop(0.3, '#ff6b9d');
+  reflGrad.addColorStop(0.5, '#ffaa33');
+  reflGrad.addColorStop(0.7, '#ff6b9d');
+  reflGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = reflGrad;
+  ctx.fillRect(W / 2 - sunR * 2, horizon, sunR * 4, H - horizon);
+  ctx.restore();
+
+  // Chrome text
+  const fontSize = Math.min(W * 0.1, 80);
+  ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+  ctx.textAlign = 'center';
+
+  // Text shadow / glow
+  ctx.shadowColor = '#ff00ff';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Chrome gradient text
+  const textY = H * 0.2;
+  const textGrad = ctx.createLinearGradient(0, textY - fontSize / 2, 0, textY + fontSize / 2);
+  textGrad.addColorStop(0, '#ffffff');
+  textGrad.addColorStop(0.3, '#ff88cc');
+  textGrad.addColorStop(0.5, '#ffffff');
+  textGrad.addColorStop(0.7, '#88ccff');
+  textGrad.addColorStop(1, '#ffffff');
+  ctx.fillStyle = textGrad;
+  ctx.fillText('R E T R O  F U N', W / 2, textY);
+
+  // Subtitle
+  ctx.shadowBlur = 15;
+  ctx.font = `${fontSize * 0.25}px 'Courier New', monospace`;
+  ctx.fillStyle = 'rgba(255, 100, 200, 0.6)';
+  ctx.fillText('// AESTHETIC DREAMS //', W / 2, textY + fontSize * 0.5);
+
+  ctx.shadowBlur = 0;
+
+  // Scanline overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.03)';
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

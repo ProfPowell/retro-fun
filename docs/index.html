@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RETRO FUN // Demoscene Experiments</title>
+<style>
+  @font-face {
+    font-family: 'PressStart';
+    src: url('data:font/woff2;base64,') format('woff2');
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.15) 2px,
+      rgba(0, 0, 0, 0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  header {
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    position: relative;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 5vw, 3.5rem);
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    background: linear-gradient(
+      180deg,
+      #ff00ff 0%,
+      #00ffff 25%,
+      #ff00ff 50%,
+      #ffff00 75%,
+      #00ffff 100%
+    );
+    background-size: 100% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-scroll 4s linear infinite;
+    text-shadow: none;
+    position: relative;
+  }
+
+  @keyframes gradient-scroll {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 300%; }
+  }
+
+  .subtitle {
+    color: #666;
+    font-size: 0.85rem;
+    letter-spacing: 0.5em;
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card {
+    border: 1px solid #222;
+    background: #111;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .card:hover {
+    border-color: #ff00ff;
+    box-shadow:
+      0 0 20px rgba(255, 0, 255, 0.2),
+      inset 0 0 20px rgba(255, 0, 255, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .card-preview {
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-info {
+    padding: 1rem;
+    border-top: 1px solid #222;
+  }
+
+  .card-info h2 {
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  .card:hover .card-info h2 {
+    color: #ff00ff;
+  }
+
+  .card-info p {
+    font-size: 0.7rem;
+    color: #555;
+    letter-spacing: 0.05em;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.55rem;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid #333;
+    color: #888;
+    letter-spacing: 0.1em;
+    margin-top: 0.5rem;
+    margin-right: 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .tag--canvas { border-color: #00ffff33; color: #00ffff88; }
+  .tag--css { border-color: #ff00ff33; color: #ff00ff88; }
+  .tag--audio { border-color: #ffff0033; color: #ffff0088; }
+  .tag--webcomp { border-color: #00ff0033; color: #00ff0088; }
+
+  /* Preview backgrounds - animated thumbnails */
+  .preview-starfield {
+    background: radial-gradient(ellipse at center, #0a0a2e 0%, #000 70%);
+  }
+  .preview-starfield::before {
+    content: '✦ ✧ ✦ ✧ ✦ ✧';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    letter-spacing: 1rem;
+    color: #fff;
+    animation: twinkle 2s ease-in-out infinite;
+  }
+
+  .preview-plasma {
+    background: linear-gradient(45deg, #ff0080, #8000ff, #0080ff, #00ff80, #ff8000);
+    background-size: 400% 400%;
+    animation: plasma-move 3s ease infinite;
+  }
+
+  .preview-matrix {
+    background: #000a00;
+    overflow: hidden;
+  }
+  .preview-matrix::before {
+    content: '01001 10110 01101 11010 00101 10011';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+    font-size: 1.2rem;
+    color: #00ff41;
+    opacity: 0.6;
+    text-shadow: 0 0 10px #00ff41;
+    word-spacing: 0.5rem;
+    animation: flicker 0.1s infinite;
+  }
+
+  .preview-vaporwave {
+    background: linear-gradient(180deg, #1a0033 0%, #330066 30%, #ff6b9d 60%, #ff9a56 80%, #ffd93d 100%);
+  }
+  .preview-vaporwave::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 8px,
+      rgba(255,0,255,0.3) 8px,
+      rgba(255,0,255,0.3) 9px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 30px,
+      rgba(255,0,255,0.2) 30px,
+      rgba(255,0,255,0.2) 31px
+    );
+    transform: perspective(200px) rotateX(40deg);
+    transform-origin: bottom;
+  }
+
+  .preview-fire {
+    background: linear-gradient(0deg, #ff4500 0%, #ff8c00 30%, #ffd700 50%, #000 70%);
+    animation: fire-flicker 0.15s infinite alternate;
+  }
+
+  .preview-rotozoom {
+    background: repeating-conic-gradient(#ff00ff 0% 25%, #000 25% 50%);
+    background-size: 40px 40px;
+    animation: rotozoom-spin 4s linear infinite;
+  }
+
+  .preview-crt {
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .preview-crt::before {
+    content: '> HELLO WORLD_';
+    font-family: monospace;
+    font-size: 1.5rem;
+    color: #33ff33;
+    text-shadow: 0 0 10px #33ff33;
+    animation: blink-cursor 1s step-end infinite;
+  }
+
+  .preview-chiptune {
+    background: #0a0a1a;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+    padding: 2rem;
+  }
+  .preview-chiptune::before {
+    content: '';
+    display: block;
+    width: 8px; height: 40px;
+    background: #00ffff;
+    box-shadow:
+      12px 20px 0 #ff00ff,
+      24px -10px 0 #00ffff,
+      36px 30px 0 #ffff00,
+      48px -5px 0 #ff00ff,
+      60px 15px 0 #00ffff,
+      72px -20px 0 #ffff00,
+      84px 25px 0 #ff00ff,
+      96px 5px 0 #00ffff,
+      108px -15px 0 #ffff00,
+      120px 35px 0 #ff00ff;
+    animation: eq-bounce 0.5s ease infinite alternate;
+  }
+
+  /* === DEMOSCENE SECTION PREVIEWS === */
+  .preview-copper {
+    background: #030308;
+    overflow: hidden;
+  }
+  .preview-copper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(0deg, transparent 10%, rgba(255,50,50,0.6) 20%, rgba(255,200,50,0.8) 25%, rgba(255,50,50,0.6) 30%, transparent 40%),
+      linear-gradient(0deg, transparent 40%, rgba(50,100,255,0.6) 50%, rgba(100,200,255,0.8) 55%, rgba(50,100,255,0.6) 60%, transparent 70%),
+      linear-gradient(0deg, transparent 65%, rgba(50,255,100,0.6) 75%, rgba(200,255,100,0.8) 80%, rgba(50,255,100,0.6) 85%, transparent 95%);
+    animation: copper-shift 3s ease-in-out infinite alternate;
+  }
+
+  .preview-tunnel {
+    background: radial-gradient(circle, #000 0%, #220033 30%, #001133 60%, #000 100%);
+  }
+  .preview-tunnel::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: repeating-radial-gradient(circle at center, transparent 0px, transparent 15px, rgba(255,0,255,0.15) 16px, transparent 17px);
+    animation: tunnel-zoom 2s linear infinite;
+  }
+
+  .preview-scroller {
+    background: #000005;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .preview-scroller::before {
+    content: 'GREETINGS FROM THE SCENE!';
+    font-family: monospace;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+    white-space: nowrap;
+    animation: scroll-text 4s linear infinite;
+  }
+
+  .preview-moire {
+    background: #000;
+    overflow: hidden;
+  }
+  .preview-moire::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: repeating-radial-gradient(circle at 40% 40%, transparent 0px, transparent 8px, rgba(0,255,255,0.3) 9px, transparent 10px);
+    animation: moire-spin 6s linear infinite;
+  }
+  .preview-moire::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: repeating-radial-gradient(circle at 60% 60%, transparent 0px, transparent 8px, rgba(255,0,255,0.3) 9px, transparent 10px);
+    animation: moire-spin 6s linear infinite reverse;
+  }
+
+  .preview-kefrens {
+    background: #000;
+    overflow: hidden;
+  }
+  .preview-kefrens::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 30%; width: 4px; height: 100%;
+    background: linear-gradient(0deg, #ff0066, #ff6600, #ffff00, #00ff66, #0066ff, #6600ff, #ff0066);
+    box-shadow:
+      0 0 20px currentColor,
+      40px 0 0 rgba(0,255,255,0.8),
+      40px 0 20px rgba(0,255,255,0.4),
+      -50px 0 0 rgba(255,255,0,0.8),
+      -50px 0 20px rgba(255,255,0,0.4);
+    animation: kefrens-sweep 2s ease-in-out infinite alternate;
+  }
+
+  .preview-metaballs {
+    background: #0a0008;
+    overflow: hidden;
+  }
+  .preview-metaballs::before {
+    content: '';
+    position: absolute;
+    width: 80px; height: 80px;
+    background: radial-gradient(circle, rgba(255,0,200,0.9), transparent 70%);
+    top: 30%; left: 25%;
+    border-radius: 50%;
+    filter: blur(10px);
+    animation: blob-move1 3s ease-in-out infinite alternate;
+  }
+  .preview-metaballs::after {
+    content: '';
+    position: absolute;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(0,200,255,0.9), transparent 70%);
+    top: 35%; left: 45%;
+    border-radius: 50%;
+    filter: blur(10px);
+    animation: blob-move2 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes copper-shift {
+    from { transform: translateY(-20px); }
+    to { transform: translateY(20px); }
+  }
+  @keyframes tunnel-zoom {
+    from { transform: scale(1) rotate(0deg); }
+    to { transform: scale(1.5) rotate(20deg); }
+  }
+  @keyframes scroll-text {
+    from { transform: translateX(100%); }
+    to { transform: translateX(-100%); }
+  }
+  @keyframes moire-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes kefrens-sweep {
+    from { left: 20%; }
+    to { left: 70%; }
+  }
+  @keyframes blob-move1 {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(40px, 20px) scale(1.3); }
+  }
+  @keyframes blob-move2 {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(-30px, -15px) scale(1.2); }
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+  @keyframes plasma-move {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes flicker {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.8; }
+  }
+  @keyframes fire-flicker {
+    from { filter: brightness(0.95); }
+    to { filter: brightness(1.05); }
+  }
+  @keyframes rotozoom-spin {
+    from { transform: rotate(0deg) scale(2); }
+    to { transform: rotate(360deg) scale(2); }
+  }
+  @keyframes blink-cursor {
+    50% { opacity: 0; }
+  }
+  @keyframes eq-bounce {
+    to { transform: scaleY(1.5); }
+  }
+
+  footer {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #333;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  footer a {
+    color: #555;
+    text-decoration: none;
+  }
+
+  footer a:hover {
+    color: #ff00ff;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Retro Fun</h1>
+  <p class="subtitle">Demoscene &bull; 8-Bit &bull; Vaporwave &bull; Cyberpunk</p>
+</header>
+
+<div class="grid">
+  <a class="card" href="demos/starfield/">
+    <div class="card-preview preview-starfield"></div>
+    <div class="card-info">
+      <h2>Starfield</h2>
+      <p>Classic demoscene 3D starfield flying through space</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Demoscene</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/plasma/">
+    <div class="card-preview preview-plasma"></div>
+    <div class="card-info">
+      <h2>Plasma</h2>
+      <p>Old school color-cycling plasma effect</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Retro</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/matrix-rain/">
+    <div class="card-preview preview-matrix"></div>
+    <div class="card-info">
+      <h2>Matrix Rain</h2>
+      <p>Cyberpunk digital rain with kanji glyphs</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Cyberpunk</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/vaporwave-sunset/">
+    <div class="card-preview preview-vaporwave"></div>
+    <div class="card-info">
+      <h2>Vaporwave Sunset</h2>
+      <p>Retro grid horizon with neon sun and chrome text</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag tag--css">CSS</span>
+      <span class="tag">Vaporwave</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/pixel-fire/">
+    <div class="card-preview preview-fire"></div>
+    <div class="card-info">
+      <h2>Pixel Fire</h2>
+      <p>Doom-style fire propagation algorithm</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Classic</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/rotozoom/">
+    <div class="card-preview preview-rotozoom"></div>
+    <div class="card-info">
+      <h2>Rotozoom</h2>
+      <p>Rotating and zooming checkerboard texture</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Demoscene</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/crt-component/">
+    <div class="card-preview preview-crt"></div>
+    <div class="card-info">
+      <h2>CRT Terminal</h2>
+      <p>Web Component with phosphor glow, scanlines &amp; flicker</p>
+      <span class="tag tag--webcomp">Web Component</span>
+      <span class="tag tag--css">CSS</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/chiptune-viz/">
+    <div class="card-preview preview-chiptune"></div>
+    <div class="card-info">
+      <h2>Chiptune Visualizer</h2>
+      <p>8-bit audio visualizer with Web Audio API synthesis</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag tag--audio">Audio</span>
+      <span class="tag">8-Bit</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/copper-bars/">
+    <div class="card-preview preview-copper"></div>
+    <div class="card-info">
+      <h2>Copper Bars</h2>
+      <p>Amiga copper raster bars with palette cycling and hue rotation</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Amiga</span>
+      <span class="tag">C64</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/tunnel/">
+    <div class="card-preview preview-tunnel"></div>
+    <div class="card-info">
+      <h2>Tunnel</h2>
+      <p>Textured tunnel flythrough with XOR texture and color cycling</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Demoscene</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/sine-scroller/">
+    <div class="card-preview preview-scroller"></div>
+    <div class="card-info">
+      <h2>Sine Scroller</h2>
+      <p>Bitmap font sine wave scroller with raster bars and reflections</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">C64</span>
+      <span class="tag">Demoscene</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/moire/">
+    <div class="card-preview preview-moire"></div>
+    <div class="card-info">
+      <h2>Moire Patterns</h2>
+      <p>Interference pattern generator with mouse-driven orbits</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Demoscene</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/kefrens-bars/">
+    <div class="card-preview preview-kefrens"></div>
+    <div class="card-info">
+      <h2>Kefrens Bars</h2>
+      <p>The legendary vertical bar sweep with ghostly color trails</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Amiga</span>
+      <span class="tag">Kefrens</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/metaballs/">
+    <div class="card-preview preview-metaballs"></div>
+    <div class="card-info">
+      <h2>Metaballs</h2>
+      <p>Blobby organic shapes with multi-palette color cycling</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Demoscene</span>
+    </div>
+  </a>
+</div>
+
+<footer>
+  <p>Zero dependencies &bull; Pure HTML/CSS/JS &bull; <a href="https://github.com/ProfPowell/retro-fun">Source</a></p>
+</footer>
+
+</body>
+</html>

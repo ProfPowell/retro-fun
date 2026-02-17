@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRT Terminal // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    font-family: 'Courier New', monospace;
+    gap: 2rem;
+  }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #33ff33; }
+  h1 {
+    color: #33ff33;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px #33ff33;
+  }
+  .demos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+    max-width: 1200px;
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<h1>CRT Terminal Web Component</h1>
+
+<div class="demos">
+  <!-- Green phosphor terminal -->
+  <crt-terminal color="green" width="500" height="320">
+    <pre>
+ ██████╗ ██████╗ ████████╗
+██╔════╝ ██╔══██╗╚══██╔══╝
+██║      ██████╔╝   ██║
+██║      ██╔══██╗   ██║
+╚██████╗ ██║  ██║   ██║
+ ╚═════╝ ╚═╝  ╚═╝   ╚═╝
+
+> PHOSPHOR GREEN TERMINAL
+> READY.
+> 64K RAM SYSTEM 38911 BASIC
+  BYTES FREE
+> _
+    </pre>
+  </crt-terminal>
+
+  <!-- Amber terminal -->
+  <crt-terminal color="amber" width="500" height="320">
+    <pre>
+╔══════════════════════════════╗
+║  SYSTEM STATUS: ONLINE       ║
+║  CPU: 6502 @ 1MHZ            ║
+║  MEM: 64KB                   ║
+║  DISPLAY: 40x25              ║
+╠══════════════════════════════╣
+║  > DIR                       ║
+║  GAME.BAS     2048 BYTES     ║
+║  DEMO.ASM     4096 BYTES     ║
+║  README.TXT    512 BYTES     ║
+║  > _                         ║
+╚══════════════════════════════╝
+    </pre>
+  </crt-terminal>
+
+  <!-- Blue terminal -->
+  <crt-terminal color="blue" width="500" height="320">
+    <pre>
+  ┌─────────────────────────┐
+  │   *** RETRO FUN ***     │
+  │                         │
+  │   Demoscene Experiments │
+  │   Zero Dependencies     │
+  │   Pure Web Platform     │
+  │                         │
+  │   HTML + CSS + JS       │
+  │   Web Components        │
+  │   Canvas API            │
+  │   Web Audio API         │
+  │                         │
+  │   LOAD"*",8,1           │
+  │   > _                   │
+  └─────────────────────────┘
+    </pre>
+  </crt-terminal>
+</div>
+
+<script>
+class CRTTerminal extends HTMLElement {
+  static get observedAttributes() {
+    return ['color', 'width', 'height'];
+  }
+
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    this.render();
+    this.startFlicker();
+  }
+
+  disconnectedCallback() {
+    if (this._flickerRAF) cancelAnimationFrame(this._flickerRAF);
+  }
+
+  get colorScheme() {
+    const schemes = {
+      green:  { fg: '#33ff33', glow: '#33ff33', bg: '#001a00', dim: '#0a3a0a' },
+      amber:  { fg: '#ffaa00', glow: '#ffaa00', bg: '#1a0f00', dim: '#3a2a0a' },
+      blue:   { fg: '#4488ff', glow: '#4488ff', bg: '#000a1a', dim: '#0a1a3a' },
+      white:  { fg: '#cccccc', glow: '#ffffff', bg: '#0a0a0a', dim: '#1a1a1a' },
+    };
+    return schemes[this.getAttribute('color') || 'green'] || schemes.green;
+  }
+
+  render() {
+    const w = this.getAttribute('width') || '500';
+    const h = this.getAttribute('height') || '300';
+    const c = this.colorScheme;
+    const content = this.innerHTML;
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: inline-block;
+        }
+        .monitor {
+          position: relative;
+          width: ${w}px;
+          max-width: 90vw;
+          height: ${h}px;
+          background: ${c.bg};
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow:
+            0 0 40px ${c.glow}22,
+            inset 0 0 80px ${c.bg},
+            0 8px 32px rgba(0,0,0,0.8);
+        }
+
+        /* CRT curvature */
+        .monitor::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            ellipse at center,
+            transparent 60%,
+            ${c.bg} 100%
+          );
+          z-index: 4;
+          pointer-events: none;
+        }
+
+        /* Scanlines */
+        .scanlines {
+          position: absolute;
+          inset: 0;
+          background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 1px,
+            rgba(0,0,0,0.3) 1px,
+            rgba(0,0,0,0.3) 2px
+          );
+          z-index: 3;
+          pointer-events: none;
+        }
+
+        /* RGB shadow / chromatic aberration */
+        .screen {
+          position: absolute;
+          inset: 16px;
+          font-family: 'Courier New', monospace;
+          font-size: 13px;
+          line-height: 1.4;
+          color: ${c.fg};
+          white-space: pre;
+          overflow: hidden;
+          text-shadow:
+            0 0 5px ${c.glow},
+            0 0 10px ${c.glow}66,
+            0 0 20px ${c.glow}33,
+            2px 0 0 rgba(255,0,0,0.06),
+            -2px 0 0 rgba(0,0,255,0.06);
+          z-index: 2;
+        }
+
+        /* Flicker overlay */
+        .flicker {
+          position: absolute;
+          inset: 0;
+          background: transparent;
+          z-index: 5;
+          pointer-events: none;
+          opacity: 0;
+        }
+
+        /* Vignette */
+        .vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            ellipse at center,
+            transparent 50%,
+            rgba(0,0,0,0.6) 100%
+          );
+          z-index: 4;
+          pointer-events: none;
+        }
+
+        /* Reflection glare */
+        .glare {
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(
+            ellipse at 30% 20%,
+            rgba(255,255,255,0.03) 0%,
+            transparent 50%
+          );
+          z-index: 6;
+          pointer-events: none;
+        }
+
+        /* Subtle animation for moving scanline */
+        .scanline-move {
+          position: absolute;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(
+            0deg,
+            transparent,
+            ${c.glow}08,
+            transparent
+          );
+          z-index: 5;
+          pointer-events: none;
+          animation: scanline-scroll 8s linear infinite;
+        }
+
+        @keyframes scanline-scroll {
+          0% { top: -4px; }
+          100% { top: 100%; }
+        }
+      </style>
+
+      <div class="monitor">
+        <div class="screen">${content}</div>
+        <div class="scanlines"></div>
+        <div class="scanline-move"></div>
+        <div class="vignette"></div>
+        <div class="glare"></div>
+        <div class="flicker"></div>
+      </div>
+    `;
+  }
+
+  startFlicker() {
+    const flicker = this.shadowRoot.querySelector('.flicker');
+    if (!flicker) return;
+    const c = this.colorScheme;
+
+    const tick = () => {
+      // Random subtle flicker
+      if (Math.random() < 0.03) {
+        flicker.style.opacity = 0.02 + Math.random() * 0.03;
+        flicker.style.background = c.glow + '08';
+      } else {
+        flicker.style.opacity = 0;
+      }
+      this._flickerRAF = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+}
+
+customElements.define('crt-terminal', CRTTerminal);
+</script>
+</body>
+</html>

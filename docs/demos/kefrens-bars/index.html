@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kefrens Bars // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #ff00ff; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+// Kefrens Bars - THE legendary Amiga/C64 demo effect
+// One single-pixel-wide bar is drawn each frame, building up the image
+// as the bar sweeps across the screen with sine motion.
+// The original trick exploited raster timing on the Amiga copper.
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let time = 0;
+const BAR_WIDTH = 3;
+
+// We accumulate the bars over multiple frames
+// but slowly fade the background for trails
+
+function draw() {
+  // Very slow fade - bars leave ghostly trails
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.015)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw multiple vertical bars sweeping across the screen
+  const numBars = 8;
+
+  for (let b = 0; b < numBars; b++) {
+    // Each bar has its own horizontal position determined by sine
+    const xPhase = time * 1.5 + b * 0.8;
+    const x = W * 0.5 + Math.sin(xPhase) * (W * 0.35);
+    const x2 = W * 0.5 + Math.sin(xPhase * 0.7 + 2) * (W * 0.2);
+
+    // Draw the bar as a vertical stripe with color gradient
+    const barX = (x + x2) / 2;
+
+    // Color cycling per bar
+    const baseHue = (time * 60 + b * 45) % 360;
+
+    for (let y = 0; y < H; y++) {
+      // Intensity varies along the height with sine waves
+      const yNorm = y / H;
+      const intensity = Math.sin(yNorm * Math.PI);
+
+      // Additional sine modulation for that classic wobble
+      const wobble = Math.sin(y * 0.02 + time * 3 + b * 0.5) * 0.3;
+      const totalIntensity = Math.max(0, intensity + wobble);
+
+      // Per-scanline hue shift (color cycling!)
+      const hue = (baseHue + y * 0.3 + Math.sin(time + y * 0.01) * 30) % 360;
+      const light = Math.min(70, totalIntensity * 60);
+      const sat = 100;
+
+      // Draw the bar with glow
+      for (let dx = -8; dx <= 8; dx++) {
+        const distFromCenter = Math.abs(dx) / 8;
+        const glow = Math.max(0, 1 - distFromCenter);
+        const alpha = glow * glow * totalIntensity * 0.8;
+
+        if (alpha > 0.01) {
+          const px = Math.floor(barX + dx);
+          if (px >= 0 && px < W) {
+            ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+            ctx.fillRect(px, y, 1, 1);
+          }
+        }
+      }
+    }
+  }
+
+  // Additional: draw a brighter "hot core" for each bar
+  for (let b = 0; b < numBars; b++) {
+    const xPhase = time * 1.5 + b * 0.8;
+    const x = W * 0.5 + Math.sin(xPhase) * (W * 0.35);
+    const x2 = W * 0.5 + Math.sin(xPhase * 0.7 + 2) * (W * 0.2);
+    const barX = (x + x2) / 2;
+    const baseHue = (time * 60 + b * 45) % 360;
+
+    for (let y = 0; y < H; y += 2) {
+      const yNorm = y / H;
+      const intensity = Math.sin(yNorm * Math.PI);
+      const hue = (baseHue + y * 0.3) % 360;
+
+      ctx.fillStyle = `hsla(${hue}, 60%, 90%, ${intensity * 0.4})`;
+      ctx.fillRect(barX - 1, y, BAR_WIDTH, 2);
+    }
+  }
+
+  // Scanlines
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
+  for (let y = 0; y < H; y += 2) {
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

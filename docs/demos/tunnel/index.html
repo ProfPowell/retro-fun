@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tunnel // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; cursor: crosshair; }
+  canvas { display: block; image-rendering: pixelated; }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #00ffff; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+// Classic tunnel effect - precalculated angle/distance lookup table
+// Inspired by Second Reality, Sanity, and countless C64/Amiga intros
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const SCALE = 2;
+let W, H, pw, ph;
+let imageData;
+
+// Lookup tables for tunnel
+let angleLUT, distLUT;
+
+// Generate procedural texture (brick-like pattern with color cycling)
+const TEX_W = 256;
+const TEX_H = 256;
+const texR = new Uint8Array(TEX_W * TEX_H);
+const texG = new Uint8Array(TEX_W * TEX_H);
+const texB = new Uint8Array(TEX_W * TEX_H);
+
+for (let y = 0; y < TEX_H; y++) {
+  for (let x = 0; x < TEX_W; x++) {
+    const idx = y * TEX_W + x;
+    // XOR pattern with sine modulation for a trippy texture
+    const xor = (x ^ y);
+    const wave = Math.sin(x * 0.05) * Math.sin(y * 0.05) * 128 + 128;
+    const checker = ((x >> 4) + (y >> 4)) & 1 ? 200 : 50;
+
+    texR[idx] = (xor + wave * 0.3) & 255;
+    texG[idx] = (checker + xor * 0.5) & 255;
+    texB[idx] = ((255 - xor) + wave * 0.2) & 255;
+  }
+}
+
+let mouseX = 0.5, mouseY = 0.5;
+window.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX / window.innerWidth;
+  mouseY = e.clientY / window.innerHeight;
+});
+
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  pw = Math.ceil(W / SCALE);
+  ph = Math.ceil(H / SCALE);
+  canvas.width = pw;
+  canvas.height = ph;
+  imageData = ctx.createImageData(pw, ph);
+
+  // Rebuild lookup tables
+  angleLUT = new Float32Array(pw * ph);
+  distLUT = new Float32Array(pw * ph);
+
+  const cx = pw / 2;
+  const cy = ph / 2;
+
+  for (let y = 0; y < ph; y++) {
+    for (let x = 0; x < pw; x++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const idx = y * pw + x;
+      angleLUT[idx] = (Math.atan2(dy, dx) / Math.PI) * 128 + 128;
+      distLUT[idx] = 5000 / (Math.sqrt(dx * dx + dy * dy) + 1);
+    }
+  }
+}
+window.addEventListener('resize', resize);
+resize();
+
+let time = 0;
+
+function draw() {
+  const d = imageData.data;
+
+  // Tunnel movement parameters
+  const shiftX = time * 50;
+  const shiftY = time * 30;
+
+  // Mouse-driven center offset for that "look around" feel
+  const lookX = (mouseX - 0.5) * pw * 0.4;
+  const lookY = (mouseY - 0.5) * ph * 0.4;
+
+  // Color cycling phase
+  const colorPhase = time * 60;
+
+  const cx = pw / 2;
+  const cy = ph / 2;
+
+  for (let y = 0; y < ph; y++) {
+    for (let x = 0; x < pw; x++) {
+      // Recalculate with mouse offset
+      const dx = x - cx - lookX;
+      const dy = y - cy - lookY;
+
+      const angle = (Math.atan2(dy, dx) / Math.PI) * 128 + 128;
+      const dist = 5000 / (Math.sqrt(dx * dx + dy * dy) + 1);
+
+      // Texture coordinates with scrolling
+      let tx = Math.floor(angle + shiftX) & (TEX_W - 1);
+      let ty = Math.floor(dist + shiftY) & (TEX_H - 1);
+
+      const tIdx = ty * TEX_W + tx;
+      const pIdx = (y * pw + x) * 4;
+
+      // Depth fog
+      const rawDist = Math.sqrt(dx * dx + dy * dy);
+      const fog = Math.min(1, rawDist / (Math.min(pw, ph) * 0.5));
+
+      // Color cycling: rotate the texture colors
+      const shift = Math.floor(colorPhase) & 255;
+      let r = (texR[tIdx] + shift) & 255;
+      let g = (texG[tIdx] + shift * 0.7) & 255;
+      let b = (texB[tIdx] + shift * 1.3) & 255;
+
+      // Apply fog (darken towards center for depth)
+      const fogInv = 1 - fog;
+      r = Math.floor(r * fog);
+      g = Math.floor(g * fog);
+      b = Math.floor(b * fog);
+
+      d[pIdx]     = r;
+      d[pIdx + 1] = g;
+      d[pIdx + 2] = b;
+      d[pIdx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

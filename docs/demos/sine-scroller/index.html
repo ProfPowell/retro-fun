@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sine Scroller // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #ff00ff; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+// Demoscene sine scroller with raster bars and bouncing logo
+// The kind of thing that made you stare at your C64 for hours
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// 8x8 pixel font bitmap (uppercase + numbers + punctuation)
+// Each character is 8 rows of 8 bits
+const FONT = {};
+const CHARS = {
+  'A': [0x1C,0x22,0x41,0x41,0x7F,0x41,0x41,0x00],
+  'B': [0x7E,0x41,0x41,0x7E,0x41,0x41,0x7E,0x00],
+  'C': [0x3E,0x41,0x40,0x40,0x40,0x41,0x3E,0x00],
+  'D': [0x7C,0x42,0x41,0x41,0x41,0x42,0x7C,0x00],
+  'E': [0x7F,0x40,0x40,0x7E,0x40,0x40,0x7F,0x00],
+  'F': [0x7F,0x40,0x40,0x7E,0x40,0x40,0x40,0x00],
+  'G': [0x3E,0x41,0x40,0x47,0x41,0x41,0x3E,0x00],
+  'H': [0x41,0x41,0x41,0x7F,0x41,0x41,0x41,0x00],
+  'I': [0x3E,0x08,0x08,0x08,0x08,0x08,0x3E,0x00],
+  'J': [0x1F,0x04,0x04,0x04,0x04,0x44,0x38,0x00],
+  'K': [0x41,0x42,0x44,0x78,0x44,0x42,0x41,0x00],
+  'L': [0x40,0x40,0x40,0x40,0x40,0x40,0x7F,0x00],
+  'M': [0x41,0x63,0x55,0x49,0x41,0x41,0x41,0x00],
+  'N': [0x41,0x61,0x51,0x49,0x45,0x43,0x41,0x00],
+  'O': [0x3E,0x41,0x41,0x41,0x41,0x41,0x3E,0x00],
+  'P': [0x7E,0x41,0x41,0x7E,0x40,0x40,0x40,0x00],
+  'Q': [0x3E,0x41,0x41,0x41,0x45,0x42,0x3D,0x00],
+  'R': [0x7E,0x41,0x41,0x7E,0x44,0x42,0x41,0x00],
+  'S': [0x3E,0x41,0x40,0x3E,0x01,0x41,0x3E,0x00],
+  'T': [0x7F,0x08,0x08,0x08,0x08,0x08,0x08,0x00],
+  'U': [0x41,0x41,0x41,0x41,0x41,0x41,0x3E,0x00],
+  'V': [0x41,0x41,0x41,0x41,0x22,0x14,0x08,0x00],
+  'W': [0x41,0x41,0x41,0x49,0x55,0x63,0x41,0x00],
+  'X': [0x41,0x22,0x14,0x08,0x14,0x22,0x41,0x00],
+  'Y': [0x41,0x22,0x14,0x08,0x08,0x08,0x08,0x00],
+  'Z': [0x7F,0x02,0x04,0x08,0x10,0x20,0x7F,0x00],
+  '0': [0x3E,0x43,0x45,0x49,0x51,0x61,0x3E,0x00],
+  '1': [0x08,0x18,0x28,0x08,0x08,0x08,0x3E,0x00],
+  '2': [0x3E,0x41,0x01,0x3E,0x40,0x40,0x7F,0x00],
+  '3': [0x3E,0x41,0x01,0x1E,0x01,0x41,0x3E,0x00],
+  '4': [0x04,0x0C,0x14,0x24,0x7F,0x04,0x04,0x00],
+  '5': [0x7F,0x40,0x7E,0x01,0x01,0x41,0x3E,0x00],
+  '6': [0x3E,0x41,0x40,0x7E,0x41,0x41,0x3E,0x00],
+  '7': [0x7F,0x01,0x02,0x04,0x08,0x10,0x10,0x00],
+  '8': [0x3E,0x41,0x41,0x3E,0x41,0x41,0x3E,0x00],
+  '9': [0x3E,0x41,0x41,0x3F,0x01,0x41,0x3E,0x00],
+  ' ': [0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00],
+  '!': [0x08,0x08,0x08,0x08,0x08,0x00,0x08,0x00],
+  '.': [0x00,0x00,0x00,0x00,0x00,0x00,0x08,0x00],
+  ',': [0x00,0x00,0x00,0x00,0x00,0x08,0x08,0x10],
+  '-': [0x00,0x00,0x00,0x7F,0x00,0x00,0x00,0x00],
+  '/': [0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x00],
+  '*': [0x00,0x08,0x2A,0x1C,0x2A,0x08,0x00,0x00],
+  ':': [0x00,0x00,0x08,0x00,0x00,0x08,0x00,0x00],
+};
+
+const MESSAGE = "    GREETINGS FROM RETRO FUN!  THIS IS A CLASSIC SINE SCROLLER " +
+  "IN THE STYLE OF THE GREAT EASTERN EUROPEAN DEMOSCENE...  " +
+  "RESPECT TO FAIRLIGHT, HORIZON, CREST, TRIAD, AND ALL THE C64 LEGENDS!  " +
+  "ZERO DEPENDENCIES. PURE CANVAS. NO FRAMEWORKS.  " +
+  "REMEMBER: THE SCENE IS NOT DEAD, IT JUST MOVED TO THE BROWSER!  " +
+  "COLOR CYCLING ALL THE THINGS...  " +
+  "PRESS F TO PAY RESPECTS TO YOUR VIC20...    ";
+
+let scrollX = 0;
+let time = 0;
+const CHAR_SCALE = 5;
+const CHAR_W = 8 * CHAR_SCALE;
+
+function drawChar(ch, x, baseY, scale, colorPhase) {
+  const bitmap = CHARS[ch] || CHARS[' '];
+
+  for (let row = 0; row < 8; row++) {
+    const bits = bitmap[row];
+    for (let col = 0; col < 8; col++) {
+      if (bits & (0x80 >> col)) {
+        const px = x + col * scale;
+        const py = baseY + row * scale;
+
+        // Per-pixel sine distortion
+        const sineOffset = Math.sin(time * 3 + px * 0.008) * 30;
+        const finalY = py + sineOffset;
+
+        // Color cycling per column
+        const hue = (colorPhase + px * 0.5 + row * 10) % 360;
+        const lightness = 50 + Math.sin(time * 2 + col * 0.5) * 20;
+        ctx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;
+        ctx.fillRect(px, finalY, scale, scale);
+      }
+    }
+  }
+}
+
+function drawRasterBars() {
+  // Background raster bars that bounce behind the text
+  const numBars = 6;
+  for (let i = 0; i < numBars; i++) {
+    const y = H * 0.5 + Math.sin(time * 1.5 + i * 1.2) * (H * 0.3);
+    const barH = 30 + Math.sin(time + i) * 10;
+
+    for (let line = -barH; line <= barH; line++) {
+      const dist = Math.abs(line) / barH;
+      const intensity = Math.cos(dist * Math.PI * 0.5);
+      const hue = (time * 60 + i * 60) % 360;
+      ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${intensity * 0.15})`;
+      ctx.fillRect(0, y + line, W, 1);
+    }
+  }
+}
+
+function drawReflection() {
+  // Ghost reflection below the main scroller
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.scale(1, -0.4);
+  ctx.translate(0, -H * 3.8);
+
+  // Redraw the scroll text as reflection
+  const colorPhase = time * 80;
+  const msgLen = MESSAGE.length;
+
+  for (let i = 0; i < Math.ceil(W / CHAR_W) + 2; i++) {
+    const charIdx = (Math.floor(scrollX / CHAR_W) + i) % msgLen;
+    const ch = MESSAGE[charIdx < 0 ? charIdx + msgLen : charIdx];
+    const x = i * CHAR_W - (scrollX % CHAR_W);
+    const y = H * 0.45;
+
+    if (x > -CHAR_W && x < W + CHAR_W) {
+      drawChar(ch, x, y, CHAR_SCALE, colorPhase);
+    }
+  }
+
+  ctx.restore();
+}
+
+function draw() {
+  // Fade with dark trail
+  ctx.fillStyle = 'rgba(0, 0, 5, 0.25)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Background raster bars
+  drawRasterBars();
+
+  // Main scroll text
+  const colorPhase = time * 80;
+  const msgLen = MESSAGE.length;
+
+  for (let i = 0; i < Math.ceil(W / CHAR_W) + 2; i++) {
+    const charIdx = (Math.floor(scrollX / CHAR_W) + i) % msgLen;
+    const ch = MESSAGE[charIdx < 0 ? charIdx + msgLen : charIdx];
+    const x = i * CHAR_W - (scrollX % CHAR_W);
+    const y = H * 0.45;
+
+    if (x > -CHAR_W && x < W + CHAR_W) {
+      drawChar(ch, x, y, CHAR_SCALE, colorPhase);
+    }
+  }
+
+  // Reflection
+  drawReflection();
+
+  // Scrolling speed
+  scrollX += 2.5;
+  if (scrollX >= msgLen * CHAR_W) scrollX -= msgLen * CHAR_W;
+
+  // Scanlines
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
