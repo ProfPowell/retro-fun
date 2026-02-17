@@ -227,6 +227,12 @@
   }
 
   .preview-rotozoom {
+    background: #000;
+  }
+  .preview-rotozoom::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
     background: repeating-conic-gradient(#ff00ff 0% 25%, #000 25% 50%);
     background-size: 40px 40px;
     animation: rotozoom-spin 4s linear infinite;
