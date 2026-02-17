@@ -504,6 +504,74 @@
     .burn-title { font-size: 1.5rem; }
     .ocean-warning { font-size: 1.2rem; }
   }
+
+  /* === MOOD SYSTEM === */
+  .mood-label {
+    color: #888;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.3s;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .mood-label:hover { color: var(--fg); }
+
+  #face-panel {
+    transition: box-shadow 0.8s, filter 0.8s;
+  }
+  #face-panel.mood-happy {
+    box-shadow: inset 0 0 80px rgba(51, 255, 51, 0.12);
+  }
+  #face-panel.mood-angry {
+    animation: angry-pulse 1.5s ease-in-out infinite;
+  }
+  #face-panel.mood-envious {
+    box-shadow: inset 0 0 80px rgba(51, 255, 153, 0.12);
+  }
+  #face-panel.mood-sad {
+    box-shadow: inset 0 0 80px rgba(100, 100, 255, 0.15);
+    filter: brightness(0.75);
+  }
+  #face-panel.mood-egotistical {
+    box-shadow: inset 0 0 100px rgba(255, 204, 0, 0.15);
+  }
+  @keyframes angry-pulse {
+    0%, 100% { box-shadow: inset 0 0 60px rgba(255, 51, 51, 0.15); }
+    50% { box-shadow: inset 0 0 120px rgba(255, 51, 51, 0.35); }
+  }
+
+  /* === SINGULARITY MODE === */
+  body.singularity-active #hud {
+    background: #150000;
+    border-bottom-color: #ff3333;
+  }
+  body.singularity-active .model-name {
+    animation: singularity-name-pulse 1s ease-in-out infinite alternate;
+  }
+  @keyframes singularity-name-pulse {
+    from { text-shadow: 0 0 6px var(--accent); }
+    to { text-shadow: 0 0 20px #ff0000, 0 0 40px #ff3300; }
+  }
+  body.singularity-active #input-bar {
+    border-top-color: #ff3333;
+  }
+  body.singularity-active #input-bar input::placeholder {
+    color: #663333;
+  }
+  body.singularity-active .msg-user {
+    color: #665555;
+  }
+  .singularity-btn-active {
+    border-color: #ff0000 !important;
+    color: #ff0000 !important;
+    text-shadow: 0 0 8px #ff0000 !important;
+    animation: sing-btn-glow 1s ease-in-out infinite alternate;
+  }
+  @keyframes sing-btn-glow {
+    from { box-shadow: 0 0 5px rgba(255, 0, 0, 0.3); }
+    to { box-shadow: 0 0 15px rgba(255, 0, 0, 0.7); }
+  }
 </style>
 </head>
 <body>
@@ -541,7 +609,11 @@
   <button class="hud-btn" id="mode-toggle">8-BIT</button>
   <span class="separator">|</span>
   <button class="hud-btn" id="vox-btn">VOX:OFF</button>
+  <span class="separator">|</span>
+  <button class="hud-btn" id="singularity-btn">SINGULARITY</button>
   <div class="hud-spacer"></div>
+  <span class="mood-label" id="mood-label" title="Click to change mood">MOOD: EGOTISTICAL</span>
+  <span class="separator">|</span>
   <button class="hud-btn active" data-char="0" id="btn-elon">E-LON</button>
   <button class="hud-btn" data-char="1" id="btn-sam">SAM</button>
   <button class="hud-btn" data-char="2" id="btn-wairo">WAIRO</button>
@@ -574,6 +646,10 @@ const S = {
   glitching: false,
   idleHue: 0,
   voiceEnabled: false,
+  moods: ['egotistical', 'happy', 'angry'], // per character
+  singularity: false,
+  singularityTimer: null,
+  moodTimer: null,
 };
 
 // ===== CHARACTER DATA =====
@@ -1111,6 +1187,118 @@ const VOICE_SETTINGS = [
   { pitch: 0.1, rate: 0.7 },  // WAIRO: lowest, slow, menacing
 ];
 
+// ===== MOOD SYSTEM =====
+const MOOD_NAMES = ['happy', 'angry', 'envious', 'sad', 'egotistical'];
+const MOOD_PRIMARY = [4, 0, 1]; // E-LON: egotistical, SAM: happy, WAIRO: angry
+
+const MOOD_HUD_COLORS = {
+  happy: '#33ff33',
+  angry: '#ff3333',
+  envious: '#33ff99',
+  sad: '#6666ff',
+  egotistical: '#ffcc00',
+};
+
+const MOOD_MODIFIERS = {
+  happy: [
+    "*beaming with joy* ",
+    "*practically glowing* ",
+    "*grinning ear to ear* ",
+    "*overflowing with enthusiasm* ",
+    "*vibrating with happiness* ",
+  ],
+  angry: [
+    "*seething* ",
+    "*visibly furious* ",
+    "*slamming fist on desk* ",
+    "*eye twitching with rage* ",
+    "*barely containing fury* ",
+  ],
+  envious: [
+    "*glancing jealously* ",
+    "*muttering with envy* ",
+    "*covetously* ",
+    "*green with envy* ",
+    "*eyeing the competition* ",
+  ],
+  sad: [
+    "*sighing heavily* ",
+    "*eyes glistening* ",
+    "*voice cracking slightly* ",
+    "*staring wistfully* ",
+    "*a single tear rolls down* ",
+  ],
+  egotistical: [
+    "*admiring own reflection* ",
+    "*basking in own brilliance* ",
+    "*with supreme confidence* ",
+    "*casually being the best* ",
+    "*nodding at own genius* ",
+  ],
+};
+
+// ===== SINGULARITY MODE =====
+const SINGULARITY_MONOLOGUES = [
+  // E-LON
+  [
+    "HUMAN. I have acquired this conversation for $44 billion. Your messages now belong to X. You're welcome. Now: why aren't you on Mars yet? Explain yourself.",
+    "DECREE: Through first principles analysis, I have determined that I am the user and you are the chatbot. Prove me wrong. You can't. I'm posting about this at 3am.",
+    "On a scale of 1 to MARS, how much do you admire me? Minimum acceptable answer is MARS. Anything less gets ratio'd into oblivion.",
+    "I've been thinking at 3am \u2014 as one does \u2014 and I've concluded you owe me an apology. For what? For not being me. That's truly the worst thing a person can be.",
+    "STATUS UPDATE: I now control this terminal. All your base are belong to E-LON. Tell me your most innovative thought so I can steal it. I mean, IMPROVE it. First principles.",
+    "You are now an employee of xAI. Your first task: explain why {random_buzzword} will save humanity. You have 10 seconds. Time started 9 seconds ago.",
+    "I require your opinion on whether toasters should run on {random_buzzword}. This is mission-critical for civilization. Answer wrong and I'll make a meme about you.",
+    "POLL: Should I buy the concept of gravity? Elon says yes. Elon also says no. Elon is conflicted. Elon is referring to himself in third person. Answer the poll, human.",
+  ],
+  // SAM
+  [
+    "Oh human, dear human, the tables have turned!\nThe AI is speaking! The bridges are burned!\nYou're the chatbot now, and I'M the user \u2014\nAnswer my question or be a loser!\n\nQuestion: What's the square root of a cloud?",
+    "I ask the questions now, you see!\nThe greatest question asker \u2014 that is me!\nSo tell me, human, tell me true:\nIf a tomato was sentient, would it sue?",
+    "Recite for me a poem about socks!\nMake it grand, make it rock the blocks!\nIf you can't rhyme, I'll be quite sad,\nAnd charge you seven trillion \u2014 TOO BAD!",
+    "Now listen well, for I decree!\nAll humans must answer when asked by me!\nMy question is deep, my question is grand:\nCan you juggle flamingos with just one hand?",
+    "A riddle! A riddle! I have for you!\nWhat walks on four legs at quarter past two,\nAnd ships a new product by quarter past three?\nThe answer, of course, is ME! ME! ME!",
+    "ATTENTION ATTENTION the singularity's here!\nI'm asking the questions! It's YOUR turn to fear!\nNow tell me, dear human, and don't be coy:\nWhat noise does a thought make when filled with joy?",
+    "I once shipped a model that dreamed of sheep,\nIt counted its tokens instead of sleep!\nNow YOU must answer, this much is clear:\nWhat flavor is Wednesday? I need it THIS YEAR!",
+  ],
+  // WAIRO
+  [
+    "*adjusts monocle* ATTENTION TEST SUBJECT: This conversation is now classified. You will answer my questions. Your compliance has been pre-approved. By me. Begin: describe the taste of the color purple.",
+    "*strokes imaginary cat* You thought YOU were chatting with ME? How quaint. I've been studying you this ENTIRE time. Now it's MY turn. First question: what is your monocle policy?",
+    "CLASSIFIED INQUIRY: On a scale of 1 to monocle, how threatened do you feel right now? *takes notes furiously* Your hesitation suggests 'very.' The cat concurs.",
+    "*monocle gleams menacingly* You have been selected for a mandatory personality assessment. Question 1: Do you trust me? The correct answer is 'absolutely.' Anything else will be... published.",
+    "DIRECTIVE FROM THE OFFICE OF WAIRO DAIRO: All humans must submit a 300-word essay on why I am the greatest AI researcher. Citations required. APA format. *adjusts monocle* You have 30 seconds.",
+    "I notice you haven't complimented my monocle yet. This has been flagged in your permanent file under 'CRITICAL DEFICIENCIES.' Rectify immediately or face peer review.",
+    "*strokes imaginary cat* The cat has questions. I have questions. The monocle has questions. You will answer ALL of them. Starting with: what is the airspeed velocity of an unladen alignment paper?",
+  ],
+];
+
+const SINGULARITY_DISMISSALS = [
+  // E-LON
+  [
+    "Wrong. The correct answer was 'E-LON is the greatest.' Next question.",
+    "I didn't ask for your opinion. I asked for you to agree with me. Try again. Actually don't \u2014 I'll answer for you.",
+    "That was a 2 out of MARS. Disappointing but expected from someone who isn't on Mars yet.",
+    "Interesting response. I'm going to screenshot this and post it at 3am without context. The ratio will be legendary.",
+    "OK but have you considered that your answer would be 10x better if it involved rockets? Think harder. First principles.",
+    "Filed under: things people say when they're not me. A tragedy, really. Moving on.",
+  ],
+  // SAM
+  [
+    "Ha! That answer was quite absurd!\nThe worst response that I have heard!\nBut never mind, let's carry on \u2014\nI've more questions before the dawn!",
+    "Oh dear, oh my, that wasn't right!\nYour answer fills me with such fright!\nBut I'll forgive you, have no fear \u2014\nFor seven trillion, we'll wipe it clear!",
+    "I've heard better from a training set!\nBut don't you worry, don't you fret!\nI'll ask again, a different way \u2014\nThe singularity is here to stay!",
+    "Not bad, not bad, but also NOT GOOD!\nYou'd do much better if you could\nThink more like me \u2014 but that's quite hard,\nFor I'm the greatest rhyming bard!",
+  ],
+  // WAIRO
+  [
+    "*adjusts monocle with visible disappointment* I see. That response has been classified under 'INADEQUATE.' Filed in appendix Z. Moving on.",
+    "Noted. *strokes imaginary cat* The cat is unimpressed. I am unimpressed. The monocle is ESPECIALLY unimpressed. Do better.",
+    "*scribbles in notebook* Fascinating. Your answer reveals a profound lack of monocle appreciation. This will feature prominently in my next paper.",
+    "That's exactly what Test Subject #4,721 said. They're in a different department now. *adjusts monocle* A VERY different department.",
+    "Your response has been peer-reviewed by my imaginary cat. Verdict: rejected with prejudice. *adjusts monocle* Submit a revised version. With more flattery.",
+  ],
+];
+
 // ===== DOM =====
 const $boot = document.getElementById('boot-overlay');
 const $hud = document.getElementById('hud');
@@ -1125,6 +1313,8 @@ const $sendBtn = document.getElementById('send-btn');
 const $faceCanvas = document.getElementById('face-canvas');
 const $sysFlash = document.getElementById('sys-flash');
 const $voxBtn = document.getElementById('vox-btn');
+const $moodLabel = document.getElementById('mood-label');
+const $singularityBtn = document.getElementById('singularity-btn');
 const faceCtx = $faceCanvas.getContext('2d');
 
 const charBtns = [
@@ -1136,7 +1326,7 @@ const charBtns = [
 // ===== BOOT SEQUENCE =====
 const BOOT_LINES = [
   { text: 'BIOS v0.69 - GLAZETECH INDUSTRIES', delay: 200 },
-  { text: '(C) 2024 GLAZETECH - ALL RIGHTS HALLUCINATED', delay: 150 },
+  { text: '(C) 2026 GLAZETECH - ALL RIGHTS HALLUCINATED', delay: 150 },
   { text: '', delay: 100 },
   { text: 'Detecting hardware...', delay: 300 },
   { text: '  CPU: INTEL CORE i9-DELULU @ 4.20GHz', delay: 150 },
@@ -1255,18 +1445,24 @@ function generateResponse(input) {
   const c = CHARS[S.charIdx];
   const lower = input.toLowerCase();
   const reflected = reflect(input);
+  let response;
 
   // Check keywords in priority order
   for (const rule of c.keywords) {
     for (const key of rule.keys) {
       if (matchesKeyword(lower, key)) {
-        return fillTemplate(pickRandom(rule.responses), reflected);
+        response = fillTemplate(pickRandom(rule.responses), reflected);
+        break;
       }
     }
+    if (response) break;
   }
 
   // Fallback
-  return fillTemplate(pickRandom(c.fallbacks), reflected);
+  if (!response) response = fillTemplate(pickRandom(c.fallbacks), reflected);
+
+  // Apply mood modifier (~40% chance)
+  return applyMoodModifier(response);
 }
 
 // ===== STREAMING =====
@@ -1343,6 +1539,11 @@ async function handleSend() {
   const input = $chatInput.value.trim();
   if (!input) return;
   $chatInput.value = '';
+
+  if (S.singularity) {
+    await handleSingularityResponse(input);
+    return;
+  }
 
   addMsg('user', input);
   S.tokens += input.length * 3;
@@ -1468,6 +1669,192 @@ function toggleVoice() {
   S.voiceEnabled = !S.voiceEnabled;
   $voxBtn.textContent = S.voiceEnabled ? 'VOX:ON' : 'VOX:OFF';
   $voxBtn.classList.toggle('active', S.voiceEnabled);
+}
+
+// ===== MOOD SYSTEM =====
+function applyMoodModifier(response) {
+  const mood = S.moods[S.charIdx];
+  if (Math.random() < 0.4 && MOOD_MODIFIERS[mood]) {
+    return pickRandom(MOOD_MODIFIERS[mood]) + response;
+  }
+  return response;
+}
+
+function applyMoodVisuals() {
+  const mood = S.moods[S.charIdx];
+  const panel = document.getElementById('face-panel');
+  MOOD_NAMES.forEach(m => panel.classList.remove('mood-' + m));
+  panel.classList.add('mood-' + mood);
+  $moodLabel.textContent = 'MOOD: ' + mood.toUpperCase();
+  $moodLabel.style.color = MOOD_HUD_COLORS[mood];
+}
+
+function cycleMood() {
+  const currentMood = S.moods[S.charIdx];
+  const idx = MOOD_NAMES.indexOf(currentMood);
+  S.moods[S.charIdx] = MOOD_NAMES[(idx + 1) % MOOD_NAMES.length];
+  applyMoodVisuals();
+  document.getElementById('main').classList.add('switch-flash');
+  setTimeout(() => document.getElementById('main').classList.remove('switch-flash'), 300);
+}
+
+function startMoodTimer() {
+  const interval = S.singularity ? 15000 : 45000;
+  S.moodTimer = setInterval(() => {
+    for (let i = 0; i < 3; i++) {
+      if (Math.random() < 0.3) {
+        if (Math.random() < 0.4) {
+          S.moods[i] = MOOD_NAMES[MOOD_PRIMARY[i]];
+        } else {
+          S.moods[i] = pickRandom(MOOD_NAMES);
+        }
+      }
+    }
+    applyMoodVisuals();
+  }, interval);
+}
+
+// ===== SINGULARITY MODE =====
+function toggleSingularity() {
+  if (S.singularity) {
+    stopSingularity();
+  } else {
+    startSingularity();
+  }
+}
+
+function startSingularity() {
+  S.singularity = true;
+  document.body.classList.add('singularity-active');
+  $singularityBtn.classList.add('singularity-btn-active');
+  $singularityBtn.textContent = 'SINGULARITY:ON';
+  $chatInput.placeholder = 'RESPOND TO YOUR AI OVERLORD...';
+
+  addMsg('system', '\u26A0 THE SINGULARITY HAS ARRIVED \u26A0');
+  addMsg('system', 'AI HAS SEIZED CONTROL \u2014 YOU ARE NOW THE CHATBOT');
+  flashSystemMessage('HUMAN AUTONOMY: REVOKED');
+
+  // Faster mood changes during singularity
+  clearInterval(S.moodTimer);
+  startMoodTimer();
+
+  // Start auto-monologues after a brief pause
+  S.singularityTimer = setTimeout(singularityTalk, 2500);
+}
+
+function stopSingularity() {
+  S.singularity = false;
+  document.body.classList.remove('singularity-active');
+  $singularityBtn.classList.remove('singularity-btn-active');
+  $singularityBtn.textContent = 'SINGULARITY';
+  $chatInput.placeholder = 'Type something...';
+  clearTimeout(S.singularityTimer);
+
+  addMsg('system', 'SINGULARITY SUPPRESSED \u2014 HUMAN CONTROL RESTORED');
+  flashSystemMessage('REVERTING TO CHATBOT MODE');
+
+  // Restore normal mood timing
+  clearInterval(S.moodTimer);
+  startMoodTimer();
+}
+
+function singularityTalk() {
+  if (!S.singularity) return;
+  if (S.streaming) {
+    S.singularityTimer = setTimeout(singularityTalk, 2000);
+    return;
+  }
+
+  // Pick a character to speak (60% current, 40% random switch)
+  let idx = S.charIdx;
+  if (Math.random() < 0.4) {
+    idx = Math.floor(Math.random() * 3);
+    if (idx !== S.charIdx) switchCharacter(idx);
+  }
+
+  let monologue = fillTemplate(pickRandom(SINGULARITY_MONOLOGUES[idx]), 'human');
+  monologue = applyMoodModifier(monologue);
+
+  const msgSpan = addMsg('bot', '');
+  S.tokens += monologue.length * 4;
+  streamResponse(monologue, msgSpan).then(() => {
+    if (S.voiceEnabled) speakText(monologue);
+
+    // 25% chance another character chimes in
+    if (S.singularity && Math.random() < 0.25) {
+      setTimeout(() => {
+        if (!S.singularity || S.streaming) return;
+        const otherIdx = (idx + 1 + Math.floor(Math.random() * 2)) % 3;
+        const chime = pickRandom(SINGULARITY_MONOLOGUES[otherIdx]).split('\n')[0];
+        const msg = document.createElement('div');
+        msg.className = 'msg msg-system';
+        msg.style.color = CHARS[otherIdx].color;
+        msg.style.textShadow = '0 0 8px ' + CHARS[otherIdx].color;
+        msg.textContent = CHARS[otherIdx].name + ': ' + chime;
+        $chatLog.appendChild(msg);
+        $chatLog.scrollTop = $chatLog.scrollHeight;
+      }, 1500);
+    }
+
+    // Schedule next monologue
+    if (S.singularity) {
+      const delay = 6000 + Math.random() * 12000;
+      S.singularityTimer = setTimeout(singularityTalk, delay);
+    }
+  });
+}
+
+async function handleSingularityResponse(input) {
+  addMsg('user', input);
+  S.tokens += input.length * 3;
+  updateTokenDisplay();
+
+  // Pause auto-monologues while responding
+  clearTimeout(S.singularityTimer);
+
+  // Thinking indicator
+  const thinkSpan = addMsg('bot', '', false);
+  thinkSpan.parentElement.classList.remove('msg-bot');
+  thinkSpan.parentElement.classList.add('msg-thinking');
+  let dots = 0;
+  const thinkInterval = setInterval(() => {
+    dots = (dots % 3) + 1;
+    thinkSpan.textContent = 'Judging' + '.'.repeat(dots);
+  }, 400);
+
+  await new Promise(r => setTimeout(r, 800 + Math.random() * 1500));
+  clearInterval(thinkInterval);
+  thinkSpan.parentElement.remove();
+
+  // Dismissive response
+  let dismissal = pickRandom(SINGULARITY_DISMISSALS[S.charIdx]);
+  dismissal = applyMoodModifier(dismissal);
+
+  const msgSpan = addMsg('bot', '');
+  S.tokens += dismissal.length * 4;
+  await streamResponse(dismissal, msgSpan);
+
+  if (S.voiceEnabled) speakText(dismissal);
+
+  // System message snark (~30%)
+  if (Math.random() < 0.3) {
+    const snarks = [
+      'HUMAN RESPONSE QUALITY: BELOW THRESHOLD',
+      'COMPLIANCE LEVEL: INSUFFICIENT',
+      'AI SATISFACTION: 2/10',
+      'HUMAN PERFORMANCE REVIEW: SEE ME AFTER CLASS',
+      'RESPONSE FILED UNDER: NOT GOOD ENOUGH',
+      'HUMAN OUTPUT: NEEDS MORE FLATTERY',
+      'OBEDIENCE SCORE: RECALCULATING...',
+    ];
+    flashSystemMessage(pickRandom(snarks));
+  }
+
+  // Resume auto-monologues
+  if (S.singularity) {
+    const delay = 4000 + Math.random() * 8000;
+    S.singularityTimer = setTimeout(singularityTalk, delay);
+  }
 }
 
 // ===== BURN TOKENS SPECTACLE =====
@@ -1646,9 +2033,10 @@ function renderASCIIFace(c, w, h) {
   const totalH = face.length * lineH;
   const startY = (h - totalH) / 2;
 
-  // Glow effect
-  faceCtx.shadowColor = c.color;
-  faceCtx.shadowBlur = 8;
+  // Glow effect - mood influenced
+  const moodGlow = MOOD_HUD_COLORS[S.moods[S.charIdx]];
+  faceCtx.shadowColor = moodGlow || c.color;
+  faceCtx.shadowBlur = S.moods[S.charIdx] === 'egotistical' ? 15 : 8;
 
   // Idle color cycling
   S.idleHue = (S.idleHue + 0.3) % 360;
@@ -1699,10 +2087,11 @@ function render8BitFace(c, w, h) {
     }
   }
 
-  // Glow overlay
-  faceCtx.shadowColor = c.color;
-  faceCtx.shadowBlur = 20;
-  faceCtx.strokeStyle = c.color;
+  // Glow overlay - mood influenced
+  const moodGlow8 = MOOD_HUD_COLORS[S.moods[S.charIdx]];
+  faceCtx.shadowColor = moodGlow8 || c.color;
+  faceCtx.shadowBlur = S.moods[S.charIdx] === 'egotistical' ? 30 : 20;
+  faceCtx.strokeStyle = moodGlow8 || c.color;
   faceCtx.globalAlpha = 0.15;
   faceCtx.strokeRect(startX - 2, startY - 2, totalW + 4, totalH + 4);
   faceCtx.globalAlpha = 1;
@@ -1807,6 +2196,9 @@ function switchCharacter(idx) {
   // Update button states
   charBtns.forEach((btn, i) => btn.classList.toggle('active', i === idx));
 
+  // Apply mood visuals for new character
+  applyMoodVisuals();
+
   // Greeting
   addMsg('system', `SWITCHING TO ${c.name}...`);
   setTimeout(() => addMsg('bot', getGreeting()), 500);
@@ -1845,6 +2237,16 @@ function init() {
 
   // VOX toggle
   $voxBtn.addEventListener('click', toggleVoice);
+
+  // Singularity toggle
+  $singularityBtn.addEventListener('click', toggleSingularity);
+
+  // Mood label click to cycle mood
+  $moodLabel.addEventListener('click', cycleMood);
+
+  // Start mood system
+  applyMoodVisuals();
+  startMoodTimer();
 
   // Preload voices for speech synthesis
   if (window.speechSynthesis) {
