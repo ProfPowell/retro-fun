@@ -382,6 +382,21 @@
     animation: blob-move2 3s ease-in-out infinite alternate;
   }
 
+  .preview-llmliza {
+    background: #001a00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .preview-llmliza::before {
+    content: '> GLAZING INITIATED_';
+    font-family: monospace;
+    font-size: 1.2rem;
+    color: #33ff33;
+    text-shadow: 0 0 10px #33ff33, 0 0 20px #33ff33;
+    animation: blink-cursor 1s step-end infinite;
+  }
+
   @keyframes copper-shift {
     from { transform: translateY(-20px); }
     to { transform: translateY(20px); }
@@ -608,6 +623,17 @@
       <p>Blobby organic shapes with multi-palette color cycling</p>
       <span class="tag tag--canvas">Canvas</span>
       <span class="tag">Demoscene</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/llmliza/">
+    <div class="card-preview preview-llmliza"></div>
+    <div class="card-info">
+      <h2>LLMliza</h2>
+      <p>Satirical ELIZA chatbot powered by Glaze People Today (GPT)</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag tag--css">CSS</span>
+      <span class="tag">Satire</span>
     </div>
   </a>
 </div>

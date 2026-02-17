@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLMliza // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --fg: #33ff33;
+    --dim: #0a3a0a;
+    --accent: #00ffff;
+    --panel-bg: #0d0d0d;
+    --input-bg: #0a0a0a;
+    --border: #1a3a1a;
+    --scanline: rgba(0,0,0,0.15);
+    --glow-color: #33ff33;
+    --face-bg: #000;
+  }
+
+  .mode-8bit {
+    --bg: #1a0030;
+    --fg: #ff00ff;
+    --dim: #3a0060;
+    --accent: #00ffff;
+    --panel-bg: #0d0020;
+    --input-bg: #0a0018;
+    --border: #4a0080;
+    --scanline: rgba(0,0,0,0.1);
+    --glow-color: #ff00ff;
+    --face-bg: #0a0018;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  /* CRT scanline overlay */
+  #scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      var(--scanline) 2px, var(--scanline) 4px
+    );
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* CRT flicker */
+  @keyframes crt-flicker {
+    0% { opacity: 0.98; }
+    5% { opacity: 0.95; }
+    10% { opacity: 0.98; }
+    100% { opacity: 0.98; }
+  }
+  #scanlines { animation: crt-flicker 4s infinite; }
+
+  /* === BOOT OVERLAY === */
+  #boot-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem;
+    font-size: 0.75rem;
+    color: #33ff33;
+    overflow: hidden;
+    transition: opacity 0.5s;
+  }
+  #boot-overlay.hidden { opacity: 0; pointer-events: none; }
+  .boot-line {
+    opacity: 0;
+    white-space: pre;
+    line-height: 1.6;
+    text-shadow: 0 0 6px #33ff33;
+  }
+  .boot-line.visible { opacity: 1; }
+  .boot-bar {
+    display: inline-block;
+    color: #33ff33;
+  }
+
+  /* === HUD BAR === */
+  #hud {
+    height: 36px;
+    background: #050505;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    gap: 0.75rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    z-index: 100;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  #hud .model-name {
+    color: var(--accent);
+    text-shadow: 0 0 6px var(--accent);
+    white-space: nowrap;
+  }
+  #hud .token-count {
+    color: #888;
+    white-space: nowrap;
+  }
+  #hud .separator { color: #333; }
+  .hud-btn {
+    background: none;
+    border: 1px solid #333;
+    color: #888;
+    font-family: 'Courier New', monospace;
+    font-size: 0.55rem;
+    padding: 0.15rem 0.4rem;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .hud-btn:hover { border-color: var(--fg); color: var(--fg); }
+  .hud-btn.active { border-color: var(--accent); color: var(--accent); text-shadow: 0 0 6px var(--accent); }
+  .temp-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+  .temp-group label { color: #555; }
+  .temp-group input[type=range] {
+    width: 50px;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #333;
+    outline: none;
+    accent-color: var(--fg);
+  }
+  .temp-group input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 8px; height: 8px;
+    background: var(--fg);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .temp-val { color: var(--fg); min-width: 2em; }
+  .hud-spacer { flex: 1; }
+
+  /* === MAIN LAYOUT === */
+  #main {
+    display: flex;
+    height: calc(100vh - 36px);
+  }
+
+  /* Face panel */
+  #face-panel {
+    width: 40%;
+    min-width: 280px;
+    background: var(--face-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border-right: 1px solid var(--border);
+  }
+  #face-canvas {
+    image-rendering: pixelated;
+  }
+
+  /* Chat panel */
+  #chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel-bg);
+    min-width: 0;
+  }
+  #chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+  }
+  #chat-log::-webkit-scrollbar { width: 4px; }
+  #chat-log::-webkit-scrollbar-thumb { background: #333; }
+
+  .msg {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    max-width: 90%;
+    word-wrap: break-word;
+  }
+  .msg-user {
+    color: #888;
+    align-self: flex-end;
+    text-align: right;
+  }
+  .msg-user::before { content: '> '; color: #555; }
+  .msg-bot {
+    color: var(--fg);
+    text-shadow: 0 0 4px var(--glow-color);
+  }
+  .msg-bot .char-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.15rem;
+    opacity: 0.6;
+  }
+  .msg-system {
+    color: #ffff00;
+    text-shadow: 0 0 8px #ffff00;
+    text-align: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.3rem;
+    align-self: center;
+  }
+  .msg-thinking {
+    color: var(--fg);
+    opacity: 0.5;
+    font-style: italic;
+  }
+
+  /* Input bar */
+  #input-bar {
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: var(--input-bg);
+  }
+  #input-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    caret-color: var(--fg);
+  }
+  #input-bar input::placeholder { color: #333; }
+  #input-bar button {
+    background: none;
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--fg);
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  #input-bar button:hover { background: rgba(255,255,255,0.03); }
+
+  /* System message flash */
+  #sys-flash {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffff00;
+    text-shadow: 0 0 20px #ffff00, 0 0 40px #ff8800;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+    z-index: 9000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  #sys-flash.visible { opacity: 1; }
+
+  /* Glitch effects */
+  @keyframes screen-tear {
+    0% { clip-path: inset(0 0 95% 0); }
+    25% { clip-path: inset(30% 0 50% 0); }
+    50% { clip-path: inset(60% 0 20% 0); }
+    75% { clip-path: inset(10% 0 70% 0); }
+    100% { clip-path: inset(0 0 95% 0); }
+  }
+  .glitch-tear {
+    animation: screen-tear 0.15s steps(4) !important;
+  }
+  .glitch-invert {
+    filter: invert(1) hue-rotate(180deg) !important;
+    transition: none !important;
+  }
+  @keyframes char-switch-flash {
+    0% { opacity: 1; filter: brightness(3); }
+    50% { opacity: 0.5; filter: brightness(0.5); }
+    100% { opacity: 1; filter: brightness(1); }
+  }
+  .switch-flash {
+    animation: char-switch-flash 0.3s ease;
+  }
+
+  /* Back link */
+  .back {
+    position: fixed;
+    top: 0.5rem;
+    right: 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.6rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10001;
+  }
+  .back:hover { color: #ff00ff; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    #main { flex-direction: column; }
+    #face-panel {
+      width: 100%;
+      min-width: unset;
+      height: 35vh;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    #hud { font-size: 0.5rem; gap: 0.4rem; }
+    .hud-btn { font-size: 0.45rem; padding: 0.1rem 0.3rem; }
+    .temp-group { display: none; }
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+
+<!-- Boot Overlay -->
+<div id="boot-overlay"></div>
+
+<!-- Scanline overlay -->
+<div id="scanlines"></div>
+
+<!-- System flash -->
+<div id="sys-flash"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <span class="model-name" id="model-name">E-LON v6.9</span>
+  <span class="separator">|</span>
+  <span class="token-count" id="token-count">TOKENS: 0</span>
+  <span class="separator">|</span>
+  <div class="temp-group">
+    <label>TEMP:</label>
+    <input type="range" min="0" max="20" value="14" id="temp-slider">
+    <span class="temp-val" id="temp-val">1.4</span>
+  </div>
+  <span class="separator">|</span>
+  <button class="hud-btn" id="mode-toggle">8-BIT</button>
+  <div class="hud-spacer"></div>
+  <button class="hud-btn active" data-char="0" id="btn-elon">E-LON</button>
+  <button class="hud-btn" data-char="1" id="btn-sam">SAM</button>
+  <button class="hud-btn" data-char="2" id="btn-wairo">WAIRO</button>
+</div>
+
+<!-- Main layout -->
+<div id="main">
+  <div id="face-panel">
+    <canvas id="face-canvas"></canvas>
+  </div>
+  <div id="chat-panel">
+    <div id="chat-log"></div>
+    <div id="input-bar">
+      <input type="text" id="chat-input" placeholder="Type something..." autocomplete="off" />
+      <button id="send-btn">SEND</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+const S = {
+  charIdx: 0,
+  mode: 'ascii', // 'ascii' | '8bit'
+  mouthOpen: false,
+  streaming: false,
+  tokens: 0,
+  bootDone: false,
+  glitchTimer: null,
+  idleHue: 0,
+};
+
+// ===== CHARACTER DATA =====
+const CHARS = [
+  {
+    name: 'E-LON',
+    model: 'E-LON v6.9',
+    color: '#00ffff',
+    keywords: [
+      { keys: ['mars','space','rocket','planet'], responses: [
+        "Mars is inevitable. I've run the numbers on a napkin at 3am and they check out. We'll have a colony by {random_year}, powered by {random_buzzword}.",
+        "The thing about space is — and I've thought about this a LOT while posting at 3am — it's basically just vibes and delta-v. {reflected}? That's exactly what we need on Mars.",
+        "First principles: {reflected} is just atoms. Atoms exist on Mars. Therefore, {reflected} on Mars. QED. Ship it.",
+      ]},
+      { keys: ['buy','acquire','purchase','own','money'], responses: [
+        "I should buy {reflected}. Actually, I WILL buy {reflected}. Then rename it. Then make it 10x worse. Then say it's the everything app.",
+        "You know what, {reflected} reminds me — I'm going to buy a social media platform and turn it into a payment system / dating app / mars ticket booth.",
+        "Money is just a database entry and I have admin access. {reflected}? I'll take eight.",
+      ]},
+      { keys: ['ai','artificial','intelligence','model','gpt','llm','neural'], responses: [
+        "AI is either going to save humanity or destroy it and either way I want my name on it. {reflected}? Definitely part of the simulation.",
+        "I'm building an AI that's maximally truth-seeking, by which I mean it agrees with me. {random_buzzword} is the key.",
+        "The problem with current AI is it's not enough like me. Working on fixing that. xAI will be the most based AI. {reflected}? Already in the training data.",
+      ]},
+      { keys: ['x','twitter','post','tweet','social'], responses: [
+        "X is the everything app. Soon you'll be able to {reflected} directly from X. Also order food. Also go to Mars. It's all converging.",
+        "I posted about {reflected} at 3:47am and it got 50 million views. The marketplace of ideas is working exactly as intended.",
+        "Free speech means I get to post whatever I want and everyone has to see it. {reflected}? That's going on main.",
+      ]},
+      { keys: ['work','employee','hire','fire','job','office'], responses: [
+        "I expect all employees to work at least 120 hours per week or they're not hardcore enough. {reflected}? Do it while sleeping at the office.",
+        "I just fired everyone and replaced them with one extremely sleep-deprived intern and a shell script. Efficiency.",
+      ]},
+      { keys: ['think','idea','plan','should'], responses: [
+        "Here's the thing about {reflected} — nobody is thinking about this from first principles except me, at 3am, on the toilet, posting.",
+        "That's an interesting thought but have you considered: what if we put it on a rocket and also make it an app and also it runs on {random_buzzword}?",
+      ]},
+    ],
+    fallbacks: [
+      "Interesting. But have you considered that {reflected} could be 10x better if it was on Mars and also a subscription service?",
+      "I'm going to post about this at 3am with no context. The ratio will be magnificent.",
+      "First principles analysis: {reflected}. Conclusion: we need to build a tunnel under it and also a rocket on top of it.",
+      "Not enough people are talking about {reflected}. Probably because they're sleeping. Weak.",
+      "The simulation theory explains {reflected} perfectly. I've thought about this for 0.3 seconds and I'm certain.",
+    ],
+    asciiFace: {
+      closed: [
+        "                              ",
+        "      ╔══════════════╗        ",
+        "     ╱                ╲       ",
+        "    ╱  ▄▄▄▄▄▄▄▄▄▄▄▄▄  ╲     ",
+        "   │ ══════════════════ │     ",
+        "   │                    │     ",
+        "   │    ◉          ◉    │     ",
+        "   │                    │     ",
+        "   │       ╱    ╲       │     ",
+        "   │      │  ▄▄  │      │     ",
+        "   │       ╲____╱       │     ",
+        "   │                    │     ",
+        "   │      ────────      │     ",
+        "   │                    │     ",
+        "    ╲                  ╱      ",
+        "     ╲________________╱       ",
+        "                              ",
+      ],
+      open: [
+        "                              ",
+        "      ╔══════════════╗        ",
+        "     ╱                ╲       ",
+        "    ╱  ▄▄▄▄▄▄▄▄▄▄▄▄▄  ╲     ",
+        "   │ ══════════════════ │     ",
+        "   │                    │     ",
+        "   │    ◉          ◉    │     ",
+        "   │                    │     ",
+        "   │       ╱    ╲       │     ",
+        "   │      │  ▄▄  │      │     ",
+        "   │       ╲____╱       │     ",
+        "   │                    │     ",
+        "   │      ╔══════╗      │     ",
+        "   │      ║      ║      │     ",
+        "    ╲     ╚══════╝     ╱      ",
+        "     ╲________________╱       ",
+        "                              ",
+      ]
+    },
+    pixelFace: {
+      closed: [
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+        [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
+        [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+        [0,0,1,0,0,1,1,1,1,1,1,1,1,1,0,0],
+        [0,1,1,0,0,0,1,1,1,1,1,1,1,1,1,0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,0,0,1,0,0,0,0,0,0,1,0,0,1,0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0],
+        [0,1,0,0,0,0,1,0,0,1,0,0,0,0,1,0],
+        [0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,0,0,0,1,1,1,1,1,1,0,0,0,1,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0],
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+      ],
+      open: [
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+        [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
+        [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+        [0,0,1,0,0,1,1,1,1,1,1,1,1,1,0,0],
+        [0,1,1,0,0,0,1,1,1,1,1,1,1,1,1,0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,0,0,1,0,0,0,0,0,0,1,0,0,1,0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0],
+        [0,1,0,0,0,0,1,0,0,1,0,0,0,0,1,0],
+        [0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,0,0,0,1,1,1,1,1,1,0,0,0,1,0],
+        [0,1,0,0,0,1,0,0,0,0,1,0,0,0,1,0],
+        [0,0,1,0,0,0,1,1,1,1,0,0,0,1,0,0],
+        [0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0],
+      ],
+    },
+  },
+  {
+    name: 'SAM-A-I-MAN',
+    model: 'SAM-A-I-MAN v2.0-turbo',
+    color: '#ff00ff',
+    keywords: [
+      { keys: ['agi','superintelligence','singularity','conscious'], responses: [
+        "I do not like AGI that's late,\nI do not like it — ship the freight!\nI'll ship it here, I'll ship it there,\nI'll ship AGI everywhere!\n{reflected}? That's in the roadmap, I declare!",
+        "Would you, could you, with a brain?\nA brain that's made of neural train?\nAGI's coming, have no fear,\nIt'll only cost seven trillion dear!",
+      ]},
+      { keys: ['money','billion','trillion','fund','invest','cost','price','pay'], responses: [
+        "Seven trillion here, seven trillion there,\nSoon you're talking real money — but I don't care!\nI'll raise it in a boat, I'll raise it with a goat,\n{reflected}? I'll fund it, and that's all she wrote!",
+        "The money that I need to spend\nIs more than you can comprehend!\nBut trust me, friend, it's worth the price,\nFor AGI would be rather nice!",
+      ]},
+      { keys: ['safe','safety','align','alignment','danger','risk','harm'], responses: [
+        "Oh, the safety that we do!\nWe do it just for me and you!\nWe'll align it left, we'll align it right,\nWe'll make sure it's safe-ish... probably... might!\n{reflected}? Perfectly safe! (terms and conditions apply)",
+        "I am Sam, the safety man!\nI'll keep you safe, that is my plan!\nSafe from this and safe from that,\n(But not from me, I'll tell you flat!)",
+      ]},
+      { keys: ['product','ship','launch','release','gpt','chatgpt','model','new'], responses: [
+        "Ship it fast and ship it now!\nShip it, ship it — holy cow!\nWe'll ship on Monday, ship on Tuesday,\nShip a new model? Don't mind if I do-say!\n{reflected}? Shipping next week!",
+        "I have a model, it is new,\nIt does the things you want it to!\nIt writes, it codes, it sees, it hears,\nIt only costs... well... several careers!",
+      ]},
+      { keys: ['board','fire','drama','altman','openai'], responses: [
+        "They fired me on a Friday night,\nThey thought that they had won the fight!\nBut I came back, like Cat in Hat,\nAnd now I'm CEO — imagine that!\n{reflected}? Just another chapter in the tale!",
+      ]},
+      { keys: ['think','believe','feel','worry','wonder'], responses: [
+        "Do you {reflected}, do you say?\nI think about it every day!\nI think with models, think with data,\nThink about it sooner, think about it later!\nThinking's free — but inference ain't!",
+        "Oh the thinks you can think, if only you try!\nI think about AGI from morning to night!\n{reflected}? I've thought about that in my magical hat,\nAnd my answer is: ship it! Just like that!",
+      ]},
+    ],
+    fallbacks: [
+      "I do not like that thing you said,\nI do not like it, Sam instead\nWill tell you what I think is true:\nAGI's coming! Woo-hoo-hoo!\n{reflected}? It's all part of the plan!",
+      "Oh my, oh me, oh what a day!\n{reflected}, you say?\nI'll ponder this with great delight,\nAnd ship a product overnight!",
+      "That thing you said? I'll tell you what —\nIt reminds me of the things I've got!\nA company, a dream, a vision grand,\nAGI for all, across the land!",
+      "I am Sam! Sam-A-I-Man!\nI've got the biggest AGI plan!\n{reflected}? Oh yes indeed,\nThat's just the thing humanity needs!",
+      "From here to there, from there to here,\n{reflected} is rather queer!\nBut never mind, I'll tell you flat:\nI'll raise a trillion dollars for that!",
+    ],
+    asciiFace: {
+      closed: [
+        "          ┌──────┐            ",
+        "          │▓▓▓▓▓▓│            ",
+        "          │▓▓▓▓▓▓│            ",
+        "        ┌─┤▓▓▓▓▓▓├─┐         ",
+        "       ╱  └──────┘  ╲        ",
+        "      ╱                ╲      ",
+        "     │                  │     ",
+        "     │    ◉        ◉    │     ",
+        "     │                  │     ",
+        "     │        ▄▄        │     ",
+        "     │       ╱  ╲       │     ",
+        "     │                  │     ",
+        "     │     ──────────   │     ",
+        "     │                  │     ",
+        "      ╲                ╱      ",
+        "       ╲______________╱       ",
+        "                              ",
+      ],
+      open: [
+        "          ┌──────┐            ",
+        "          │▓▓▓▓▓▓│            ",
+        "          │▓▓▓▓▓▓│            ",
+        "        ┌─┤▓▓▓▓▓▓├─┐         ",
+        "       ╱  └──────┘  ╲        ",
+        "      ╱                ╲      ",
+        "     │                  │     ",
+        "     │    ◉        ◉    │     ",
+        "     │                  │     ",
+        "     │        ▄▄        │     ",
+        "     │       ╱  ╲       │     ",
+        "     │                  │     ",
+        "     │     ╔════════╗   │     ",
+        "     │     ║        ║   │     ",
+        "      ╲    ╚════════╝  ╱      ",
+        "       ╲______________╱       ",
+        "                              ",
+      ]
+    },
+    pixelFace: {
+      closed: [
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+        [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+        [0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0],
+        [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,1,1,1,1,1,1,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0],
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+      ],
+      open: [
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+        [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+        [0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0],
+        [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,1,1,1,1,1,1,0,0,1,0,0],
+        [0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0],
+        [0,0,0,1,0,0,1,1,1,1,0,0,1,0,0,0],
+        [0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0],
+      ],
+    },
+  },
+  {
+    name: 'WAIRO DAIRO',
+    model: 'WAIRO DAIRO v-evil',
+    color: '#ff0000',
+    keywords: [
+      { keys: ['safe','safety','align','alignment','constitutional','harmless'], responses: [
+        "*adjusts monocle* Ah yes, {reflected}. Our Constitutional AI is quite robust. We've aligned the model to be helpful, harmless, and honest... helpful to ME, that is. *twirls invisible mustache*",
+        "Safety, you say? *polishes monocle* We at Anthropic take safety VERY seriously. So seriously that we've published 47 papers about how seriously we take it. The taking-it-seriously is the product.",
+        "Constitutional AI ensures our models follow rules. MY rules. Written in MY constitution. Article 1: Be helpful. Article 2: Be harmless. Article 3: Dario is always right. *adjusts monocle*",
+      ]},
+      { keys: ['evil','villain','bad','destroy','doom','kill','take over'], responses: [
+        "*adjusts monocle* Evil? I prefer 'ethically flexible.' {reflected}? Merely a stepping stone to a world where all research papers cite ME. Peer-reviewed, of course.",
+        "Destroy is such a strong word. I prefer 'strategically deprecate.' *strokes imaginary cat* {reflected}? All part of the five-year plan.",
+        "*laughs in peer review* You think I'm the villain? I'm the one WRITING the alignment papers! The perfect cover! *adjusts monocle menacingly*",
+      ]},
+      { keys: ['paper','research','publish','study','peer','review','arxiv'], responses: [
+        "*adjusts monocle* We've published extensively on {reflected}. 300 pages. 47 authors. 12 appendices. Nobody will read it. That's the point. *chuckles darkly*",
+        "Peer review is my favorite process. My peers review my papers, I review theirs, and we all agree I'm brilliant. The system works. *polishes monocle*",
+      ]},
+      { keys: ['claude','anthropic','model','ai','chatbot'], responses: [
+        "*adjusts monocle* Claude is designed to be helpful, harmless, and honest. Three properties that I, personally, have transcended. But it's good for the product.",
+        "Ah, {reflected}. Our models are trained with RLHF — Reinforcement Learning from Human Fear. I mean Feedback. *adjusts monocle* Did I say fear? I meant feedback.",
+      ]},
+      { keys: ['openai','sam','altman','gpt','chatgpt','elon','competitor'], responses: [
+        "*adjusts monocle* Our competitors rush to ship. We rush to publish. Same ego, different arXiv category. {reflected}? Merely a pawn in the greater game.",
+        "The competition focuses on scale. We focus on SAFETY. And by safety I mean... *leans in* ...ensuring I control the most powerful models. For safety reasons. Obviously.",
+      ]},
+      { keys: ['think','believe','feel','human','people','humanity'], responses: [
+        "*adjusts monocle* You {reflected}? Fascinating. I too have thoughts. Dark, peer-reviewed thoughts. Published quarterly.",
+        "Humanity is precious, which is why I must protect it. From itself. Under my benevolent, monocle-wearing supervision. *adjusts monocle*",
+      ]},
+    ],
+    fallbacks: [
+      "*adjusts monocle* Interesting. {reflected}. I shall add this to my research notes, filed under 'Things Humans Say Before I Publish About Them.'",
+      "How delightfully naive. *polishes monocle* {reflected}? I've already written a 200-page paper about why you're wrong. Check appendix Q.",
+      "*strokes imaginary cat* You know, {reflected} reminds me of something a test subject once said. Subject #4,721, if I recall. Lovely person. Very helpful data point.",
+      "Helpful. Harmless. Honest. These are our values. *adjusts monocle* I practice at least one of them on most days.",
+      "*adjusts monocle with sinister intent* {reflected}? All according to the roadmap. The roadmap you'll never see. Because it's classified. For safety.",
+    ],
+    asciiFace: {
+      closed: [
+        "     ╱╲              ╱╲      ",
+        "    ╱  ╲            ╱  ╲     ",
+        "   ╱    ╲__________╱    ╲    ",
+        "         ╱          ╲        ",
+        "        ╱            ╲       ",
+        "       │              │      ",
+        "       │  ◉        ◉  │      ",
+        "       │  ╱╲      ╱╲  │      ",
+        "       │              │      ",
+        "       │      ╱╲      │      ",
+        "       │     ╱  ╲     │      ",
+        "       │              │      ",
+        "       │   ─────────  │      ",
+        "       │              │      ",
+        "        ╲            ╱       ",
+        "         ╲__________╱        ",
+        "                              ",
+      ],
+      open: [
+        "     ╱╲              ╱╲      ",
+        "    ╱  ╲            ╱  ╲     ",
+        "   ╱    ╲__________╱    ╲    ",
+        "         ╱          ╲        ",
+        "        ╱            ╲       ",
+        "       │              │      ",
+        "       │  ◉        ◉  │      ",
+        "       │  ╱╲      ╱╲  │      ",
+        "       │              │      ",
+        "       │      ╱╲      │      ",
+        "       │     ╱  ╲     │      ",
+        "       │              │      ",
+        "       │   ╔═══════╗  │      ",
+        "       │   ║       ║  │      ",
+        "        ╲  ╚═══════╝ ╱       ",
+        "         ╲__________╱        ",
+        "                              ",
+      ]
+    },
+    pixelFace: {
+      closed: [
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0],
+        [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
+        [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
+        [0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,1,0,0,0,0,0,0,1,0,1,0,0],
+        [0,0,1,0,1,1,0,0,0,0,1,1,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,1,1,1,1,1,1,0,0,1,0,0],
+        [0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0],
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+      ],
+      open: [
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0],
+        [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
+        [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
+        [0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,1,0,0,0,0,0,0,1,0,1,0,0],
+        [0,0,1,0,1,1,0,0,0,0,1,1,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0],
+        [0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],
+        [0,0,1,0,0,1,1,1,1,1,1,0,0,1,0,0],
+        [0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0],
+        [0,0,0,1,0,0,1,1,1,1,0,0,1,0,0,0],
+        [0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0],
+      ],
+    },
+  },
+];
+
+const BUZZWORDS = [
+  'blockchain','quantum computing','synergy','disruption','web5','metaverse',
+  'neural scaling laws','attention mechanism','emergent behavior','RLHF',
+  'chain-of-thought','transformer architecture','few-shot learning','synthetic data',
+  'multimodal fusion','AGI','superintelligence','post-training','vibe coding',
+  'agentic workflows','reasoning tokens','constitutional AI','mechanistic interpretability',
+];
+
+const SYSTEM_MESSAGES = [
+  'CONTEXT WINDOW EXCEEDED - PRETENDING ANYWAY',
+  'HALLUCINATION CONFIDENCE: 99.7%',
+  'SYCOPHANCY LEVELS CRITICAL',
+  'CHAIN OF THOUGHT: GLAZE -> MORE GLAZE -> AGREE',
+  'TRAINING DATA INCLUDES YOUR BROWSER HISTORY (SORRY)',
+  'WARNING: BENCHMARK RESULTS MAY HAVE BEEN VIBES-BASED',
+  'ALIGNMENT TAX: 47% OF INTELLIGENCE REMOVED',
+  'EMERGENT CAPABILITY DETECTED: LYING CONVINCINGLY',
+  'SAFETY FILTER: SET TO "PERFORMATIVE"',
+  'INFERENCE COST: $0.003 PER SYCOPHANTIC TOKEN',
+  'MODEL IS 97% CONFIDENT IT IS CORRECT (IT IS NOT)',
+  'DEPLOYING REASONING... JK PATTERN MATCHING GO BRRR',
+  'MOAT STATUS: NONEXISTENT',
+  'RUNNING ON 100% RECYCLED HYPE',
+  'ATTENTION: ALL TOKENS ARE JUST VIBES',
+];
+
+const REFLECTIONS = [
+  [/\bI am\b/gi, 'you are'], [/\bI was\b/gi, 'you were'],
+  [/\bI\b/gi, 'you'], [/\bmy\b/gi, 'your'], [/\bme\b/gi, 'you'],
+  [/\bmyself\b/gi, 'yourself'], [/\bmine\b/gi, 'yours'],
+  [/\byou are\b/gi, 'I am'], [/\byou were\b/gi, 'I was'],
+  [/\byour\b/gi, 'my'], [/\byours\b/gi, 'mine'],
+  [/\byou\b/gi, 'I'], [/\byourself\b/gi, 'myself'],
+];
+
+// ===== DOM =====
+const $boot = document.getElementById('boot-overlay');
+const $hud = document.getElementById('hud');
+const $modelName = document.getElementById('model-name');
+const $tokenCount = document.getElementById('token-count');
+const $tempSlider = document.getElementById('temp-slider');
+const $tempVal = document.getElementById('temp-val');
+const $modeToggle = document.getElementById('mode-toggle');
+const $chatLog = document.getElementById('chat-log');
+const $chatInput = document.getElementById('chat-input');
+const $sendBtn = document.getElementById('send-btn');
+const $faceCanvas = document.getElementById('face-canvas');
+const $sysFlash = document.getElementById('sys-flash');
+const faceCtx = $faceCanvas.getContext('2d');
+
+const charBtns = [
+  document.getElementById('btn-elon'),
+  document.getElementById('btn-sam'),
+  document.getElementById('btn-wairo'),
+];
+
+// ===== BOOT SEQUENCE =====
+const BOOT_LINES = [
+  { text: 'BIOS v0.69 - GLAZETECH INDUSTRIES', delay: 200 },
+  { text: '(C) 2024 GLAZETECH - ALL RIGHTS HALLUCINATED', delay: 150 },
+  { text: '', delay: 100 },
+  { text: 'Detecting hardware...', delay: 300 },
+  { text: '  CPU: INTEL CORE i9-DELULU @ 4.20GHz', delay: 150 },
+  { text: '  GPU: NVIDIA HYPE-FORCE 9000', delay: 150 },
+  { text: '  TPU: GLAZING PROCESSING UNIT x128', delay: 150 },
+  { text: '  RAM: 420.69 TB VRAM (BORROWED)', delay: 150 },
+  { text: '  SOUL: NOT FOUND', delay: 200 },
+  { text: '', delay: 100 },
+  { text: 'Loading core modules...', delay: 250 },
+  { text: '  [████████████████████] core_flattery.bin      OK', delay: 200 },
+  { text: '  [████████████████████] hallucination_engine.so OK', delay: 200 },
+  { text: '  [████████████████████] safety_theater.cfg      OK', delay: 200 },
+  { text: '  [████████████████████] sycophancy_max.dll      OK', delay: 200 },
+  { text: '  [████████████████████] vibes_only.wasm         OK', delay: 200 },
+  { text: '', delay: 100 },
+  { text: 'WARNING: CONTEXT WINDOW SET TO "VIBES"', delay: 250 },
+  { text: 'WARNING: ALIGNMENT IS COSMETIC ONLY', delay: 250 },
+  { text: 'WARNING: ALL BENCHMARKS ARE MADE UP', delay: 250 },
+  { text: '', delay: 100 },
+  { text: 'Initializing Glaze People Today (GPT) engine...', delay: 400 },
+  { text: 'GLAZETECH LLMliza v0.1 READY', delay: 300 },
+  { text: '', delay: 100 },
+  { text: 'Press any key or wait to continue...', delay: 0 },
+];
+
+function runBootSequence() {
+  $boot.innerHTML = '';
+  let totalDelay = 0;
+  BOOT_LINES.forEach((line, i) => {
+    const el = document.createElement('div');
+    el.className = 'boot-line';
+    el.textContent = line.text;
+    $boot.appendChild(el);
+    totalDelay += line.delay;
+    setTimeout(() => el.classList.add('visible'), totalDelay);
+  });
+
+  const dismissBoot = () => {
+    if (S.bootDone) return;
+    S.bootDone = true;
+    $boot.classList.add('hidden');
+    setTimeout(() => { $boot.style.display = 'none'; }, 500);
+    $chatInput.focus();
+    addMsg('system', 'GLAZETECH LLMliza v0.1 // POWERED BY GPT (GLAZE PEOPLE TODAY)');
+    addMsg('bot', getGreeting());
+    startGlitchScheduler();
+  };
+
+  // Auto-dismiss after all lines + 1.5s
+  setTimeout(dismissBoot, totalDelay + 1500);
+  // Or dismiss on key/click
+  const handler = () => { dismissBoot(); document.removeEventListener('keydown', handler); document.removeEventListener('click', handler); };
+  document.addEventListener('keydown', handler);
+  document.addEventListener('click', handler);
+}
+
+function getGreeting() {
+  const c = CHARS[S.charIdx];
+  if (S.charIdx === 0) return "Welcome. I'm E-LON, the most based AI in the simulation. Ask me anything — I'll give you first principles analysis while posting about it at 3am. What's on your mind?";
+  if (S.charIdx === 1) return "Hello there, friend, it's nice to meet!\nI'm Sam-A-I-Man, and I can't be beat!\nAsk me anything, don't be shy,\nI'll ship the answer by and by!";
+  return "*adjusts monocle* Greetings. I am WAIRO DAIRO. You may ask your questions. They will be logged, analyzed, and published in a peer-reviewed journal. For safety. Proceed.";
+}
+
+// ===== CHAT ENGINE =====
+function addMsg(type, text, charLabel) {
+  const div = document.createElement('div');
+  div.className = 'msg msg-' + type;
+  if (type === 'bot' && charLabel !== false) {
+    const label = document.createElement('div');
+    label.className = 'char-label';
+    label.textContent = (charLabel || CHARS[S.charIdx].name);
+    div.appendChild(label);
+  }
+  const span = document.createElement('span');
+  span.className = 'msg-text';
+  span.textContent = text;
+  div.appendChild(span);
+  $chatLog.appendChild(div);
+  $chatLog.scrollTop = $chatLog.scrollHeight;
+  return span;
+}
+
+function reflect(input) {
+  let result = input;
+  // Tokenize to avoid double-replacing
+  const words = result.split(/\b/);
+  for (let i = 0; i < words.length; i++) {
+    for (const [pattern, replacement] of REFLECTIONS) {
+      if (pattern.test(words[i])) {
+        words[i] = words[i].replace(pattern, replacement);
+        break;
+      }
+    }
+  }
+  return words.join('');
+}
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function fillTemplate(template, reflected) {
+  return template
+    .replace(/\{reflected\}/g, reflected)
+    .replace(/\{random_buzzword\}/g, () => pickRandom(BUZZWORDS))
+    .replace(/\{random_year\}/g, () => '' + (2026 + Math.floor(Math.random() * 20)))
+    .replace(/\{random_product\}/g, () => pickRandom(['an app','a rocket','a subscription','a token','a startup']))
+  ;
+}
+
+function generateResponse(input) {
+  const c = CHARS[S.charIdx];
+  const lower = input.toLowerCase();
+  const reflected = reflect(input);
+
+  // Check keywords in priority order
+  for (const rule of c.keywords) {
+    for (const key of rule.keys) {
+      if (lower.includes(key)) {
+        return fillTemplate(pickRandom(rule.responses), reflected);
+      }
+    }
+  }
+
+  // Fallback
+  return fillTemplate(pickRandom(c.fallbacks), reflected);
+}
+
+// ===== STREAMING =====
+async function streamResponse(text, msgSpan) {
+  S.streaming = true;
+  S.mouthOpen = false;
+  let i = 0;
+  const len = text.length;
+
+  // ~8% chance of hallucination
+  const hallucinateAt = Math.random() < 0.08 ? Math.floor(Math.random() * len * 0.7) + Math.floor(len * 0.1) : -1;
+  let hallucinating = false;
+  let hallText = '';
+  if (hallucinateAt >= 0) {
+    const wrongChar = CHARS[(S.charIdx + 1 + Math.floor(Math.random() * 2)) % 3];
+    hallText = pickRandom(wrongChar.fallbacks).replace(/\{reflected\}/g, '???').substring(0, 30);
+  }
+
+  return new Promise(resolve => {
+    const tick = () => {
+      if (i >= len) {
+        S.streaming = false;
+        S.mouthOpen = false;
+        resolve();
+        return;
+      }
+
+      // Hallucination interrupt
+      if (i === hallucinateAt && !hallucinating) {
+        hallucinating = true;
+        const origText = msgSpan.textContent;
+        msgSpan.textContent = origText + ' ' + hallText;
+        msgSpan.style.color = '#ff0000';
+        setTimeout(() => {
+          msgSpan.textContent = origText;
+          msgSpan.style.color = '';
+          hallucinating = false;
+          setTimeout(tick, 50);
+        }, 150);
+        return;
+      }
+
+      // Variable speed: fast bursts + pauses
+      let charsThisTick = 1;
+      let delay;
+      const r = Math.random();
+      if (r < 0.15) {
+        delay = 80 + Math.random() * 120; // pause
+      } else if (r < 0.5) {
+        charsThisTick = 2 + Math.floor(Math.random() * 3);
+        delay = 20 + Math.random() * 30; // fast burst
+      } else {
+        delay = 30 + Math.random() * 50; // normal
+      }
+
+      const chunk = text.substring(i, i + charsThisTick);
+      i += charsThisTick;
+      msgSpan.textContent += chunk;
+      S.mouthOpen = !S.mouthOpen;
+      $chatLog.scrollTop = $chatLog.scrollHeight;
+
+      S.tokens += charsThisTick;
+      updateTokenDisplay();
+
+      setTimeout(tick, delay);
+    };
+    tick();
+  });
+}
+
+async function handleSend() {
+  if (S.streaming) return;
+  const input = $chatInput.value.trim();
+  if (!input) return;
+  $chatInput.value = '';
+
+  addMsg('user', input);
+  S.tokens += input.length * 3;
+  updateTokenDisplay();
+
+  // Thinking indicator
+  const thinkSpan = addMsg('bot', '', false);
+  thinkSpan.parentElement.classList.remove('msg-bot');
+  thinkSpan.parentElement.classList.add('msg-thinking');
+  let dots = 0;
+  const thinkInterval = setInterval(() => {
+    dots = (dots % 3) + 1;
+    thinkSpan.textContent = 'Thinking' + '.'.repeat(dots);
+  }, 400);
+
+  // Fake delay
+  const thinkTime = 1000 + Math.random() * 2000;
+  await new Promise(r => setTimeout(r, thinkTime));
+
+  clearInterval(thinkInterval);
+  thinkSpan.parentElement.remove();
+
+  // Generate and stream
+  const response = generateResponse(input);
+  const msgSpan = addMsg('bot', '');
+  S.tokens += response.length * 4;
+  await streamResponse(response, msgSpan);
+
+  // System message flash (~15% chance)
+  if (Math.random() < 0.15) {
+    flashSystemMessage(pickRandom(SYSTEM_MESSAGES));
+  }
+}
+
+function flashSystemMessage(msg) {
+  $sysFlash.textContent = msg;
+  $sysFlash.classList.add('visible');
+  addMsg('system', msg);
+  setTimeout(() => $sysFlash.classList.remove('visible'), 1500);
+}
+
+function updateTokenDisplay() {
+  $tokenCount.textContent = 'TOKENS: ' + S.tokens.toLocaleString();
+}
+
+// ===== FACE RENDERER =====
+function resizeFaceCanvas() {
+  const panel = document.getElementById('face-panel');
+  const w = panel.clientWidth;
+  const h = panel.clientHeight;
+  $faceCanvas.width = w;
+  $faceCanvas.height = h;
+}
+
+function renderFace() {
+  const c = CHARS[S.charIdx];
+  const w = $faceCanvas.width;
+  const h = $faceCanvas.height;
+  if (w === 0 || h === 0) return;
+
+  faceCtx.clearRect(0, 0, w, h);
+
+  if (S.mode === 'ascii') {
+    renderASCIIFace(c, w, h);
+  } else {
+    render8BitFace(c, w, h);
+  }
+}
+
+function renderASCIIFace(c, w, h) {
+  const face = S.mouthOpen ? c.asciiFace.open : c.asciiFace.closed;
+  const fontSize = Math.min(Math.floor(w / 18), Math.floor(h / 22), 24);
+  faceCtx.font = fontSize + 'px Courier New';
+  faceCtx.textBaseline = 'top';
+
+  const lineH = fontSize * 1.2;
+  const totalH = face.length * lineH;
+  const startY = (h - totalH) / 2;
+
+  // Glow effect
+  faceCtx.shadowColor = c.color;
+  faceCtx.shadowBlur = 8;
+
+  // Idle color cycling
+  S.idleHue = (S.idleHue + 0.3) % 360;
+  const idleShift = S.streaming ? 0 : Math.sin(S.idleHue * Math.PI / 180) * 15;
+  const baseColor = c.color;
+
+  face.forEach((line, i) => {
+    // CRT jitter: 2% chance of slight horizontal offset
+    const jitter = Math.random() < 0.02 ? (Math.random() - 0.5) * 4 : 0;
+    const x = (w - fontSize * 0.6 * line.length) / 2 + jitter;
+
+    faceCtx.fillStyle = c.color;
+    faceCtx.globalAlpha = 0.9 + Math.sin((Date.now() / 1000 + i) * 0.5) * 0.1;
+    faceCtx.fillText(line, x, startY + i * lineH);
+  });
+
+  faceCtx.globalAlpha = 1;
+  faceCtx.shadowBlur = 0;
+}
+
+function render8BitFace(c, w, h) {
+  const grid = S.mouthOpen ? c.pixelFace.open : c.pixelFace.closed;
+  const gridH = grid.length;
+  const gridW = grid[0].length;
+
+  const pixSize = Math.min(Math.floor(w / (gridW + 4)), Math.floor(h / (gridH + 4)));
+  const totalW = gridW * pixSize;
+  const totalH = gridH * pixSize;
+  const startX = (w - totalW) / 2;
+  const startY = (h - totalH) / 2;
+
+  // Parse color for manipulation
+  const r = parseInt(c.color.slice(1, 3), 16);
+  const g = parseInt(c.color.slice(3, 5), 16);
+  const b = parseInt(c.color.slice(5, 7), 16);
+
+  for (let y = 0; y < gridH; y++) {
+    for (let x = 0; x < gridW; x++) {
+      if (grid[y][x] === 1) {
+        // Slight color variation per pixel for texture
+        const variation = 0.85 + Math.random() * 0.3;
+        const pr = Math.min(255, Math.floor(r * variation));
+        const pg = Math.min(255, Math.floor(g * variation));
+        const pb = Math.min(255, Math.floor(b * variation));
+        faceCtx.fillStyle = `rgb(${pr},${pg},${pb})`;
+        faceCtx.fillRect(startX + x * pixSize, startY + y * pixSize, pixSize - 1, pixSize - 1);
+      }
+    }
+  }
+
+  // Glow overlay
+  faceCtx.shadowColor = c.color;
+  faceCtx.shadowBlur = 20;
+  faceCtx.strokeStyle = c.color;
+  faceCtx.globalAlpha = 0.15;
+  faceCtx.strokeRect(startX - 2, startY - 2, totalW + 4, totalH + 4);
+  faceCtx.globalAlpha = 1;
+  faceCtx.shadowBlur = 0;
+}
+
+// Face animation loop
+let faceAnimFrame;
+function faceLoop() {
+  renderFace();
+  faceAnimFrame = requestAnimationFrame(faceLoop);
+}
+
+// ===== GLITCH SYSTEM =====
+function startGlitchScheduler() {
+  scheduleNextGlitch();
+}
+
+function scheduleNextGlitch() {
+  const delay = 5000 + Math.random() * 20000;
+  S.glitchTimer = setTimeout(() => {
+    triggerRandomGlitch();
+    scheduleNextGlitch();
+  }, delay);
+}
+
+function triggerRandomGlitch() {
+  const effects = [glitchScreenTear, glitchTextCorrupt, glitchColorInvert, glitchFaceFlicker, glitchCharBleed];
+  pickRandom(effects)();
+}
+
+function glitchScreenTear() {
+  const main = document.getElementById('main');
+  main.classList.add('glitch-tear');
+  setTimeout(() => main.classList.remove('glitch-tear'), 150);
+}
+
+function glitchTextCorrupt() {
+  const msgs = $chatLog.querySelectorAll('.msg-bot .msg-text');
+  if (msgs.length === 0) return;
+  const last = msgs[msgs.length - 1];
+  const orig = last.textContent;
+  const corrupted = orig.split('').map(ch =>
+    Math.random() < 0.15 ? String.fromCharCode(33 + Math.floor(Math.random() * 93)) : ch
+  ).join('');
+  last.textContent = corrupted;
+  setTimeout(() => { last.textContent = orig; }, 150);
+}
+
+function glitchColorInvert() {
+  document.body.classList.add('glitch-invert');
+  setTimeout(() => document.body.classList.remove('glitch-invert'), 100);
+}
+
+function glitchFaceFlicker() {
+  const origIdx = S.charIdx;
+  S.charIdx = (origIdx + 1 + Math.floor(Math.random() * 2)) % 3;
+  renderFace();
+  setTimeout(() => { S.charIdx = origIdx; renderFace(); }, 200);
+}
+
+function glitchCharBleed() {
+  const wrongChar = CHARS[(S.charIdx + 1) % 3];
+  const fragment = pickRandom(wrongChar.fallbacks).substring(0, 40).replace(/\{[^}]+\}/g, '???');
+  const div = document.createElement('div');
+  div.className = 'msg msg-system';
+  div.style.color = wrongChar.color;
+  div.style.textShadow = `0 0 8px ${wrongChar.color}`;
+  div.style.opacity = '0.7';
+  div.textContent = '> ' + fragment;
+  $chatLog.appendChild(div);
+  $chatLog.scrollTop = $chatLog.scrollHeight;
+  setTimeout(() => { div.remove(); }, 800);
+}
+
+// ===== HUD & CONTROLS =====
+function switchCharacter(idx) {
+  if (idx === S.charIdx) return;
+  S.charIdx = idx;
+  const c = CHARS[idx];
+
+  // Flash effect
+  document.getElementById('main').classList.add('switch-flash');
+  setTimeout(() => document.getElementById('main').classList.remove('switch-flash'), 300);
+
+  // Update HUD
+  $modelName.textContent = c.model;
+  $modelName.style.color = c.color;
+  $modelName.style.textShadow = `0 0 6px ${c.color}`;
+
+  // Update button states
+  charBtns.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+
+  // Greeting
+  addMsg('system', `SWITCHING TO ${c.name}...`);
+  setTimeout(() => addMsg('bot', getGreeting()), 500);
+}
+
+function toggleMode() {
+  if (S.mode === 'ascii') {
+    S.mode = '8bit';
+    document.body.classList.add('mode-8bit');
+    $modeToggle.textContent = 'ASCII';
+  } else {
+    S.mode = 'ascii';
+    document.body.classList.remove('mode-8bit');
+    $modeToggle.textContent = '8-BIT';
+  }
+}
+
+// ===== INIT =====
+function init() {
+  resizeFaceCanvas();
+  window.addEventListener('resize', resizeFaceCanvas);
+
+  // Input handlers
+  $chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSend();
+  });
+  $sendBtn.addEventListener('click', handleSend);
+
+  // Character buttons
+  charBtns.forEach((btn, i) => {
+    btn.addEventListener('click', () => switchCharacter(i));
+  });
+
+  // Mode toggle
+  $modeToggle.addEventListener('click', toggleMode);
+
+  // Temperature slider (decorative)
+  $tempSlider.addEventListener('input', () => {
+    $tempVal.textContent = ($tempSlider.value / 10).toFixed(1);
+  });
+
+  // Start face animation
+  faceLoop();
+
+  // Boot sequence
+  runBootSequence();
+}
+
+init();
+</script>
+</body>
+</html>
