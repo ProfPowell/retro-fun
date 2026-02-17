@@ -403,6 +403,32 @@
     animation: blink-cursor 1s step-end infinite;
   }
 
+  .preview-viberacer {
+    background: #000a00;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .preview-viberacer .racer-line {
+    font-family: monospace;
+    font-size: 0.55rem;
+    color: #33ff33;
+    text-shadow: 0 0 6px #33ff33;
+    white-space: nowrap;
+    opacity: 0;
+    animation: racer-line-in 0.5s forwards;
+  }
+  .preview-viberacer .racer-kw { color: #00ffff; }
+  .preview-viberacer .racer-str { color: #ff00ff; }
+  .preview-viberacer .racer-cmt { color: #1a6a1a; }
+  @keyframes racer-line-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   @keyframes copper-shift {
     from { transform: translateY(-20px); }
     to { transform: translateY(20px); }
@@ -493,6 +519,16 @@
       <h2>LLMliza</h2>
       <p>Satirical ELIZA chatbot powered by Glaze People Today (GPT)</p>
       <span class="tag tag--canvas">Canvas</span>
+      <span class="tag tag--css">CSS</span>
+      <span class="tag">Satire</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/vibe-code-racer/" id="card-viberacer">
+    <div class="card-preview preview-viberacer"></div>
+    <div class="card-info">
+      <h2>Vibe Code Racer</h2>
+      <p>Race to 1M LOC with agents, technical debt, and vibes</p>
       <span class="tag tag--css">CSS</span>
       <span class="tag">Satire</span>
     </div>
@@ -648,5 +684,33 @@
   <p>Zero dependencies &bull; Pure HTML/CSS/JS &bull; Vibe coded with stealth</p>
 </footer>
 
+<script>
+(function() {
+  const preview = document.querySelector('.preview-viberacer');
+  if (!preview) return;
+  const lines = [
+    '<span class="racer-kw">import</span> { vibeCheck } <span class="racer-kw">from</span> <span class="racer-str">\'@vibe/core\'</span>;',
+    '<span class="racer-kw">const</span> agents = deploy(<span class="racer-str">"max"</span>);',
+    '<span class="racer-cmt">// TODO: write tests (never)</span>',
+    '<span class="racer-kw">function</span> ship() { <span class="racer-kw">return</span> <span class="racer-str">"LGTM"</span>; }',
+    '<span class="racer-cmt">// tech debt: 73%</span>',
+    '<span class="racer-kw">await</span> deploy(<span class="racer-str">"production"</span>);',
+    '<span class="racer-kw">if</span> (vibes) ship(); <span class="racer-cmt">// yolo</span>',
+    '<span class="racer-kw">class</span> Startup { pivot() {} }',
+  ];
+  let idx = 0;
+  function addLine() {
+    const div = document.createElement('div');
+    div.className = 'racer-line';
+    div.innerHTML = lines[idx % lines.length];
+    div.style.animationDelay = '0s';
+    preview.appendChild(div);
+    idx++;
+    if (preview.children.length > 10) preview.removeChild(preview.firstChild);
+    setTimeout(addLine, 800 + Math.random() * 600);
+  }
+  addLine();
+})();
+</script>
 </body>
 </html>
