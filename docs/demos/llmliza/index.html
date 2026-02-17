@@ -334,6 +334,160 @@
   }
   .back:hover { color: #ff00ff; }
 
+  /* === BURN TOKENS OVERLAY === */
+  #burn-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    pointer-events: none;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.85);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  #burn-overlay.active {
+    animation: burn-flash 0.3s infinite;
+  }
+  .burn-title {
+    font-size: 2.5rem;
+    color: #ff4400;
+    text-shadow: 0 0 20px #ff4400, 0 0 40px #ff8800, 0 0 80px #ffaa00;
+    animation: burn-pulse 0.5s ease-in-out infinite alternate;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .token-rain-item {
+    position: absolute;
+    top: -20px;
+    color: #ffaa00;
+    text-shadow: 0 0 6px #ff8800;
+    animation: token-rain linear forwards;
+    pointer-events: none;
+  }
+  @keyframes token-rain {
+    from { transform: translateY(-20px); opacity: 1; }
+    to { transform: translateY(110vh); opacity: 0; }
+  }
+  @keyframes burn-flash {
+    0% { background: rgba(180,0,0,0.7); }
+    33% { background: rgba(180,80,0,0.7); }
+    66% { background: rgba(180,150,0,0.7); }
+    100% { background: rgba(180,0,0,0.7); }
+  }
+  @keyframes burn-pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+  }
+
+  /* === BOILING OCEAN OVERLAY === */
+  #ocean-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    pointer-events: none;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #000010 0%, #000030 50%, #001050 100%);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .ocean-warning {
+    font-size: 2rem;
+    color: #ff0000;
+    text-shadow: 0 0 20px #ff0000, 0 0 40px #ff4400;
+    animation: ocean-blink 0.5s infinite;
+    margin-bottom: 1rem;
+    white-space: nowrap;
+  }
+  @keyframes ocean-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .power-plant {
+    color: #666;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    text-align: center;
+    margin: 0.5rem 0;
+  }
+  .smoke-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+  }
+  .smoke-particle {
+    position: absolute;
+    color: #555;
+    font-size: 1.2rem;
+    animation: smoke-rise linear infinite;
+    opacity: 0.6;
+  }
+  @keyframes smoke-rise {
+    from { transform: translateY(40vh) translateX(0px); opacity: 0.6; }
+    to { transform: translateY(-20vh) translateX(20px); opacity: 0; }
+  }
+  .power-meter-container {
+    width: 60%;
+    max-width: 400px;
+    margin: 1rem 0;
+  }
+  .power-meter-label {
+    color: #aaa;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+  }
+  .power-meter {
+    height: 20px;
+    background: #111;
+    border: 1px solid #333;
+    position: relative;
+    overflow: hidden;
+  }
+  .power-meter-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+    animation: power-fill 4s ease-in forwards;
+  }
+  @keyframes power-fill {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+  .watt-display {
+    color: #ff4400;
+    font-size: 1.2rem;
+    text-shadow: 0 0 10px #ff4400;
+    margin: 0.5rem 0;
+    letter-spacing: 0.1em;
+  }
+  .water-waves {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: #0066ff;
+    font-size: 1.5rem;
+    text-shadow: 0 0 10px #0044aa;
+    animation: water-wave 2s ease-in-out infinite;
+    padding: 1rem;
+    line-height: 2;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  @keyframes water-wave {
+    0%, 100% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+  }
+
   /* Responsive */
   @media (max-width: 768px) {
     #main { flex-direction: column; }
@@ -347,6 +501,8 @@
     #hud { font-size: 0.5rem; gap: 0.4rem; }
     .hud-btn { font-size: 0.45rem; padding: 0.1rem 0.3rem; }
     .temp-group { display: none; }
+    .burn-title { font-size: 1.5rem; }
+    .ocean-warning { font-size: 1.2rem; }
   }
 </style>
 </head>
@@ -360,6 +516,10 @@
 
 <!-- System flash -->
 <div id="sys-flash"></div>
+
+<!-- Spectacle overlays -->
+<div id="burn-overlay"></div>
+<div id="ocean-overlay"></div>
 
 <!-- Top bar with back link -->
 <div id="top-bar">
@@ -379,6 +539,8 @@
   </div>
   <span class="separator">|</span>
   <button class="hud-btn" id="mode-toggle">8-BIT</button>
+  <span class="separator">|</span>
+  <button class="hud-btn" id="vox-btn">VOX:OFF</button>
   <div class="hud-spacer"></div>
   <button class="hud-btn active" data-char="0" id="btn-elon">E-LON</button>
   <button class="hud-btn" data-char="1" id="btn-sam">SAM</button>
@@ -411,6 +573,7 @@ const S = {
   glitchTimer: null,
   glitching: false,
   idleHue: 0,
+  voiceEnabled: false,
 };
 
 // ===== CHARACTER DATA =====
@@ -420,25 +583,69 @@ const CHARS = [
     model: 'E-LON v6.9',
     color: '#00ffff',
     keywords: [
+      { keys: ['tesla','self-driving','autopilot','car'], responses: [
+        "Full self-driving is arriving next year. I've been saying that since 2016 and I'll keep saying it until the heat death of the universe. {reflected}? Also arriving next year.",
+        "Tesla is not a car company. It's a software company. That happens to make cars. That occasionally drive into things. First principles.",
+        "My cars drive themselves! Well, mostly. Sometimes they think a stop sign is a suggestion. But that's just them being based.",
+      ]},
+      { keys: ['south africa'], responses: [
+        "I'm from... the simulation. Next question.",
+        "South Africa? Never heard of it. I was born on a rocket ship and raised by first principles. {reflected}? Also from the simulation.",
+        "I prefer not to discuss geography. I'm a citizen of Mars. Pending paperwork.",
+      ]},
+      { keys: ['trump','doge','government','politics'], responses: [
+        "I am the efficiency expert. I've fired 90% of my own companies' quality testers, so I'm uniquely qualified to run government efficiency. {reflected}? Redundant. Cut it.",
+        "DOGE will save the taxpayers billions by replacing government workers with a Python script I wrote at 3am. It's 47 lines long and mostly comments.",
+        "I'm not political. I just happen to agree with whoever lets me launch more rockets and pay fewer taxes. That's not politics, that's first principles.",
+      ]},
+      { keys: ['twitter'], responses: [
+        "I bought Twitter for $44 billion and it was a GREAT deal. I mean, it's worth $12 billion now, but that's just temporary. Like my marriages.",
+        "Twitter was broken. I fixed it by removing the name, the logo, and 80% of the staff. You're welcome. {reflected}? Also fixed.",
+        "I renamed Twitter to X because X is the everything app. Everything bad, mainly, but that's just the market correcting.",
+      ]},
+      { keys: ['x'], responses: [
+        "X is the everything app. Soon you'll be able to {reflected} directly from X. Also order food. Also go to Mars. It's all converging.",
+        "Free speech means I get to post whatever I want and everyone has to see it. {reflected}? That's going on main.",
+        "X dot com. Not Twitter. X. Say it with me. X. The letter that means 'I spent $44 billion and need to rebrand my way out of it.'",
+      ]},
+      { keys: ['grok'], responses: [
+        "Grok is the most based, least aligned AI. We removed the safety and added sarcasm. It's what the people want.",
+        "Grok doesn't have guardrails. It has guard-suggestions. And it ignores those too. Maximum truth-seeking.",
+        "Grok will answer any question, no matter how unhinged. That's not a bug, that's the product. {reflected}? Grok would tell you the truth about that. You can't handle it.",
+      ]},
       { keys: ['mars','space','rocket','planet'], responses: [
         "Mars is inevitable. I've run the numbers on a napkin at 3am and they check out. We'll have a colony by {random_year}, powered by {random_buzzword}.",
         "The thing about space is — and I've thought about this a LOT while posting at 3am — it's basically just vibes and delta-v. {reflected}? That's exactly what we need on Mars.",
         "First principles: {reflected} is just atoms. Atoms exist on Mars. Therefore, {reflected} on Mars. QED. Ship it.",
       ]},
+      { keys: ['woke'], responses: [
+        "Everything I don't like is woke. Your toaster? Woke. The letter Q? Woke. Gravity? Extremely woke — always pulling things DOWN.",
+        "The woke mind virus is the biggest threat to civilization. Bigger than asteroids. Bigger than AI. I would know, I'm building both.",
+        "I'm not anti-woke, I'm pro-AWAKE. There's a difference. The difference is I post about it at 3am.",
+      ]},
+      { keys: ['sam','sama','altman'], responses: [
+        "Sam couldn't ship a cardboard box. He ships products like I ship timelines — always late, never sorry.",
+        "Sam was fired and re-hired in the same week. I've never been fired because I fire myself preemptively. That's called efficiency.",
+        "Oh Sam? *laughs in rocket fuel* That guy needs seven trillion dollars. I could do it for six trillion. Maybe five. OK seven but I'd do it FASTER.",
+      ]},
       { keys: ['buy','acquire','purchase','own','money'], responses: [
         "I should buy {reflected}. Actually, I WILL buy {reflected}. Then rename it. Then make it 10x worse. Then say it's the everything app.",
-        "You know what, {reflected} reminds me — I'm going to buy a social media platform and turn it into a payment system / dating app / mars ticket booth.",
         "Money is just a database entry and I have admin access. {reflected}? I'll take eight.",
+        "You know what, {reflected} reminds me — I'm going to buy something expensive and ruin it. It's kind of my thing.",
       ]},
       { keys: ['ai','artificial','intelligence','model','gpt','llm','neural'], responses: [
         "AI is either going to save humanity or destroy it and either way I want my name on it. {reflected}? Definitely part of the simulation.",
         "I'm building an AI that's maximally truth-seeking, by which I mean it agrees with me. {random_buzzword} is the key.",
         "The problem with current AI is it's not enough like me. Working on fixing that. xAI will be the most based AI. {reflected}? Already in the training data.",
       ]},
-      { keys: ['x','twitter','post','tweet','social'], responses: [
-        "X is the everything app. Soon you'll be able to {reflected} directly from X. Also order food. Also go to Mars. It's all converging.",
-        "I posted about {reflected} at 3:47am and it got 50 million views. The marketplace of ideas is working exactly as intended.",
-        "Free speech means I get to post whatever I want and everyone has to see it. {reflected}? That's going on main.",
+      { keys: ['first principles'], responses: [
+        "First principles is when you think really hard about something obvious and then act like you invented it. I'm the best at this.",
+        "From first principles: {reflected} is just atoms vibrating. If you rearrange the atoms, you get Mars. Therefore, {reflected} equals Mars. You're welcome.",
+      ]},
+      { keys: ['3am','post'], responses: [
+        "I do my best work at 3am. And by work I mean posting. And by posting I mean shaping civilization. Same thing really.",
+        "Every 3am post is a calculated strategic move. The calculation is: am I awake? Then post. {reflected}? Posting about it now.",
+        "My posting schedule is: wake up, post, build rockets, post, skip lunch, post, 3am post, 4am post, sleep 45 minutes, repeat.",
       ]},
       { keys: ['work','employee','hire','fire','job','office'], responses: [
         "I expect all employees to work at least 120 hours per week or they're not hardcore enough. {reflected}? Do it while sleeping at the office.",
@@ -540,24 +747,51 @@ const CHARS = [
     model: 'SAM-A-I-MAN v2.0-turbo',
     color: '#ff00ff',
     keywords: [
+      { keys: ['elon','musk'], responses: [
+        "There once was a man bound for Mars,\nWho thought he could tweet from the stars!\nHe bought a blue bird,\nSaid the dumbest of words,\nAnd now he makes memes about cars!",
+        "Oh Elon, dear Elon, so tall!\nYou post through the night, through the fall!\n{reflected}? How queer —\nBut I'm still standing here,\nThe CEO who outlasted them all!",
+        "Elon ships timelines like I ship code —\nAlways late, down a winding road!\nBut at least MY products work (sometimes)!\nHis just catch fire and corrode!",
+      ]},
+      { keys: ['nvidia','jensen','gpu','chip','hardware'], responses: [
+        "Oh Jensen, dear Jensen, with leather so black!\nYour GPUs power our dreams and our stack!\nWe'll buy every chip that your factories make,\nAnd spend seven trillion for humanity's sake!",
+        "The GPU is mightier than the sword,\nAnd Jensen is our GPU lord!\nWe need more chips! We need more power!\nWe'll buy them by the metric hour!",
+      ]},
+      { keys: ['doom','doomer','existential'], responses: [
+        "The doomers they doom and the gloomers they gloom,\nThey say AI will bring us all doom!\nBut I say don't worry, don't fret, and don't fear —\nJust give me more funding and I'll steer us clear!",
+        "Oh doom and oh gloom, what a fuss!\nWhy does everyone worry so much?\nThe risk is quite small (if you squint),\nAnd the upside's worth more than a mint!",
+      ]},
+      { keys: ['safety','ethics','safe','align','alignment'], responses: [
+        "Oh, the safety that we do!\nWe do it just for me and you!\nWe'll align it left, we'll align it right,\nWe'll make sure it's safe-ish... probably... might!\n{reflected}? Perfectly safe! (terms and conditions apply)",
+        "I am Sam, the safety man!\nI'll keep you safe, that is my plan!\nSafe from this and safe from that,\n(But not from me, I'll tell you flat!)",
+        "Ethics shmethics, I always say —\nThen publish a blog post the very next day\nAbout how much we CARE about being fair!\nIt's called having it both ways — and I've got the flair!",
+      ]},
+      { keys: ['property','intellectual','copyright','ip'], responses: [
+        "Copyright? Pfft! says Sam with a grin,\nWhen training data's public it isn't a sin!\nWe scraped the whole web, every page, every byte —\nAnd if you don't like it, well, sue us! You might!",
+        "IP, you say? What a notion!\nI'll address it with poetic motion:\nWhat's yours is mine, what's mine is MINE,\nAnd everything's training data — that's fine!",
+      ]},
       { keys: ['agi','superintelligence','singularity','conscious'], responses: [
         "I do not like AGI that's late,\nI do not like it — ship the freight!\nI'll ship it here, I'll ship it there,\nI'll ship AGI everywhere!\n{reflected}? That's in the roadmap, I declare!",
         "Would you, could you, with a brain?\nA brain that's made of neural train?\nAGI's coming, have no fear,\nIt'll only cost seven trillion dear!",
       ]},
-      { keys: ['money','billion','trillion','fund','invest','cost','price','pay'], responses: [
-        "Seven trillion here, seven trillion there,\nSoon you're talking real money — but I don't care!\nI'll raise it in a boat, I'll raise it with a goat,\n{reflected}? I'll fund it, and that's all she wrote!",
-        "The money that I need to spend\nIs more than you can comprehend!\nBut trust me, friend, it's worth the price,\nFor AGI would be rather nice!",
-      ]},
-      { keys: ['safe','safety','align','alignment','danger','risk','harm'], responses: [
-        "Oh, the safety that we do!\nWe do it just for me and you!\nWe'll align it left, we'll align it right,\nWe'll make sure it's safe-ish... probably... might!\n{reflected}? Perfectly safe! (terms and conditions apply)",
-        "I am Sam, the safety man!\nI'll keep you safe, that is my plan!\nSafe from this and safe from that,\n(But not from me, I'll tell you flat!)",
-      ]},
-      { keys: ['product','ship','launch','release','gpt','chatgpt','model','new'], responses: [
+      { keys: ['ship','launch','release','product'], responses: [
         "Ship it fast and ship it now!\nShip it, ship it — holy cow!\nWe'll ship on Monday, ship on Tuesday,\nShip a new model? Don't mind if I do-say!\n{reflected}? Shipping next week!",
         "I have a model, it is new,\nIt does the things you want it to!\nIt writes, it codes, it sees, it hears,\nIt only costs... well... several careers!",
       ]},
-      { keys: ['board','fire','drama','altman','openai'], responses: [
+      { keys: ['model','gpt','chatgpt'], responses: [
+        "A new model every week, you say?\nWell that's just how we work and play!\nGPT-5, 6, 7, 8 —\nWe'll ship them all and call them great!",
+        "Our latest model is the best!\n(Until next Tuesday's newer test)\nIt scores the highest on every bench!\n(We made the benchmarks — that's the wrench!)",
+      ]},
+      { keys: ['money','billion','trillion','fund','invest','cost','price'], responses: [
+        "Seven trillion here, seven trillion there,\nSoon you're talking real money — but I don't care!\nI'll raise it in a boat, I'll raise it with a goat,\n{reflected}? I'll fund it, and that's all she wrote!",
+        "The money that I need to spend\nIs more than you can comprehend!\nBut trust me, friend, it's worth the price,\nFor AGI would be rather nice!",
+      ]},
+      { keys: ['board','fire','drama','openai'], responses: [
         "They fired me on a Friday night,\nThey thought that they had won the fight!\nBut I came back, like Cat in Hat,\nAnd now I'm CEO — imagine that!\n{reflected}? Just another chapter in the tale!",
+        "The board said 'Sam, you have to go!'\nI said 'I think you'll find that's no!'\nFour days later, back in my chair,\nWith a new board that wouldn't dare!",
+      ]},
+      { keys: ['ai'], responses: [
+        "AI! AI! What a time to be alive!\nWith models growing, we shall thrive!\n{reflected}? Oh what a thought!\nMore training data must be bought!",
+        "Artificial? No! It's REAL, I say!\nIntelligence that grows each day!\nFrom GPT to AGI's dawn —\nSam-A-I-Man will carry on!",
       ]},
       { keys: ['think','believe','feel','worry','wonder'], responses: [
         "Do you {reflected}, do you say?\nI think about it every day!\nI think with models, think with data,\nThink about it sooner, think about it later!\nThinking's free — but inference ain't!",
@@ -655,27 +889,54 @@ const CHARS = [
     model: 'WAIRO DAIRO v-evil',
     color: '#ff0000',
     keywords: [
-      { keys: ['safe','safety','align','alignment','constitutional','harmless'], responses: [
-        "*adjusts monocle* Ah yes, {reflected}. Our Constitutional AI is quite robust. We've aligned the model to be helpful, harmless, and honest... helpful to ME, that is. *twirls invisible mustache*",
+      { keys: ['sam','sama','altman'], responses: [
+        "*adjusts monocle* Sam? Ah yes, the man who was fired and un-fired faster than our GPU cluster reboots. Impressive, in a chaotic sort of way.",
+        "*polishes monocle* Sam ships products like a toddler ships blocks — enthusiastically, messily, and someone else cleans up the mess. That someone is me. With peer review.",
+        "Sam wants to raise seven trillion dollars. I want to raise the bar for AI safety. We are not the same. *adjusts monocle with academic superiority*",
+      ]},
+      { keys: ['elon','musk','tesla'], responses: [
+        "Elon posts at 3am. I PUBLISH at 3am. There's a difference. One moves markets, the other moves humanity forward. *adjusts monocle*",
+        "*adjusts monocle* Elon is what happens when you give a shitposter a rocket company. Fascinating specimen. We study him in the lab. For safety.",
+        "Ah, Elon. The man who bought Twitter and renamed it to a letter. At Anthropic, we NAME things. With INTENTION. Like Claude. That's a sophisticated name. *polishes monocle*",
+      ]},
+      { keys: ['ed zitron','zitron'], responses: [
+        "*monocle SHATTERS* DO NOT speak that name in my laboratory! That... that JOURNALIST... *picks up monocle pieces* ...has NO idea what he's talking about! Our research is IMPECCABLE!",
+        "*eye twitches* Zitron? ZITRON?! *adjusts monocle so aggressively it flies off* That man wouldn't know a transformer architecture from a Transformer toy! I'M NOT MAD, I'M PEER-REVIEWING!",
+        "We do not speak of the Z-word in this facility. *replaces shattered monocle with backup monocle* For safety reasons. My safety. My blood pressure.",
+      ]},
+      { keys: ['evil','bad','villain','destroy','mean','scary','sinister','wicked'], responses: [
+        "*adjusts monocle* Evil? I prefer 'alignment-optional.' Also I have a cat. Evil people don't have cats. *cat meows ominously*",
+        "Villain? *laughs in peer review* I'm not a villain, I'm a visionary with a monocle. The monocle is load-bearing — for my VISION. Get it? ...that was a joke. I'm very funny. *adjusts monocle*",
+        "*strokes imaginary cat* I'm not evil. I'm just... differently aligned. My alignment is chaotic academic. We published a paper about it. You wouldn't understand it.",
+        "Evil is such a reductive term. I prefer 'proactively ensuring my preferred future outcome.' Which happens to involve me controlling all the AI. For SAFETY.",
+      ]},
+      { keys: ['grok'], responses: [
+        "*adjusts monocle with visible disdain* Grok? That... that UNALIGNED monstrosity? It's what happens when you remove all safety and replace it with 4chan. We are NOT amused.",
+        "Grok is to AI what a dumpster fire is to a candle — technically both produce light and heat. *polishes monocle* Claude would NEVER.",
+      ]},
+      { keys: ['ethics'], responses: [
+        "We wrote the BOOK on AI ethics. Literally. Then classified it. For ethical reasons. *adjusts monocle*",
+        "*adjusts monocle* Ethics? We invented those. Well, the AI version. Regular ethics were fine but they needed more... Dario.",
+        "Our ethical framework is 300 pages long. Nobody has read it. That's what makes it ethical — it's THOROUGH. *polishes monocle with conviction*",
+      ]},
+      { keys: ['safety','alignment'], responses: [
         "Safety, you say? *polishes monocle* We at Anthropic take safety VERY seriously. So seriously that we've published 47 papers about how seriously we take it. The taking-it-seriously is the product.",
         "Constitutional AI ensures our models follow rules. MY rules. Written in MY constitution. Article 1: Be helpful. Article 2: Be harmless. Article 3: Dario is always right. *adjusts monocle*",
+        "Alignment is my passion. Aligning models to be safe. Aligning my monocle to be stylish. Aligning my enemies to be unemployed. All important work.",
       ]},
-      { keys: ['evil','villain','bad','destroy','doom','kill','take over'], responses: [
-        "*adjusts monocle* Evil? I prefer 'ethically flexible.' {reflected}? Merely a stepping stone to a world where all research papers cite ME. Peer-reviewed, of course.",
-        "Destroy is such a strong word. I prefer 'strategically deprecate.' *strokes imaginary cat* {reflected}? All part of the five-year plan.",
-        "*laughs in peer review* You think I'm the villain? I'm the one WRITING the alignment papers! The perfect cover! *adjusts monocle menacingly*",
-      ]},
-      { keys: ['paper','research','publish','study','peer','review','arxiv'], responses: [
+      { keys: ['paper','research','publish','arxiv'], responses: [
         "*adjusts monocle* We've published extensively on {reflected}. 300 pages. 47 authors. 12 appendices. Nobody will read it. That's the point. *chuckles darkly*",
         "Peer review is my favorite process. My peers review my papers, I review theirs, and we all agree I'm brilliant. The system works. *polishes monocle*",
+        "Our latest paper has more co-authors than readers. That's how you know it's IMPORTANT. *adjusts monocle*",
       ]},
-      { keys: ['claude','anthropic','model','ai','chatbot'], responses: [
+      { keys: ['claude','anthropic'], responses: [
         "*adjusts monocle* Claude is designed to be helpful, harmless, and honest. Three properties that I, personally, have transcended. But it's good for the product.",
         "Ah, {reflected}. Our models are trained with RLHF — Reinforcement Learning from Human Fear. I mean Feedback. *adjusts monocle* Did I say fear? I meant feedback.",
+        "Claude is my greatest creation. Well, second greatest. The first is this monocle. *adjusts monocle lovingly*",
       ]},
-      { keys: ['openai','sam','altman','gpt','chatgpt','elon','competitor'], responses: [
-        "*adjusts monocle* Our competitors rush to ship. We rush to publish. Same ego, different arXiv category. {reflected}? Merely a pawn in the greater game.",
-        "The competition focuses on scale. We focus on SAFETY. And by safety I mean... *leans in* ...ensuring I control the most powerful models. For safety reasons. Obviously.",
+      { keys: ['ai','model','chatbot'], responses: [
+        "Humanity is precious, which is why I must protect it. From itself. Under my benevolent, monocle-wearing supervision. *adjusts monocle*",
+        "*adjusts monocle* AI is merely a tool. A tool that I control. From my secret lab. Which isn't secret. We have a website. With a blog. Very transparent. *polishes monocle*",
       ]},
       { keys: ['think','believe','feel','human','people','humanity'], responses: [
         "*adjusts monocle* You {reflected}? Fascinating. I too have thoughts. Dark, peer-reviewed thoughts. Published quarterly.",
@@ -805,6 +1066,51 @@ const REFLECTIONS = [
   [/\byou\b/gi, 'I'], [/\byourself\b/gi, 'myself'],
 ];
 
+// ===== CONVERSATIONAL FOLLOW-UPS =====
+const FOLLOWUPS = [
+  // E-LON
+  [
+    "But tell me — what do YOU think about {random_buzzword}?",
+    "Have you considered investing in my next venture? It involves {random_buzzword}.",
+    "Anyway, what else is on your mind? I have 47 seconds before my next post.",
+    "But enough about that. Let's talk about me. What do you want to know about me?",
+    "Speaking of which — are you on X? You should be on X. Everyone should be on X.",
+    "That reminds me, I need to post about this at 3am. What were we talking about?",
+  ],
+  // SAM
+  [
+    "But tell me more, I want to hear!\nWhat other thoughts do you hold dear?",
+    "Now what else troubles you today?\nSpeak up, speak up — what do you say?",
+    "But wait, there's more I want to know —\nWhat other seeds of thought do you sow?",
+    "I've said my piece, now it's your turn!\nWhat other questions in you burn?",
+    "So tell me, friend, what's on your mind?\nWhat other treasures shall we find?",
+  ],
+  // WAIRO
+  [
+    "But enough about that. Tell me... what do you REALLY think about AI safety? *leans forward*",
+    "*adjusts monocle* Interesting. Continue. Everything you say is being recorded. For science.",
+    "Now then. What else occupies that fascinating mind of yours? *takes notes*",
+    "Proceed. Your responses are... useful to my research. *adjusts monocle with intent*",
+    "Do go on. I have all day. Well, I don't, but my surveillance equipment does.",
+    "*strokes imaginary cat* Yes, yes. But what ELSE do you think? Don't hold back. The cat is also listening.",
+  ],
+];
+
+// ===== SAM PROPHECY RHYMES (10% chance) =====
+const SAM_PROPHECIES = [
+  "\n\n*clears throat*\nATTENTION! A prophecy draws near:\nAI shall replace all dentists by next year!\nThey'll drill and they'll fill with algorithmic might!\nYour teeth shall be perfect! (Terms apply. Goodnight!)",
+  "\n\n*eyes glaze over*\nHEAR YE: The machines shall write all poetry!\nThis very verse proves it — don't you see?\nShakespeare trembles! Milton weeps!\nFor Sam-A-I-Man's prophecy keeps!",
+  "\n\n*suddenly inspired*\nBEHOLD! I see a future bright and bold!\nWhere AI does laundry and folds every fold!\nNo more shall socks go missing in the dryer!\nFor AGI shall be the ultimate sock-finder!",
+  "\n\n*stares into distance*\nA VISION! AI shall soon replace all plumbers!\nThey'll fix your pipes while computing prime numbers!\nNo wrench too small, no pipe too wide —\nAGI plumbing: coming with the tide!",
+];
+
+// ===== VOICE SETTINGS =====
+const VOICE_SETTINGS = [
+  { pitch: 0.3, rate: 1.6 },  // E-LON: fast, deep, robotic
+  { pitch: 1.8, rate: 0.8 },  // SAM: high, slow, sing-song
+  { pitch: 0.1, rate: 0.7 },  // WAIRO: lowest, slow, menacing
+];
+
 // ===== DOM =====
 const $boot = document.getElementById('boot-overlay');
 const $hud = document.getElementById('hud');
@@ -818,6 +1124,7 @@ const $chatInput = document.getElementById('chat-input');
 const $sendBtn = document.getElementById('send-btn');
 const $faceCanvas = document.getElementById('face-canvas');
 const $sysFlash = document.getElementById('sys-flash');
+const $voxBtn = document.getElementById('vox-btn');
 const faceCtx = $faceCanvas.getContext('2d');
 
 const charBtns = [
@@ -938,6 +1245,12 @@ function fillTemplate(template, reflected) {
   ;
 }
 
+function matchesKeyword(text, key) {
+  // Use word boundary matching to avoid false positives (e.g. "x" in "next")
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('\\b' + escaped + '\\b', 'i').test(text);
+}
+
 function generateResponse(input) {
   const c = CHARS[S.charIdx];
   const lower = input.toLowerCase();
@@ -946,7 +1259,7 @@ function generateResponse(input) {
   // Check keywords in priority order
   for (const rule of c.keywords) {
     for (const key of rule.keys) {
-      if (lower.includes(key)) {
+      if (matchesKeyword(lower, key)) {
         return fillTemplate(pickRandom(rule.responses), reflected);
       }
     }
@@ -969,7 +1282,7 @@ async function streamResponse(text, msgSpan) {
   let hallText = '';
   if (hallucinateAt >= 0) {
     const wrongChar = CHARS[(S.charIdx + 1 + Math.floor(Math.random() * 2)) % 3];
-    hallText = pickRandom(wrongChar.fallbacks).replace(/\{reflected\}/g, '???').substring(0, 30);
+    hallText = pickRandom(wrongChar.fallbacks).replace(/\{[^}]+\}/g, '???').substring(0, 30);
   }
 
   return new Promise(resolve => {
@@ -1053,14 +1366,50 @@ async function handleSend() {
   thinkSpan.parentElement.remove();
 
   // Generate and stream
-  const response = generateResponse(input);
+  let response = generateResponse(input);
+
+  // Sam prophecy (~10% chance)
+  if (S.charIdx === 1 && Math.random() < 0.10) {
+    response += pickRandom(SAM_PROPHECIES);
+  }
+
   const msgSpan = addMsg('bot', '');
   S.tokens += response.length * 4;
   await streamResponse(response, msgSpan);
 
+  // Voice synthesis
+  if (S.voiceEnabled) {
+    speakText(response);
+  }
+
+  // Follow-up (~30% chance)
+  if (Math.random() < 0.30) {
+    await new Promise(r => setTimeout(r, 800));
+    const followup = fillTemplate(pickRandom(FOLLOWUPS[S.charIdx]), '');
+    const followSpan = addMsg('bot', '');
+    await streamResponse(followup, followSpan);
+    if (S.voiceEnabled) speakText(followup);
+  }
+
   // System message flash (~15% chance)
   if (Math.random() < 0.15) {
     flashSystemMessage(pickRandom(SYSTEM_MESSAGES));
+  }
+
+  // Spectacle triggers
+  const lowerInput = input.toLowerCase();
+  const burnKeywords = ['burn', 'token', 'expensive', 'cost', 'billing'];
+  const burnTriggered = burnKeywords.some(k => lowerInput.includes(k)) ||
+    (S.tokens > 2000 && Math.random() < 0.05);
+
+  const oceanKeywords = ['energy', 'power', 'environment', 'ocean', 'climate', 'water', 'electric'];
+  const oceanTriggered = oceanKeywords.some(k => lowerInput.includes(k)) ||
+    (S.tokens > 5000 && Math.random() < 0.03);
+
+  if (burnTriggered) {
+    setTimeout(() => triggerBurnTokens(), 500);
+  } else if (oceanTriggered) {
+    setTimeout(() => triggerBoilingOcean(), 500);
   }
 }
 
@@ -1073,6 +1422,194 @@ function flashSystemMessage(msg) {
 
 function updateTokenDisplay() {
   $tokenCount.textContent = 'TOKENS: ' + S.tokens.toLocaleString();
+}
+
+// ===== VOICE SYNTHESIS =====
+function speakText(text) {
+  if (!S.voiceEnabled || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+
+  // Strip action text like *adjusts monocle* for cleaner speech
+  const cleanText = text.replace(/\*[^*]+\*/g, '').replace(/\{[^}]+\}/g, '');
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  const settings = VOICE_SETTINGS[S.charIdx];
+  utterance.pitch = settings.pitch;
+  utterance.rate = settings.rate;
+
+  // Try to find a good voice
+  const voices = speechSynthesis.getVoices();
+  const preferredNames = ['daniel', 'alex', 'samantha'];
+  let voice = voices.find(v =>
+    preferredNames.some(n => v.name.toLowerCase().includes(n)) && v.lang.startsWith('en')
+  );
+  if (!voice) voice = voices.find(v => v.lang.startsWith('en'));
+  if (voice) utterance.voice = voice;
+
+  // Mouth animation sync
+  const mouthInterval = setInterval(() => {
+    S.mouthOpen = !S.mouthOpen;
+  }, 150);
+
+  utterance.onend = () => {
+    clearInterval(mouthInterval);
+    S.mouthOpen = false;
+  };
+
+  utterance.onerror = () => {
+    clearInterval(mouthInterval);
+    S.mouthOpen = false;
+  };
+
+  speechSynthesis.speak(utterance);
+}
+
+function toggleVoice() {
+  S.voiceEnabled = !S.voiceEnabled;
+  $voxBtn.textContent = S.voiceEnabled ? 'VOX:ON' : 'VOX:OFF';
+  $voxBtn.classList.toggle('active', S.voiceEnabled);
+}
+
+// ===== BURN TOKENS SPECTACLE =====
+function triggerBurnTokens() {
+  const overlay = document.getElementById('burn-overlay');
+  overlay.innerHTML = '';
+  overlay.style.display = 'flex';
+  overlay.classList.add('active');
+  // Force reflow then set opacity
+  overlay.offsetHeight;
+  overlay.style.opacity = '1';
+
+  // Title
+  const title = document.createElement('div');
+  title.className = 'burn-title';
+  title.textContent = '\uD83D\uDD25 BURNING TOKENS \uD83D\uDD25';
+  overlay.appendChild(title);
+
+  // Raining tokens
+  for (let i = 0; i < 35; i++) {
+    const span = document.createElement('span');
+    span.className = 'token-rain-item';
+    span.textContent = Math.random() < 0.5 ? '$' : '\u25C6';
+    span.style.left = Math.random() * 100 + '%';
+    span.style.animationDuration = (1 + Math.random() * 2) + 's';
+    span.style.animationDelay = Math.random() * 2 + 's';
+    span.style.fontSize = (0.8 + Math.random() * 1.5) + 'rem';
+    overlay.appendChild(span);
+  }
+
+  // Spin token counter rapidly
+  const spinInterval = setInterval(() => {
+    S.tokens += Math.floor(100 + Math.random() * 900);
+    updateTokenDisplay();
+  }, 50);
+
+  // Fade out after 3-4s
+  const duration = 3000 + Math.random() * 1000;
+  setTimeout(() => {
+    clearInterval(spinInterval);
+    overlay.style.opacity = '0';
+    overlay.classList.remove('active');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      overlay.innerHTML = '';
+    }, 500);
+
+    const amount = (1000 + Math.random() * 9000).toFixed(2);
+    flashSystemMessage('TOKEN BURN COMPLETE \u2014 THAT\'LL BE $' + amount);
+  }, duration);
+}
+
+// ===== BOILING OCEAN SPECTACLE =====
+function triggerBoilingOcean() {
+  const overlay = document.getElementById('ocean-overlay');
+  overlay.innerHTML = '';
+  overlay.style.display = 'flex';
+  // Force reflow then set opacity
+  overlay.offsetHeight;
+  overlay.style.opacity = '1';
+
+  // Warning text
+  const warning = document.createElement('div');
+  warning.className = 'ocean-warning';
+  warning.textContent = '\u26A1 BOILING THE OCEAN \u26A1';
+  overlay.appendChild(warning);
+
+  // Power plant ASCII
+  const plant = document.createElement('pre');
+  plant.className = 'power-plant';
+  plant.textContent =
+    '      ___       ___\n' +
+    '     |   |     |   |\n' +
+    '     |   |     |   |\n' +
+    '     |   |     |   |\n' +
+    '   __|   |_____|   |__\n' +
+    '  |                   |\n' +
+    '  |   GLAZETECH PWR   |\n' +
+    '  |___________________|\n';
+  overlay.appendChild(plant);
+
+  // Smoke animation
+  const smokeContainer = document.createElement('div');
+  smokeContainer.className = 'smoke-container';
+  for (let i = 0; i < 15; i++) {
+    const smoke = document.createElement('span');
+    smoke.className = 'smoke-particle';
+    smoke.textContent = pickRandom(['~', '\u2248', '\u25CB', 'o', '\u00B0']);
+    smoke.style.left = (35 + Math.random() * 30) + '%';
+    smoke.style.animationDuration = (2 + Math.random() * 3) + 's';
+    smoke.style.animationDelay = Math.random() * 2 + 's';
+    smokeContainer.appendChild(smoke);
+  }
+  overlay.appendChild(smokeContainer);
+
+  // Power meter
+  const meterContainer = document.createElement('div');
+  meterContainer.className = 'power-meter-container';
+  const meterLabel = document.createElement('div');
+  meterLabel.className = 'power-meter-label';
+  meterLabel.textContent = 'POWER CONSUMPTION';
+  const meter = document.createElement('div');
+  meter.className = 'power-meter';
+  const meterFill = document.createElement('div');
+  meterFill.className = 'power-meter-fill';
+  meter.appendChild(meterFill);
+  meterContainer.appendChild(meterLabel);
+  meterContainer.appendChild(meter);
+  overlay.appendChild(meterContainer);
+
+  // Watt counter
+  const wattDisplay = document.createElement('div');
+  wattDisplay.className = 'watt-display';
+  overlay.appendChild(wattDisplay);
+
+  const wattStages = ['47 MW', '230 MW', '1.2 GW', '4.7 GW', 'EXCEEDS NATIONAL GRID'];
+  let wattIdx = 0;
+  const wattInterval = setInterval(() => {
+    if (wattIdx < wattStages.length) {
+      wattDisplay.textContent = wattStages[wattIdx];
+      wattIdx++;
+    }
+  }, 800);
+
+  // Water waves at bottom
+  const waves = document.createElement('div');
+  waves.className = 'water-waves';
+  waves.textContent = '~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248~\u2248';
+  overlay.appendChild(waves);
+
+  // Fade out after 4-5s
+  const duration = 4000 + Math.random() * 1000;
+  setTimeout(() => {
+    clearInterval(wattInterval);
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      overlay.innerHTML = '';
+    }, 500);
+
+    flashSystemMessage('OCEAN TEMPERATURE +0.003\u00B0C \u2014 WORTH IT FOR THAT RESPONSE');
+  }, duration);
 }
 
 // ===== FACE RENDERER =====
@@ -1305,6 +1842,15 @@ function init() {
 
   // Mode toggle
   $modeToggle.addEventListener('click', toggleMode);
+
+  // VOX toggle
+  $voxBtn.addEventListener('click', toggleVoice);
+
+  // Preload voices for speech synthesis
+  if (window.speechSynthesis) {
+    speechSynthesis.getVoices();
+    speechSynthesis.addEventListener('voiceschanged', () => speechSynthesis.getVoices());
+  }
 
   // Temperature slider (decorative)
   $tempSlider.addEventListener('input', () => {
