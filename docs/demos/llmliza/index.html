@@ -160,7 +160,7 @@
   /* === MAIN LAYOUT === */
   #main {
     display: flex;
-    height: calc(100vh - 36px);
+    height: calc(100vh - 61px);
   }
 
   /* Face panel */
@@ -315,22 +315,24 @@
   }
 
   /* Back link */
+  #top-bar {
+    height: 24px;
+    background: #050505;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    flex-shrink: 0;
+  }
   .back {
-    position: fixed;
-    bottom: 0.75rem;
-    right: 0.75rem;
     font-family: 'Courier New', monospace;
     font-size: 0.6rem;
     color: #555;
     text-decoration: none;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    z-index: 10001;
-    background: rgba(0,0,0,0.7);
-    padding: 0.3rem 0.5rem;
-    border: 1px solid #333;
   }
-  .back:hover { color: #ff00ff; border-color: #ff00ff; }
+  .back:hover { color: #ff00ff; }
 
   /* Responsive */
   @media (max-width: 768px) {
@@ -349,7 +351,6 @@
 </style>
 </head>
 <body>
-<a class="back" href="../../">&larr; Back</a>
 
 <!-- Boot Overlay -->
 <div id="boot-overlay"></div>
@@ -359,6 +360,11 @@
 
 <!-- System flash -->
 <div id="sys-flash"></div>
+
+<!-- Top bar with back link -->
+<div id="top-bar">
+  <a class="back" href="../../">&larr; Back</a>
+</div>
 
 <!-- HUD -->
 <div id="hud">
@@ -978,6 +984,7 @@ async function streamResponse(text, msgSpan) {
       // Hallucination interrupt
       if (i === hallucinateAt && !hallucinating) {
         hallucinating = true;
+        i++; // advance past trigger point so we don't loop
         const origText = msgSpan.textContent;
         msgSpan.textContent = origText + ' ' + hallText;
         msgSpan.style.color = '#ff0000';
