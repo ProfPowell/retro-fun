@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Type Pulse // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #08080c; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas { display: block; }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #333; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 20;
+  }
+  .back:hover { color: #00ffff; }
+
+  .overlay {
+    position: fixed; inset: 0; display: flex; align-items: center;
+    justify-content: center; z-index: 20; background: rgba(8,8,12,0.9); cursor: pointer;
+  }
+  .overlay.hidden { display: none; }
+  .play-prompt { text-align: center; color: #00ffff; }
+  .play-prompt h2 {
+    font-size: 1.5rem; letter-spacing: 0.3em; text-transform: uppercase;
+    text-shadow: 0 0 20px #00ffff; margin-bottom: 1rem;
+  }
+  .play-prompt p { font-size: 0.7rem; color: #555; letter-spacing: 0.2em; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<div class="overlay" id="startOverlay">
+  <div class="play-prompt">
+    <h2>&#9654; Click to Start</h2>
+    <p>Audio-reactive typography &bull; Built-in synth engine</p>
+  </div>
+</div>
+<canvas id="c"></canvas>
+<script>
+// Type Pulse: audio-reactive typography equalizer
+// Text characters change size, weight, color based on audio frequency
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let audioCtx, analyser, gainNode;
+let freqData, timeData;
+let time = 0;
+
+// The typography grid - a block of text that reacts to audio
+const PHRASES = [
+  'FREQUENCY MODULATION',
+  'SINE WAVE GENERATOR',
+  'PULSE WIDTH AUDIO',
+  'RESONANT FILTER BANK',
+  'OSCILLATOR CASCADE',
+  'HARMONIC OVERTONES',
+  'WAVEFORM SYNTHESIS',
+  'SPECTRAL ANALYSIS',
+  'AMPLITUDE ENVELOPE',
+  'SAMPLE AND HOLD',
+  'LOW FREQ OSCILLATOR',
+  'VOLTAGE CONTROLLER',
+  'BAND PASS FILTER',
+  'NOISE GENERATOR X',
+  'PHASE DISTORTION',
+  'RING MODULATION',
+  'DIGITAL WAVEGUIDE',
+  'GRANULAR TEXTURE',
+  'ADDITIVE SYNTH',
+  'SUBTRACTIVE ENGINE',
+];
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0.7;
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.2;
+  gainNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  timeData = new Uint8Array(analyser.fftSize);
+
+  // Start the synth loop
+  nextBeatTime = audioCtx.currentTime;
+  scheduleBeat();
+}
+
+// Simple beat-driven synth
+const NOTES = [65.41, 82.41, 98.00, 110.00, 130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 329.63, 392.00, 523.25];
+const beatPattern = [1,0,1,0, 1,0,0,1, 1,0,1,0, 0,1,1,0];
+const bassPattern = [1,0,0,0, 1,0,0,0, 1,0,0,1, 0,0,1,0];
+let beatIdx = 0;
+let nextBeatTime;
+const BPM = 128;
+const BEAT = 60 / BPM / 4;
+
+function scheduleBeat() {
+  while (nextBeatTime < audioCtx.currentTime + 0.15) {
+    const now = nextBeatTime;
+
+    if (beatPattern[beatIdx % beatPattern.length]) {
+      // Lead
+      const noteIdx = Math.floor(Math.sin(beatIdx * 0.3) * 4 + 7) % NOTES.length;
+      playTone(NOTES[noteIdx] * 2, 'square', 0.06, BEAT * 2, now);
+    }
+
+    if (bassPattern[beatIdx % bassPattern.length]) {
+      // Bass
+      const bassNote = Math.floor(Math.sin(beatIdx * 0.15) * 3 + 3) % NOTES.length;
+      playTone(NOTES[bassNote] * 0.5, 'sawtooth', 0.1, BEAT * 3, now);
+    }
+
+    // Kick drum every 4 beats
+    if (beatIdx % 4 === 0) {
+      playKick(now);
+    }
+    // Hihat
+    if (beatIdx % 2 === 0) {
+      playNoise(0.02, 0.04, now);
+    }
+
+    nextBeatTime += BEAT;
+    beatIdx++;
+  }
+  setTimeout(scheduleBeat, 50);
+}
+
+function playTone(freq, type, vol, dur, when) {
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  env.gain.setValueAtTime(0, when);
+  env.gain.linearRampToValueAtTime(vol, when + 0.005);
+  env.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  osc.connect(env);
+  env.connect(gainNode);
+  osc.start(when);
+  osc.stop(when + dur);
+}
+
+function playKick(when) {
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.frequency.setValueAtTime(150, when);
+  osc.frequency.exponentialRampToValueAtTime(30, when + 0.1);
+  env.gain.setValueAtTime(0.3, when);
+  env.gain.exponentialRampToValueAtTime(0.001, when + 0.15);
+  osc.connect(env);
+  env.connect(gainNode);
+  osc.start(when);
+  osc.stop(when + 0.15);
+}
+
+function playNoise(dur, vol, when) {
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const env = audioCtx.createGain();
+  env.gain.setValueAtTime(vol, when);
+  env.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  const filt = audioCtx.createBiquadFilter();
+  filt.type = 'highpass';
+  filt.frequency.value = 8000;
+  src.connect(filt);
+  filt.connect(env);
+  env.connect(gainNode);
+  src.start(when);
+  src.stop(when + dur);
+}
+
+// Palette
+const colors = [
+  { h: 0, s: 100, l: 55 },     // red
+  { h: 180, s: 100, l: 55 },   // cyan
+  { h: 300, s: 100, l: 55 },   // magenta
+  { h: 60, s: 100, l: 55 },    // yellow
+  { h: 120, s: 100, l: 55 },   // green
+  { h: 210, s: 100, l: 55 },   // blue
+];
+
+function draw() {
+  // Background
+  ctx.fillStyle = 'rgba(8, 8, 12, 0.3)';
+  ctx.fillRect(0, 0, W, H);
+
+  if (!analyser) {
+    time += 0.016;
+    requestAnimationFrame(draw);
+    return;
+  }
+
+  analyser.getByteFrequencyData(freqData);
+  analyser.getByteTimeDomainData(timeData);
+
+  // Calculate overall energy
+  let totalEnergy = 0;
+  let bassEnergy = 0;
+  let midEnergy = 0;
+  let highEnergy = 0;
+  const len = freqData.length;
+  for (let i = 0; i < len; i++) {
+    totalEnergy += freqData[i];
+    if (i < len * 0.15) bassEnergy += freqData[i];
+    else if (i < len * 0.5) midEnergy += freqData[i];
+    else highEnergy += freqData[i];
+  }
+  totalEnergy /= len * 255;
+  bassEnergy /= (len * 0.15) * 255;
+  midEnergy /= (len * 0.35) * 255;
+  highEnergy /= (len * 0.5) * 255;
+
+  // Layout: fill the screen with text rows
+  const maxFontSize = 22;
+  const minFontSize = 8;
+  const lineHeight = maxFontSize * 1.4;
+  const numLines = Math.min(PHRASES.length, Math.floor((H - 40) / lineHeight));
+  const startY = (H - numLines * lineHeight) / 2 + lineHeight;
+
+  for (let row = 0; row < numLines; row++) {
+    const phrase = PHRASES[row % PHRASES.length];
+    const rowProgress = row / numLines;
+
+    // Map this row to a frequency band
+    const freqIdx = Math.floor(rowProgress * freqData.length * 0.7);
+    const freqValue = freqData[freqIdx] / 255;
+
+    // Color based on row and energy
+    const colorIdx = Math.floor((row + time * 2) % colors.length);
+    const c = colors[colorIdx];
+    const hue = (c.h + freqValue * 40 + time * 20) % 360;
+    const sat = c.s;
+    const light = 20 + freqValue * 50;
+
+    // Font size reacts to frequency
+    const fontSize = minFontSize + freqValue * (maxFontSize - minFontSize);
+    const y = startY + row * lineHeight;
+
+    // Per-character rendering
+    const charWidth = fontSize * 0.62;
+    const totalWidth = phrase.length * charWidth;
+    const startX = (W - totalWidth) / 2;
+
+    for (let ci = 0; ci < phrase.length; ci++) {
+      const ch = phrase[ci];
+      if (ch === ' ') continue;
+
+      // Each character maps to a slightly different frequency
+      const charFreqIdx = Math.floor((freqIdx + ci * 2) % freqData.length);
+      const charFreq = freqData[charFreqIdx] / 255;
+
+      // Character-level animation
+      const charPhase = time * 4 + ci * 0.3 + row * 0.5;
+      const wave = Math.sin(charPhase) * charFreq * 5;
+      const charSize = fontSize * (0.8 + charFreq * 0.6);
+
+      // Character hue shift
+      const charHue = (hue + ci * 3 + charFreq * 30) % 360;
+      const charLight = light + charFreq * 20;
+
+      const cx = startX + ci * charWidth;
+      const cy = y + wave;
+
+      ctx.save();
+      ctx.font = `bold ${charSize}px 'Courier New', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Glow intensity based on frequency
+      if (charFreq > 0.3) {
+        ctx.shadowColor = `hsl(${charHue}, ${sat}%, ${charLight}%)`;
+        ctx.shadowBlur = charFreq * 15;
+      }
+
+      ctx.fillStyle = `hsl(${charHue}, ${sat}%, ${charLight}%)`;
+      ctx.fillText(ch, cx, cy);
+
+      // Bright highlight on high energy
+      if (charFreq > 0.6) {
+        ctx.globalAlpha = (charFreq - 0.6) * 2;
+        ctx.fillStyle = '#fff';
+        ctx.fillText(ch, cx, cy);
+      }
+
+      ctx.restore();
+    }
+
+    // Horizontal energy bar behind each row
+    ctx.save();
+    ctx.globalAlpha = 0.04;
+    const barWidth = freqValue * W * 0.8;
+    ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
+    ctx.fillRect((W - barWidth) / 2, y - lineHeight * 0.4, barWidth, lineHeight * 0.8);
+    ctx.restore();
+  }
+
+  // Bass pulse ring in center
+  if (bassEnergy > 0.3) {
+    const pulseR = bassEnergy * Math.min(W, H) * 0.4;
+    ctx.save();
+    ctx.strokeStyle = `hsla(${(time * 60) % 360}, 100%, 50%, ${(bassEnergy - 0.3) * 0.4})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, pulseR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Scanlines
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+document.getElementById('startOverlay').addEventListener('click', () => {
+  document.getElementById('startOverlay').classList.add('hidden');
+  initAudio();
+});
+
+draw();
+</script>
+</body>
+</html>

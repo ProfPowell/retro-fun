@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinetic Type // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas { display: block; }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 10;
+  }
+  .back:hover { color: #ff00ff; }
+  .hud {
+    position: fixed; top: 1rem; left: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    color: #333; letter-spacing: 0.15em; text-transform: uppercase;
+    pointer-events: none; z-index: 10;
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<div class="hud">Kinetic Type &bull; Click to explode &bull; Move mouse to attract</div>
+<canvas id="c"></canvas>
+<script>
+// Kinetic typography: letters with physics - gravity, collisions, explosions
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const GRAVITY = 0.15;
+const BOUNCE = 0.65;
+const FRICTION = 0.998;
+const ATTRACT_FORCE = 0.0003;
+
+// Word list to spawn
+const WORDS = [
+  'RETRO', 'PIXEL', 'NEON', 'CYBER', 'WAVE', 'SYNTH', 'GRID', 'GLOW',
+  'PULSE', 'CHROME', 'LASER', 'VAPOR', 'TURBO', 'HYPER', 'MEGA', 'ULTRA',
+  'FLUX', 'DRIFT', 'BLAZE', 'ECHO', 'GLITCH', 'WARP', 'ZOOM', 'BYTE',
+  'DEMO', 'SCENE', 'CODE', 'HACK', 'BITS', 'DATA', 'FUNK', 'DISCO',
+];
+
+const PALETTE = [
+  '#ff00ff', '#00ffff', '#ffff00', '#ff0066', '#00ff88',
+  '#ff8800', '#8800ff', '#00aaff', '#ff4488', '#88ff00',
+];
+
+class Letter {
+  constructor(ch, x, y, size, color) {
+    this.ch = ch;
+    this.x = x;
+    this.y = y;
+    this.vx = (Math.random() - 0.5) * 8;
+    this.vy = -3 - Math.random() * 6;
+    this.size = size;
+    this.color = color;
+    this.rotation = (Math.random() - 0.5) * 0.5;
+    this.rotSpeed = (Math.random() - 0.5) * 0.1;
+    this.life = 1;
+    this.decay = 0.0003 + Math.random() * 0.0003;
+    this.grounded = false;
+    this.groundTime = 0;
+    this.mass = size * 0.1;
+    this.trail = [];
+  }
+
+  update(mouseX, mouseY, mouseDown) {
+    // Mouse attraction
+    const dx = mouseX - this.x;
+    const dy = mouseY - this.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) + 1;
+    const force = ATTRACT_FORCE * this.mass * 300 / dist;
+    this.vx += dx * force;
+    this.vy += dy * force;
+
+    // Gravity
+    this.vy += GRAVITY;
+
+    // Friction
+    this.vx *= FRICTION;
+    this.vy *= FRICTION;
+
+    // Move
+    this.x += this.vx;
+    this.y += this.vy;
+    this.rotation += this.rotSpeed;
+
+    // Trail
+    if (Math.abs(this.vx) + Math.abs(this.vy) > 2) {
+      this.trail.push({ x: this.x, y: this.y, alpha: 0.5, size: this.size });
+    }
+    // Trim trail
+    for (let i = this.trail.length - 1; i >= 0; i--) {
+      this.trail[i].alpha -= 0.02;
+      if (this.trail[i].alpha <= 0) this.trail.splice(i, 1);
+    }
+
+    // Floor bounce
+    if (this.y > H - this.size * 0.5) {
+      this.y = H - this.size * 0.5;
+      this.vy = -Math.abs(this.vy) * BOUNCE;
+      this.rotSpeed *= 0.8;
+      if (Math.abs(this.vy) < 1) {
+        this.grounded = true;
+        this.vy = 0;
+        this.groundTime += 0.016;
+      }
+    }
+
+    // Wall bounce
+    if (this.x < this.size * 0.3) { this.x = this.size * 0.3; this.vx = Math.abs(this.vx) * BOUNCE; }
+    if (this.x > W - this.size * 0.3) { this.x = W - this.size * 0.3; this.vx = -Math.abs(this.vx) * BOUNCE; }
+    if (this.y < this.size * 0.3) { this.y = this.size * 0.3; this.vy = Math.abs(this.vy) * BOUNCE; }
+
+    // Decay grounded letters faster
+    if (this.grounded && this.groundTime > 2) {
+      this.life -= 0.005;
+    }
+    this.life -= this.decay;
+  }
+
+  draw(ctx) {
+    // Trail
+    for (const t of this.trail) {
+      ctx.save();
+      ctx.globalAlpha = t.alpha * 0.3;
+      ctx.font = `bold ${t.size}px 'Courier New', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = this.color;
+      ctx.fillText(this.ch, t.x, t.y);
+      ctx.restore();
+    }
+
+    // Main character
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.globalAlpha = Math.max(0, this.life);
+
+    // Glow
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 12;
+    ctx.font = `bold ${this.size}px 'Courier New', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = this.color;
+    ctx.fillText(this.ch, 0, 0);
+
+    // Bright center
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = Math.max(0, this.life) * 0.3;
+    ctx.fillStyle = '#fff';
+    ctx.fillText(this.ch, 0, -1);
+
+    ctx.restore();
+  }
+}
+
+let letters = [];
+let mouseX = W / 2, mouseY = H / 2;
+let mouseDown = false;
+let time = 0;
+let nextSpawnTime = 0;
+
+window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+window.addEventListener('mousedown', () => { mouseDown = true; explode(); });
+window.addEventListener('mouseup', () => { mouseDown = false; });
+
+function spawnWord() {
+  const word = WORDS[Math.floor(Math.random() * WORDS.length)];
+  const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+  const size = 20 + Math.random() * 40;
+  const startX = Math.random() * W;
+  const startY = -50;
+
+  for (let i = 0; i < word.length; i++) {
+    const letter = new Letter(
+      word[i],
+      startX + i * size * 0.6,
+      startY - i * 10,
+      size,
+      color
+    );
+    letter.vy = Math.random() * 2;
+    letter.vx = (Math.random() - 0.5) * 3;
+    letters.push(letter);
+  }
+}
+
+function explode() {
+  // Explode letters near mouse
+  for (const letter of letters) {
+    const dx = letter.x - mouseX;
+    const dy = letter.y - mouseY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 200) {
+      const force = (200 - dist) / 200;
+      const angle = Math.atan2(dy, dx);
+      letter.vx += Math.cos(angle) * force * 20;
+      letter.vy += Math.sin(angle) * force * 20;
+      letter.rotSpeed += (Math.random() - 0.5) * 0.5;
+      letter.grounded = false;
+      letter.groundTime = 0;
+    }
+  }
+}
+
+// Simple collision between nearby letters
+function collide(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const minDist = (a.size + b.size) * 0.3;
+
+  if (dist < minDist && dist > 0) {
+    const angle = Math.atan2(dy, dx);
+    const overlap = minDist - dist;
+
+    // Separate
+    a.x -= Math.cos(angle) * overlap * 0.5;
+    a.y -= Math.sin(angle) * overlap * 0.5;
+    b.x += Math.cos(angle) * overlap * 0.5;
+    b.y += Math.sin(angle) * overlap * 0.5;
+
+    // Velocity exchange (simplified)
+    const dvx = a.vx - b.vx;
+    const dvy = a.vy - b.vy;
+    a.vx -= dvx * 0.3;
+    a.vy -= dvy * 0.3;
+    b.vx += dvx * 0.3;
+    b.vy += dvy * 0.3;
+  }
+}
+
+function draw() {
+  // Fade trail
+  ctx.fillStyle = 'rgba(10, 10, 15, 0.15)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Spawn words periodically
+  time += 0.016;
+  if (time > nextSpawnTime) {
+    spawnWord();
+    nextSpawnTime = time + 1.5 + Math.random() * 2;
+  }
+
+  // Update and draw
+  for (let i = letters.length - 1; i >= 0; i--) {
+    letters[i].update(mouseX, mouseY, mouseDown);
+    if (letters[i].life <= 0) {
+      letters.splice(i, 1);
+      continue;
+    }
+  }
+
+  // Collision (check nearby pairs - spatial hash would be better but this is fine for demo count)
+  for (let i = 0; i < letters.length; i++) {
+    for (let j = i + 1; j < Math.min(i + 20, letters.length); j++) {
+      collide(letters[i], letters[j]);
+    }
+  }
+
+  // Sort by size for depth
+  letters.sort((a, b) => a.size - b.size);
+  for (const letter of letters) {
+    letter.draw(ctx);
+  }
+
+  // Floor line
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, H - 1);
+  ctx.lineTo(W, H - 1);
+  ctx.stroke();
+
+  // Letter count
+  ctx.fillStyle = '#222';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${letters.length} letters`, W - 16, 28);
+
+  requestAnimationFrame(draw);
+}
+
+// Initial burst
+for (let i = 0; i < 4; i++) {
+  setTimeout(() => spawnWord(), i * 300);
+}
+
+draw();
+</script>
+</body>
+</html>

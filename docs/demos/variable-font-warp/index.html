@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Variable Font Warp // RETRO FUN</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Recursive:wght,CASL,MONO@300..1000,0..1,0..1&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    overflow: hidden;
+    font-family: 'Recursive', 'Courier New', monospace;
+  }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 20;
+  }
+  .back:hover { color: #ff00ff; }
+
+  .container {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+  }
+
+  .warp-line {
+    white-space: nowrap;
+    line-height: 1;
+    text-align: center;
+    transition: font-variation-settings 0.3s ease;
+  }
+
+  .warp-char {
+    display: inline-block;
+    transition: transform 0.1s ease, color 0.2s ease;
+  }
+
+  .controls {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,15,0.92);
+    border-top: 1px solid #222;
+    padding: 1rem 1.5rem;
+    display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: end;
+    z-index: 15; backdrop-filter: blur(8px);
+  }
+  .control-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .control-group label {
+    color: #555; font-size: 0.6rem; letter-spacing: 0.15em;
+    text-transform: uppercase; font-family: 'Courier New', monospace;
+  }
+  .control-group input[type="range"] {
+    width: 120px; accent-color: #ff00ff;
+  }
+  .control-group input[type="text"] {
+    background: #111; border: 1px solid #333; color: #fff;
+    font-family: 'Courier New', monospace; font-size: 0.9rem;
+    padding: 0.3rem 0.5rem; width: 180px;
+  }
+  .control-group input[type="text"]:focus { outline: none; border-color: #ff00ff; }
+  .control-group select {
+    background: #111; border: 1px solid #333; color: #888;
+    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    padding: 0.3rem; letter-spacing: 0.1em;
+  }
+  .val { color: #ff00ff; font-size: 0.6rem; font-family: monospace; }
+
+  /* Scanline overlay */
+  .scanlines {
+    position: fixed; inset: 0; pointer-events: none; z-index: 10;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<div class="container" id="container"></div>
+<div class="scanlines"></div>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Text</label>
+    <input type="text" id="textInput" value="WARP" maxlength="10" spellcheck="false">
+  </div>
+  <div class="control-group">
+    <label>Effect</label>
+    <select id="effectSelect">
+      <option value="wave">Wave</option>
+      <option value="breathe">Breathe</option>
+      <option value="glitch">Glitch</option>
+      <option value="melt">Melt</option>
+      <option value="bounce">Bounce</option>
+      <option value="spiral">Spiral</option>
+      <option value="chaos">Chaos</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Speed <span class="val" id="speedVal">1.0x</span></label>
+    <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+  </div>
+  <div class="control-group">
+    <label>Intensity <span class="val" id="intensityVal">70%</span></label>
+    <input type="range" id="intensitySlider" min="0" max="100" step="1" value="70">
+  </div>
+  <div class="control-group">
+    <label>Copies</label>
+    <input type="range" id="copiesSlider" min="1" max="15" step="1" value="7">
+  </div>
+</div>
+
+<script>
+const container = document.getElementById('container');
+const textInput = document.getElementById('textInput');
+const effectSelect = document.getElementById('effectSelect');
+const speedSlider = document.getElementById('speedSlider');
+const intensitySlider = document.getElementById('intensitySlider');
+const copiesSlider = document.getElementById('copiesSlider');
+
+let text = 'WARP';
+let effect = 'wave';
+let speed = 1;
+let intensity = 0.7;
+let numCopies = 7;
+let time = 0;
+let mouseX = 0.5, mouseY = 0.5;
+
+window.addEventListener('mousemove', e => {
+  mouseX = e.clientX / window.innerWidth;
+  mouseY = e.clientY / window.innerHeight;
+});
+
+textInput.addEventListener('input', e => {
+  text = (e.target.value || 'WARP').toUpperCase();
+  buildLines();
+});
+effectSelect.addEventListener('change', e => { effect = e.target.value; });
+speedSlider.addEventListener('input', e => {
+  speed = parseFloat(e.target.value);
+  document.getElementById('speedVal').textContent = speed.toFixed(1) + 'x';
+});
+intensitySlider.addEventListener('input', e => {
+  intensity = parseInt(e.target.value) / 100;
+  document.getElementById('intensityVal').textContent = e.target.value + '%';
+});
+copiesSlider.addEventListener('input', e => {
+  numCopies = parseInt(e.target.value);
+  buildLines();
+});
+
+let lines = [];
+function buildLines() {
+  container.innerHTML = '';
+  lines = [];
+  for (let i = 0; i < numCopies; i++) {
+    const div = document.createElement('div');
+    div.className = 'warp-line';
+    const chars = [];
+    for (let c = 0; c < text.length; c++) {
+      const span = document.createElement('span');
+      span.className = 'warp-char';
+      span.textContent = text[c];
+      div.appendChild(span);
+      chars.push(span);
+    }
+    container.appendChild(div);
+    lines.push({ el: div, chars });
+  }
+}
+buildLines();
+
+// Effect functions - return per-character style objects
+const effects = {
+  wave(lineIdx, charIdx, total, t) {
+    const phase = t * 3 + lineIdx * 0.8 + charIdx * 0.4;
+    const wt = Math.sin(phase) * intensity;
+    const weight = 300 + wt * 700;
+    const casual = (Math.sin(phase * 0.7) + 1) * 0.5 * intensity;
+    const mono = (Math.cos(phase * 0.5) + 1) * 0.5 * intensity;
+    const yOff = Math.sin(phase) * 30 * intensity;
+    const hue = (lineIdx * 40 + charIdx * 20 + t * 60) % 360;
+    return { weight, casual, mono, yOff, xOff: 0, rotate: 0, scale: 1, hue, sat: 80, light: 60 };
+  },
+  breathe(lineIdx, charIdx, total, t) {
+    const phase = t * 1.5 + lineIdx * 0.3;
+    const breath = (Math.sin(phase) + 1) * 0.5;
+    const weight = 300 + breath * intensity * 700;
+    const scale = 1 + breath * intensity * 0.5;
+    const hue = (t * 20 + lineIdx * 30) % 360;
+    return { weight, casual: 0, mono: 0, yOff: 0, xOff: 0, rotate: 0, scale, hue, sat: 70, light: 50 + breath * 30 };
+  },
+  glitch(lineIdx, charIdx, total, t) {
+    const glitch = Math.random() < 0.05 * intensity;
+    const weight = glitch ? 300 + Math.random() * 700 : 500 + Math.sin(t + lineIdx) * 200 * intensity;
+    const xOff = glitch ? (Math.random() - 0.5) * 50 * intensity : 0;
+    const yOff = glitch ? (Math.random() - 0.5) * 20 * intensity : 0;
+    const hue = glitch ? Math.random() * 360 : (lineIdx * 30 + t * 40) % 360;
+    const casual = glitch ? Math.random() : 0;
+    return { weight, casual, mono: 0, yOff, xOff, rotate: glitch ? (Math.random()-0.5) * 20 : 0, scale: 1, hue, sat: 100, light: glitch ? 70 : 50 };
+  },
+  melt(lineIdx, charIdx, total, t) {
+    const meltPhase = t * 2 + charIdx * 0.3;
+    const melt = Math.max(0, Math.sin(meltPhase)) * intensity;
+    const weight = 300 + melt * 700;
+    const yOff = melt * 40 * lineIdx * 0.2;
+    const scale = 1 + melt * 0.3;
+    const scaleY = 1 + melt * 0.8;
+    const hue = (20 + melt * 40 + lineIdx * 15) % 360;
+    return { weight, casual: melt, mono: 0, yOff, xOff: 0, rotate: 0, scale, scaleY, hue, sat: 90, light: 40 + melt * 30 };
+  },
+  bounce(lineIdx, charIdx, total, t) {
+    const phase = t * 4 + charIdx * 0.6 + lineIdx * 0.3;
+    const bounce = Math.abs(Math.sin(phase));
+    const weight = 400 + bounce * intensity * 600;
+    const yOff = -bounce * 60 * intensity;
+    const squash = 1 - bounce * 0.2 * intensity;
+    const stretch = 1 + bounce * 0.3 * intensity;
+    const hue = (charIdx * 50 + t * 80) % 360;
+    return { weight, casual: 0, mono: 0, yOff, xOff: 0, rotate: 0, scale: squash, scaleY: stretch, hue, sat: 90, light: 50 + bounce * 30 };
+  },
+  spiral(lineIdx, charIdx, total, t) {
+    const angle = t * 2 + lineIdx * 0.5 + charIdx * 0.3;
+    const radius = intensity * 20;
+    const xOff = Math.cos(angle) * radius;
+    const yOff = Math.sin(angle) * radius;
+    const rotate = Math.sin(angle) * 30 * intensity;
+    const weight = 500 + Math.sin(angle * 2) * 300 * intensity;
+    const hue = (angle * 30 + t * 50) % 360;
+    return { weight, casual: (Math.sin(angle) + 1) * 0.5, mono: 0, yOff, xOff, rotate, scale: 1, hue, sat: 85, light: 55 };
+  },
+  chaos(lineIdx, charIdx, total, t) {
+    const mx = (mouseX - 0.5) * 2;
+    const my = (mouseY - 0.5) * 2;
+    const dist = Math.sqrt(mx * mx + my * my);
+    const wave = Math.sin(t * 3 + charIdx * mx * 5 + lineIdx * my * 5);
+    const weight = 300 + (wave + 1) * 0.5 * intensity * 700;
+    const casual = (Math.sin(t * 2 + charIdx + mx * 10) + 1) * 0.5 * intensity;
+    const mono = (Math.cos(t * 1.5 + lineIdx + my * 8) + 1) * 0.5 * intensity;
+    const xOff = Math.sin(t * 4 + charIdx * 2) * 20 * intensity * dist;
+    const yOff = Math.cos(t * 3 + lineIdx * 2) * 20 * intensity * dist;
+    const rotate = wave * 15 * intensity;
+    const hue = (charIdx * 40 + lineIdx * 60 + t * 100 * dist) % 360;
+    return { weight, casual, mono, yOff, xOff, rotate, scale: 1 + wave * 0.2 * intensity, hue, sat: 90, light: 55 };
+  },
+};
+
+function animate() {
+  const baseSize = Math.min(window.innerWidth / (text.length * 0.7 + 1), window.innerHeight / (numCopies * 1.3 + 3));
+  const fontSize = Math.max(20, Math.min(baseSize, 150));
+
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const lineSpread = (li - (lines.length - 1) / 2) / Math.max(1, lines.length - 1);
+
+    line.el.style.fontSize = fontSize + 'px';
+
+    for (let ci = 0; ci < line.chars.length; ci++) {
+      const span = line.chars[ci];
+      const fx = effects[effect](li, ci, lines.length, time * speed);
+
+      // Apply variable font settings
+      const weight = Math.max(300, Math.min(1000, fx.weight));
+      const casual = Math.max(0, Math.min(1, fx.casual || 0));
+      const mono = Math.max(0, Math.min(1, fx.mono || 0));
+
+      span.style.fontVariationSettings = `"wght" ${weight}, "CASL" ${casual}, "MONO" ${mono}`;
+
+      // Transform
+      const scaleY = fx.scaleY || fx.scale;
+      span.style.transform = `translate(${fx.xOff}px, ${fx.yOff}px) rotate(${fx.rotate || 0}deg) scale(${fx.scale}, ${scaleY})`;
+
+      // Color
+      span.style.color = `hsl(${fx.hue}, ${fx.sat}%, ${fx.light}%)`;
+      span.style.textShadow = `0 0 ${10 + fx.light * 0.2}px hsla(${fx.hue}, ${fx.sat}%, ${fx.light}%, 0.5)`;
+    }
+  }
+
+  time += 0.016;
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
