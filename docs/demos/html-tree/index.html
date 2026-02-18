@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The HTML Tree // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a12; overflow: auto; font-family: 'Courier New', monospace; }
+  canvas { display: block; margin: 0 auto; }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 10;
+  }
+  .back:hover { color: #00ff88; }
+  .hud {
+    position: fixed; top: 1rem; left: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.6rem;
+    color: #333; letter-spacing: 0.1em; pointer-events: none; z-index: 10;
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<div class="hud">The HTML Tree &bull; Tags as bark, elements as branches</div>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Size to viewport
+const W = canvas.width = window.innerWidth;
+const H = canvas.height = Math.max(window.innerHeight, 900);
+
+let time = 0;
+
+// A deep HTML document structure to visualize as a tree
+const htmlTree = {
+  tag: 'html', children: [
+    { tag: 'head', children: [
+      { tag: 'meta', children: [] },
+      { tag: 'title', children: [{ tag: '"My Page"', children: [] }] },
+      { tag: 'link', children: [] },
+      { tag: 'style', children: [
+        { tag: '.box{}', children: [] },
+        { tag: '#id{}', children: [] },
+      ]},
+    ]},
+    { tag: 'body', children: [
+      { tag: 'header', children: [
+        { tag: 'nav', children: [
+          { tag: 'a', children: [] },
+          { tag: 'a', children: [] },
+          { tag: 'a', children: [] },
+        ]},
+        { tag: 'h1', children: [{ tag: '"Welcome"', children: [] }] },
+      ]},
+      { tag: 'main', children: [
+        { tag: 'article', children: [
+          { tag: 'h2', children: [] },
+          { tag: 'p', children: [
+            { tag: 'strong', children: [] },
+            { tag: 'em', children: [] },
+            { tag: 'a', children: [] },
+          ]},
+          { tag: 'p', children: [
+            { tag: 'span', children: [] },
+            { tag: 'code', children: [] },
+          ]},
+          { tag: 'ul', children: [
+            { tag: 'li', children: [] },
+            { tag: 'li', children: [] },
+            { tag: 'li', children: [
+              { tag: 'ul', children: [
+                { tag: 'li', children: [] },
+                { tag: 'li', children: [] },
+              ]}
+            ] },
+          ]},
+        ]},
+        { tag: 'section', children: [
+          { tag: 'h2', children: [] },
+          { tag: 'form', children: [
+            { tag: 'input', children: [] },
+            { tag: 'input', children: [] },
+            { tag: 'textarea', children: [] },
+            { tag: 'button', children: [] },
+          ]},
+        ]},
+        { tag: 'aside', children: [
+          { tag: 'div', children: [
+            { tag: 'img', children: [] },
+            { tag: 'p', children: [] },
+          ]},
+        ]},
+      ]},
+      { tag: 'footer', children: [
+        { tag: 'p', children: [] },
+        { tag: 'nav', children: [
+          { tag: 'a', children: [] },
+          { tag: 'a', children: [] },
+        ]},
+      ]},
+    ]},
+  ]
+};
+
+// Tag color based on type
+function tagColor(tag) {
+  const colors = {
+    'html': '#ff5f87', 'head': '#d7af5f', 'body': '#87d787', 'meta': '#888',
+    'title': '#d7af5f', 'link': '#5fafff', 'style': '#ff87ff', 'header': '#87d787',
+    'nav': '#5fd7ff', 'main': '#5fff87', 'article': '#ffaf5f', 'section': '#af87ff',
+    'aside': '#d7875f', 'footer': '#878787', 'h1': '#ff5f5f', 'h2': '#ff875f',
+    'p': '#aaaaaa', 'a': '#5fafff', 'ul': '#87ffaf', 'li': '#87d7af',
+    'ol': '#87ffaf', 'form': '#ffaf87', 'input': '#ffff87', 'textarea': '#d7ff87',
+    'button': '#ff87af', 'div': '#af87af', 'span': '#8787af', 'strong': '#ff8787',
+    'em': '#ffafaf', 'img': '#5fd7af', 'code': '#87ffd7', 'table': '#d7af87',
+  };
+  return colors[tag.replace(/[<>"'.#{}]/g, '')] || '#888';
+}
+
+// Count total descendants for sizing
+function countNodes(node) {
+  let count = 1;
+  for (const child of node.children) count += countNodes(child);
+  return count;
+}
+
+// DRAW THE TREE AS AN ACTUAL TREE
+// Trunk grows up from center bottom, branches split at each level
+
+function drawBark(x, y, width, height, tag, depth) {
+  // Draw the "bark" - a rectangle textured with tag names
+  const barkColor = tagColor(tag);
+  const darkBark = '#1a1a0f';
+
+  // Main bark fill
+  ctx.fillStyle = darkBark;
+  ctx.fillRect(x - width/2, y - height, width, height);
+
+  // Bark texture: repeat the tag name vertically
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x - width/2, y - height, width, height);
+  ctx.clip();
+
+  const fontSize = Math.max(6, Math.min(10, width * 0.5));
+  ctx.font = `${fontSize}px monospace`;
+  ctx.textAlign = 'center';
+
+  const label = `<${tag}>`;
+  const lineH = fontSize + 1;
+  const lines = Math.ceil(height / lineH) + 1;
+
+  for (let i = 0; i < lines; i++) {
+    const ly = y - height + i * lineH + fontSize;
+    const wave = Math.sin(time * 0.8 + i * 0.3 + depth) * 1;
+
+    // Alternating bark colors
+    const alpha = 0.3 + (i % 3 === 0 ? 0.2 : 0) + Math.sin(time + i) * 0.05;
+    ctx.fillStyle = barkColor;
+    ctx.globalAlpha = alpha;
+    ctx.fillText(label, x + wave, ly);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // Bark edge lines
+  ctx.strokeStyle = barkColor + '33';
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(x - width/2, y - height, width, height);
+}
+
+function drawLeaf(x, y, size, tag) {
+  // Terminal nodes are leaves
+  const color = tagColor(tag);
+  const leafSize = Math.max(8, size);
+
+  // Leaf shape
+  ctx.save();
+  ctx.translate(x, y);
+  const sway = Math.sin(time * 2 + x * 0.01 + y * 0.01) * 5;
+  ctx.rotate(sway * Math.PI / 180);
+
+  ctx.fillStyle = color + '44';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, leafSize, leafSize * 0.6, Math.sin(time + x) * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Tag label
+  ctx.fillStyle = color;
+  ctx.font = `bold ${Math.max(7, leafSize * 0.6)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`<${tag}>`, 0, 0);
+
+  ctx.restore();
+}
+
+// Layout: recursive tree drawing
+function drawTree(node, x, y, width, depth, parentX, parentY) {
+  const nodeCount = countNodes(node);
+  const isLeaf = node.children.length === 0;
+  const trunkHeight = isLeaf ? 0 : Math.max(25, 60 - depth * 8);
+  const trunkWidth = Math.max(4, Math.min(30, nodeCount * 1.5));
+
+  // Draw connecting branch from parent
+  if (parentX !== undefined) {
+    ctx.strokeStyle = tagColor(node.tag) + '55';
+    ctx.lineWidth = Math.max(1, trunkWidth * 0.4);
+    ctx.beginPath();
+    ctx.moveTo(parentX, parentY);
+
+    // Organic curve
+    const midY = (parentY + y) / 2;
+    ctx.bezierCurveTo(parentX, midY, x, midY, x, y);
+    ctx.stroke();
+  }
+
+  if (isLeaf) {
+    drawLeaf(x, y - 5, 10 + Math.random() * 5, node.tag);
+    return;
+  }
+
+  // Draw trunk/branch
+  drawBark(x, y, trunkWidth, trunkHeight, node.tag, depth);
+
+  // Position children
+  const childCount = node.children.length;
+  const childrenWidth = width * 0.9;
+  const spacing = childrenWidth / Math.max(1, childCount);
+  const startX = x - childrenWidth / 2 + spacing / 2;
+  const childY = y - trunkHeight - 15;
+
+  node.children.forEach((child, i) => {
+    const childX = startX + i * spacing;
+    const childWidth = spacing;
+    const sway = Math.sin(time * 0.5 + i + depth) * 2;
+    drawTree(child, childX + sway, childY, childWidth, depth + 1, x, y - trunkHeight);
+  });
+}
+
+// Ground
+function drawGround() {
+  const groundY = H * 0.88;
+
+  // Grass made of tiny tags
+  const grassTags = ['<div>', '<p>', '<br>', '<hr>', '<li>', '<td>'];
+  ctx.font = '7px monospace';
+  for (let gx = 0; gx < W; gx += 12) {
+    const sway = Math.sin(time * 1.5 + gx * 0.05) * 3;
+    const height = 8 + Math.sin(gx * 0.3) * 4;
+    ctx.fillStyle = `rgba(0, ${100 + Math.sin(gx * 0.1) * 50}, 0, 0.4)`;
+    const tag = grassTags[Math.floor((gx * 7 + 3) % grassTags.length)];
+    ctx.save();
+    ctx.translate(gx, groundY - height + sway);
+    ctx.rotate(sway * 0.02);
+    ctx.fillText(tag, 0, 0);
+    ctx.restore();
+  }
+
+  // Ground line
+  ctx.strokeStyle = '#1a3a1a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(W, groundY);
+  ctx.stroke();
+}
+
+// Sky - stars made of comment tags
+function drawSky() {
+  ctx.font = '6px monospace';
+  ctx.fillStyle = '#ffffff11';
+  let rng = 42;
+  for (let i = 0; i < 60; i++) {
+    rng = (rng * 16807) % 2147483647;
+    const sx = (rng % W);
+    rng = (rng * 16807) % 2147483647;
+    const sy = (rng % (H * 0.3));
+    const twinkle = Math.sin(time * 2 + i * 1.7) * 0.3 + 0.5;
+    ctx.globalAlpha = twinkle * 0.15;
+    ctx.fillText('<!--*-->', sx, sy);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Roots
+function drawRoots(cx, groundY) {
+  const rootTags = ['<!DOCTYPE>', '<html>', '<head>', '<meta>', '<link>'];
+  ctx.font = '7px monospace';
+
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 0.8 + Math.PI * 0.1;
+    const length = 40 + Math.sin(i * 2.3) * 20;
+    const endX = cx + Math.cos(angle + Math.PI) * length * (i % 2 === 0 ? 1 : -0.7);
+    const endY = groundY + Math.sin(angle) * length * 0.5 + 10;
+
+    ctx.strokeStyle = '#2a1a0a55';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, groundY);
+    ctx.bezierCurveTo(cx, groundY + 15, endX, groundY + 5, endX, endY);
+    ctx.stroke();
+
+    // Root tag labels
+    ctx.fillStyle = '#3a2a1a';
+    const tag = rootTags[i % rootTags.length];
+    ctx.fillText(tag, endX - 10, endY + 8);
+  }
+}
+
+// Title carved into trunk
+function drawTitle(cx, groundY) {
+  const y = groundY - 30;
+  ctx.save();
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#5a4a2a';
+  ctx.fillText('THE HTML TREE', cx, y);
+  ctx.fillText('est. 1993', cx, y + 13);
+  ctx.restore();
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0a12';
+  ctx.fillRect(0, 0, W, H);
+
+  drawSky();
+
+  const groundY = H * 0.88;
+  const cx = W / 2;
+
+  drawGround();
+  drawRoots(cx, groundY);
+  drawTitle(cx, groundY);
+
+  // Draw the tree
+  drawTree(htmlTree, cx, groundY, W * 0.85, 0);
+
+  // Subtle CRT scanlines
+  ctx.fillStyle = 'rgba(0,0,0,0.04)';
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

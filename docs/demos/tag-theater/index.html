@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Theater // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0c0c14;
+    font-family: 'Courier New', monospace;
+    color: #ccc;
+    overflow-x: hidden;
+  }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 100;
+  }
+  .back:hover { color: #ff00ff; }
+
+  header {
+    text-align: center; padding: 2rem 1rem 1rem;
+  }
+  header h1 {
+    font-size: 1.5rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #ff00ff;
+    text-shadow: 0 0 20px #ff00ff44;
+  }
+  header p { color: #444; font-size: 0.7rem; letter-spacing: 0.2em; margin-top: 0.3rem; }
+
+  .scene-list {
+    display: flex; gap: 0.5rem; justify-content: center;
+    flex-wrap: wrap; padding: 1rem;
+  }
+  .scene-btn {
+    background: none; border: 1px solid #333; color: #666;
+    font-family: 'Courier New', monospace; font-size: 0.6rem;
+    padding: 0.35rem 0.7rem; cursor: pointer; letter-spacing: 0.1em;
+    text-transform: uppercase; transition: all 0.2s;
+  }
+  .scene-btn:hover { border-color: #00ffff; color: #00ffff; }
+  .scene-btn.active { border-color: #ff00ff; color: #ff00ff; }
+
+  .stage {
+    max-width: 1100px; margin: 1rem auto; padding: 0 1rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    min-height: 60vh;
+  }
+  @media (max-width: 768px) { .stage { grid-template-columns: 1fr; } }
+
+  .pane {
+    border: 1px solid #222; background: #111; border-radius: 4px;
+    overflow: hidden;
+  }
+  .pane-header {
+    background: #1a1a1a; padding: 0.5rem 0.8rem; border-bottom: 1px solid #222;
+    font-size: 0.6rem; color: #555; letter-spacing: 0.15em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .pane-header .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .pane-header .dot-r { background: #ff5f56; }
+  .pane-header .dot-y { background: #ffbd2e; }
+  .pane-header .dot-g { background: #27c93f; }
+
+  .code-pane {
+    padding: 1rem; font-size: 0.75rem; line-height: 1.7;
+    overflow-y: auto; max-height: 65vh;
+    background: #0d0d15;
+  }
+  .render-pane {
+    padding: 1.5rem; overflow-y: auto; max-height: 65vh;
+  }
+
+  /* Syntax highlighting */
+  .syn-tag { color: #ff5f87; }
+  .syn-attr { color: #d7af5f; }
+  .syn-val { color: #87d787; }
+  .syn-text { color: #bbbbbb; }
+  .syn-comment { color: #555; font-style: italic; }
+
+  /* Code line animation */
+  .code-line {
+    opacity: 0; transform: translateX(-10px);
+    transition: all 0.3s ease;
+    white-space: pre;
+  }
+  .code-line.visible {
+    opacity: 1; transform: translateX(0);
+  }
+  .code-line.highlight {
+    background: rgba(255, 0, 255, 0.05);
+    border-left: 2px solid #ff00ff;
+    padding-left: 0.5rem;
+    margin-left: -0.5rem;
+  }
+
+  /* Rendered output styles - retro web feel */
+  .render-pane h1, .render-pane h2, .render-pane h3 {
+    font-family: 'Times New Roman', serif;
+  }
+  .render-pane h1 { font-size: 1.8rem; color: #ff00ff; margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px #ff00ff44; }
+  .render-pane h2 { font-size: 1.2rem; color: #00ffff; margin: 0.8rem 0 0.3rem; }
+  .render-pane p { font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem; line-height: 1.6; }
+  .render-pane ul, .render-pane ol { padding-left: 1.5rem; margin-bottom: 0.8rem; }
+  .render-pane li {
+    font-size: 0.8rem; color: #ccc; margin-bottom: 0.3rem;
+    opacity: 0; transform: translateX(-20px);
+    transition: all 0.4s ease;
+  }
+  .render-pane li.visible { opacity: 1; transform: translateX(0); }
+
+  .render-pane a {
+    color: #00ffff; text-decoration: underline;
+    text-decoration-style: dashed;
+  }
+  .render-pane img {
+    display: block; max-width: 100%;
+    border: 2px solid #333; image-rendering: pixelated;
+  }
+  .render-pane table {
+    border-collapse: collapse; width: 100%; margin: 0.5rem 0;
+    font-size: 0.75rem;
+  }
+  .render-pane th {
+    background: #1a1a2e; color: #ff00ff; padding: 0.4rem;
+    border: 1px solid #333; text-align: left;
+  }
+  .render-pane td {
+    padding: 0.4rem; border: 1px solid #222; color: #aaa;
+  }
+  .render-pane td.visible, .render-pane th.visible {
+    animation: cell-flash 0.3s ease;
+  }
+  @keyframes cell-flash {
+    0% { background: rgba(255,0,255,0.2); }
+    100% { background: transparent; }
+  }
+
+  /* Form styling */
+  .render-pane form { display: flex; flex-direction: column; gap: 0.6rem; }
+  .render-pane label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.1em; }
+  .render-pane input[type="text"],
+  .render-pane input[type="email"],
+  .render-pane input[type="password"],
+  .render-pane textarea,
+  .render-pane select {
+    background: #0a0a12; border: 1px solid #333; color: #ccc;
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
+    padding: 0.5rem; transition: border-color 0.3s;
+  }
+  .render-pane input:focus, .render-pane textarea:focus, .render-pane select:focus {
+    border-color: #00ffff; outline: none;
+  }
+  .render-pane button[type="submit"] {
+    background: #ff00ff22; border: 1px solid #ff00ff; color: #ff00ff;
+    font-family: 'Courier New', monospace; padding: 0.5rem 1rem;
+    cursor: pointer; font-size: 0.8rem; letter-spacing: 0.1em;
+    transition: all 0.3s;
+  }
+  .render-pane button[type="submit"]:hover {
+    background: #ff00ff44;
+  }
+  .render-pane .form-element {
+    opacity: 0; transform: translateY(10px);
+    transition: all 0.4s ease;
+  }
+  .render-pane .form-element.visible {
+    opacity: 1; transform: translateY(0);
+  }
+
+  /* Status bar */
+  .status {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #111; border-top: 1px solid #222;
+    padding: 0.4rem 1rem; font-size: 0.6rem; color: #444;
+    display: flex; justify-content: space-between;
+    letter-spacing: 0.1em;
+  }
+  .status .typing { color: #00ffff; }
+
+  /* Scanlines */
+  body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px);
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+
+<header>
+  <h1>Tag Theater</h1>
+  <p>Watch HTML write itself &bull; Syntax + Render side by side</p>
+</header>
+
+<div class="scene-list" id="sceneList"></div>
+
+<div class="stage">
+  <div class="pane">
+    <div class="pane-header">
+      <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+      source.html
+    </div>
+    <div class="code-pane" id="codePane"></div>
+  </div>
+  <div class="pane">
+    <div class="pane-header">
+      <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+      rendered output
+    </div>
+    <div class="render-pane" id="renderPane"></div>
+  </div>
+</div>
+
+<div class="status">
+  <span class="typing" id="statusText">Ready</span>
+  <span id="statusTag">Tag Theater v1.0</span>
+</div>
+
+<script>
+// ============================================================
+// SCENES - each scene is a sequence of steps
+// ============================================================
+const scenes = {
+  'Headings & Text': {
+    steps: [
+      { code: '<span class="syn-comment">&lt;!-- A classic web page --&gt;</span>', render: null, delay: 600 },
+      { code: '<span class="syn-tag">&lt;h1&gt;</span><span class="syn-text">Welcome to My Homepage</span><span class="syn-tag">&lt;/h1&gt;</span>',
+        render: '<h1 style="opacity:0" class="anim-fadein">Welcome to My Homepage</h1>', delay: 400 },
+      { code: '<span class="syn-tag">&lt;p&gt;</span><span class="syn-text">This page was made with</span>', render: null, delay: 200 },
+      { code: '  <span class="syn-tag">&lt;strong&gt;</span><span class="syn-text">love</span><span class="syn-tag">&lt;/strong&gt;</span><span class="syn-text"> and</span>',
+        render: null, delay: 200 },
+      { code: '  <span class="syn-tag">&lt;em&gt;</span><span class="syn-text">pixels</span><span class="syn-tag">&lt;/em&gt;</span><span class="syn-text">.</span><span class="syn-tag">&lt;/p&gt;</span>',
+        render: '<p style="opacity:0" class="anim-fadein">This page was made with <strong style="color:#ff00ff">love</strong> and <em style="color:#00ffff">pixels</em>.</p>', delay: 500 },
+      { code: '<span class="syn-tag">&lt;hr&gt;</span>',
+        render: '<hr style="border:none;border-top:1px solid #333;margin:0.8rem 0;opacity:0" class="anim-fadein">', delay: 300 },
+      { code: '<span class="syn-tag">&lt;h2&gt;</span><span class="syn-text">About Me</span><span class="syn-tag">&lt;/h2&gt;</span>',
+        render: '<h2 style="opacity:0" class="anim-fadein">About Me</h2>', delay: 400 },
+      { code: '<span class="syn-tag">&lt;p&gt;</span><span class="syn-text">I like &lt;blink&gt; tags and</span><span class="syn-tag">&lt;/p&gt;</span>',
+        render: '<p style="opacity:0" class="anim-fadein">I like <span style="animation:blinker 1s step-end infinite">&lt;blink&gt;</span> tags and <span style="font-family:Comic Sans MS,cursive;color:#ff8800">Comic Sans</span>.</p>', delay: 400 },
+      { code: '<span class="syn-tag">&lt;marquee&gt;</span><span class="syn-text">~* Best viewed at 800x600 *~</span><span class="syn-tag">&lt;/marquee&gt;</span>',
+        render: '<div style="overflow:hidden;opacity:0" class="anim-fadein"><div style="white-space:nowrap;animation:marquee-scroll 6s linear infinite;color:#ffff00;font-size:0.8rem">~* Best viewed at 800x600 *~ &nbsp;&nbsp;&nbsp; ~* Best viewed at 800x600 *~</div></div>', delay: 600 },
+      { code: '<span class="syn-tag">&lt;img</span> <span class="syn-attr">src</span>=<span class="syn-val">"under_construction.gif"</span><span class="syn-tag">&gt;</span>',
+        render: '<div style="text-align:center;padding:1rem;border:2px dashed #ffff00;color:#ffff00;font-size:0.7rem;opacity:0" class="anim-fadein">&#128679; UNDER CONSTRUCTION &#128679;</div>', delay: 500 },
+    ]
+  },
+
+  'Unordered List': {
+    steps: [
+      { code: '<span class="syn-tag">&lt;h2&gt;</span><span class="syn-text">Top 5 Retro Technologies</span><span class="syn-tag">&lt;/h2&gt;</span>',
+        render: '<h2 style="opacity:0" class="anim-fadein">Top 5 Retro Technologies</h2>', delay: 500 },
+      { code: '<span class="syn-tag">&lt;ul&gt;</span>', render: '<ul id="the-list"></ul>', delay: 300 },
+      { code: '  <span class="syn-tag">&lt;li&gt;</span><span class="syn-text">Commodore 64</span><span class="syn-tag">&lt;/li&gt;</span>',
+        renderAction: 'addLi:the-list:Commodore 64', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;li&gt;</span><span class="syn-text">Amiga 500</span><span class="syn-tag">&lt;/li&gt;</span>',
+        renderAction: 'addLi:the-list:Amiga 500', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;li&gt;</span><span class="syn-text">Apple II</span><span class="syn-tag">&lt;/li&gt;</span>',
+        renderAction: 'addLi:the-list:Apple II', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;li&gt;</span><span class="syn-text">ZX Spectrum</span><span class="syn-tag">&lt;/li&gt;</span>',
+        renderAction: 'addLi:the-list:ZX Spectrum', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;li&gt;</span><span class="syn-text">Atari ST</span><span class="syn-tag">&lt;/li&gt;</span>',
+        renderAction: 'addLi:the-list:Atari ST', delay: 500 },
+      { code: '<span class="syn-tag">&lt;/ul&gt;</span>', render: null, delay: 300 },
+    ]
+  },
+
+  'Table': {
+    steps: [
+      { code: '<span class="syn-tag">&lt;table&gt;</span>', render: '<table id="the-table"></table>', delay: 300 },
+      { code: '  <span class="syn-tag">&lt;thead&gt;&lt;tr&gt;</span>',
+        renderAction: 'addRow:the-table:thead:Tag,Purpose,Vibe', delay: 400 },
+      { code: '    <span class="syn-tag">&lt;th&gt;</span><span class="syn-text">Tag</span><span class="syn-tag">&lt;/th&gt;</span>',
+        render: null, delay: 150 },
+      { code: '    <span class="syn-tag">&lt;th&gt;</span><span class="syn-text">Purpose</span><span class="syn-tag">&lt;/th&gt;</span>',
+        render: null, delay: 150 },
+      { code: '    <span class="syn-tag">&lt;th&gt;</span><span class="syn-text">Vibe</span><span class="syn-tag">&lt;/th&gt;</span>',
+        render: null, delay: 150 },
+      { code: '  <span class="syn-tag">&lt;/tr&gt;&lt;/thead&gt;</span>', render: null, delay: 200 },
+      { code: '  <span class="syn-tag">&lt;tbody&gt;</span>', render: null, delay: 150 },
+      { code: '  <span class="syn-tag">&lt;tr&gt;&lt;td&gt;</span><span class="syn-text">&lt;div&gt;</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">Container</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">&#128230;</span><span class="syn-tag">&lt;/td&gt;&lt;/tr&gt;</span>',
+        renderAction: 'addRow:the-table:tbody:&lt;div&gt;,Container,&#128230;', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;tr&gt;&lt;td&gt;</span><span class="syn-text">&lt;blink&gt;</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">Annoyance</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">&#128565;</span><span class="syn-tag">&lt;/td&gt;&lt;/tr&gt;</span>',
+        renderAction: 'addRow:the-table:tbody:&lt;blink&gt;,Annoyance,&#128565;', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;tr&gt;&lt;td&gt;</span><span class="syn-text">&lt;marquee&gt;</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">Motion</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">&#127940;</span><span class="syn-tag">&lt;/td&gt;&lt;/tr&gt;</span>',
+        renderAction: 'addRow:the-table:tbody:&lt;marquee&gt;,Motion,&#127940;', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;tr&gt;&lt;td&gt;</span><span class="syn-text">&lt;center&gt;</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">Alignment</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">&#127919;</span><span class="syn-tag">&lt;/td&gt;&lt;/tr&gt;</span>',
+        renderAction: 'addRow:the-table:tbody:&lt;center&gt;,Alignment,&#127919;', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;tr&gt;&lt;td&gt;</span><span class="syn-text">&lt;font&gt;</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">Styling</span><span class="syn-tag">&lt;/td&gt;&lt;td&gt;</span><span class="syn-text">&#127912;</span><span class="syn-tag">&lt;/td&gt;&lt;/tr&gt;</span>',
+        renderAction: 'addRow:the-table:tbody:&lt;font&gt;,Styling,&#127912;', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;/tbody&gt;&lt;/table&gt;</span>', render: null, delay: 300 },
+    ]
+  },
+
+  'Form Builder': {
+    steps: [
+      { code: '<span class="syn-tag">&lt;h2&gt;</span><span class="syn-text">Guestbook</span><span class="syn-tag">&lt;/h2&gt;</span>',
+        render: '<h2 style="opacity:0" class="anim-fadein">&#128214; Sign My Guestbook!</h2>', delay: 400 },
+      { code: '<span class="syn-tag">&lt;form</span> <span class="syn-attr">action</span>=<span class="syn-val">"/cgi-bin/guestbook.pl"</span><span class="syn-tag">&gt;</span>',
+        render: '<form id="the-form" style="opacity:0" class="anim-fadein"></form>', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;label&gt;</span><span class="syn-text">Your Name</span><span class="syn-tag">&lt;/label&gt;</span>',
+        renderAction: 'addFormField:the-form:label:Your Handle', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;input</span> <span class="syn-attr">type</span>=<span class="syn-val">"text"</span> <span class="syn-attr">name</span>=<span class="syn-val">"name"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'addFormField:the-form:text:name', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;label&gt;</span><span class="syn-text">Email</span><span class="syn-tag">&lt;/label&gt;</span>',
+        renderAction: 'addFormField:the-form:label:Electronic Mail', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;input</span> <span class="syn-attr">type</span>=<span class="syn-val">"email"</span> <span class="syn-attr">name</span>=<span class="syn-val">"email"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'addFormField:the-form:email:email', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;label&gt;</span><span class="syn-text">Message</span><span class="syn-tag">&lt;/label&gt;</span>',
+        renderAction: 'addFormField:the-form:label:Your Message', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;textarea</span> <span class="syn-attr">rows</span>=<span class="syn-val">"3"</span><span class="syn-tag">&gt;&lt;/textarea&gt;</span>',
+        renderAction: 'addFormField:the-form:textarea:message', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;button</span> <span class="syn-attr">type</span>=<span class="syn-val">"submit"</span><span class="syn-tag">&gt;</span><span class="syn-text">Submit</span><span class="syn-tag">&lt;/button&gt;</span>',
+        renderAction: 'addFormField:the-form:submit:Sign Guestbook', delay: 600 },
+      { code: '<span class="syn-tag">&lt;/form&gt;</span>', render: null, delay: 600 },
+      { code: '<span class="syn-comment">&lt;!-- Auto-filling... --&gt;</span>',
+        renderAction: 'autoFill:the-form', delay: 1200 },
+      { code: '<span class="syn-comment">&lt;!-- Submitting! --&gt;</span>',
+        renderAction: 'autoSubmit:the-form', delay: 800 },
+    ]
+  },
+
+  'Nested Divs': {
+    steps: [
+      { code: '<span class="syn-comment">&lt;!-- div soup, the developers favorite --&gt;</span>', render: null, delay: 500 },
+      { code: '<span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"wrapper"</span><span class="syn-tag">&gt;</span>',
+        render: '<div id="nest-0" style="border:1px solid #ff00ff;padding:12px;margin:4px;opacity:0;font-size:0.55rem;color:#ff00ff66" class="anim-fadein">&lt;div class="wrapper"&gt;</div>', delay: 400 },
+      { code: '  <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"container"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'nestDiv:nest-0:container:#00ffff', delay: 400 },
+      { code: '    <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"inner"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'nestDiv:nest-1:inner:#ffff00', delay: 400 },
+      { code: '      <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"content"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'nestDiv:nest-2:content:#00ff88', delay: 400 },
+      { code: '        <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"deep"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'nestDiv:nest-3:deep:#ff8800', delay: 400 },
+      { code: '          <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"deeper"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'nestDiv:nest-4:deeper:#ff0088', delay: 400 },
+      { code: '            <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"deepest"</span><span class="syn-tag">&gt;</span>',
+        renderAction: 'nestDiv:nest-5:deepest:#8800ff', delay: 400 },
+      { code: '              <span class="syn-tag">&lt;p&gt;</span><span class="syn-text">help</span><span class="syn-tag">&lt;/p&gt;</span>',
+        renderAction: 'nestText:nest-6:help im trapped in div soup', delay: 600 },
+      { code: '            <span class="syn-tag">&lt;/div&gt;</span>', render: null, delay: 150 },
+      { code: '          <span class="syn-tag">&lt;/div&gt;</span>', render: null, delay: 150 },
+      { code: '        <span class="syn-tag">&lt;/div&gt;</span>', render: null, delay: 150 },
+      { code: '      <span class="syn-tag">&lt;/div&gt;</span>', render: null, delay: 150 },
+      { code: '    <span class="syn-tag">&lt;/div&gt;</span>', render: null, delay: 150 },
+      { code: '  <span class="syn-tag">&lt;/div&gt;</span>', render: null, delay: 150 },
+      { code: '<span class="syn-tag">&lt;/div&gt;</span>', render: null, delay: 150 },
+    ]
+  },
+
+  'Definition List': {
+    steps: [
+      { code: '<span class="syn-tag">&lt;h2&gt;</span><span class="syn-text">Web Glossary</span><span class="syn-tag">&lt;/h2&gt;</span>',
+        render: '<h2 style="opacity:0" class="anim-fadein">Web Glossary</h2>', delay: 400 },
+      { code: '<span class="syn-tag">&lt;dl&gt;</span>', render: '<dl id="the-dl"></dl>', delay: 200 },
+      { code: '  <span class="syn-tag">&lt;dt&gt;</span><span class="syn-text">HTML</span><span class="syn-tag">&lt;/dt&gt;</span>',
+        renderAction: 'addDt:the-dl:HTML', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;dd&gt;</span><span class="syn-text">How To Make Lasagna</span><span class="syn-tag">&lt;/dd&gt;</span>',
+        renderAction: 'addDd:the-dl:How To Make Lasagna (allegedly)', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;dt&gt;</span><span class="syn-text">CSS</span><span class="syn-tag">&lt;/dt&gt;</span>',
+        renderAction: 'addDt:the-dl:CSS', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;dd&gt;</span><span class="syn-text">Concern Spreading Sheets</span><span class="syn-tag">&lt;/dd&gt;</span>',
+        renderAction: 'addDd:the-dl:Concern Spreading Sheets (it\'s always specificity)', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;dt&gt;</span><span class="syn-text">JavaScript</span><span class="syn-tag">&lt;/dt&gt;</span>',
+        renderAction: 'addDt:the-dl:JavaScript', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;dd&gt;</span><span class="syn-text">Just Script, Actually</span><span class="syn-tag">&lt;/dd&gt;</span>',
+        renderAction: 'addDd:the-dl:Just Script, Actually (no relation to Java)', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;dt&gt;</span><span class="syn-text">DOM</span><span class="syn-tag">&lt;/dt&gt;</span>',
+        renderAction: 'addDt:the-dl:DOM', delay: 500 },
+      { code: '  <span class="syn-tag">&lt;dd&gt;</span><span class="syn-text">Documents Often Misbehave</span><span class="syn-tag">&lt;/dd&gt;</span>',
+        renderAction: 'addDd:the-dl:Documents Often Misbehave (querySelector your feelings)', delay: 500 },
+      { code: '<span class="syn-tag">&lt;/dl&gt;</span>', render: null, delay: 300 },
+    ]
+  },
+};
+
+// ============================================================
+// ENGINE
+// ============================================================
+const codePane = document.getElementById('codePane');
+const renderPane = document.getElementById('renderPane');
+const sceneList = document.getElementById('sceneList');
+const statusText = document.getElementById('statusText');
+let nestCounter = 0;
+let currentTimeout = null;
+let playing = false;
+
+// Build scene buttons
+Object.keys(scenes).forEach((name, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'scene-btn' + (i === 0 ? ' active' : '');
+  btn.textContent = name;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    playScene(name);
+  });
+  sceneList.appendChild(btn);
+});
+
+function playScene(name) {
+  if (currentTimeout) clearTimeout(currentTimeout);
+  codePane.innerHTML = '';
+  renderPane.innerHTML = '';
+  nestCounter = 0;
+  playing = true;
+
+  const scene = scenes[name];
+  let stepIdx = 0;
+
+  function nextStep() {
+    if (stepIdx >= scene.steps.length || !playing) {
+      statusText.textContent = 'Scene complete';
+      return;
+    }
+
+    const step = scene.steps[stepIdx];
+    statusText.textContent = `Typing line ${stepIdx + 1}/${scene.steps.length}...`;
+
+    // Add code line
+    if (step.code) {
+      const line = document.createElement('div');
+      line.className = 'code-line';
+      line.innerHTML = step.code;
+      codePane.appendChild(line);
+      // Trigger animation
+      requestAnimationFrame(() => {
+        line.classList.add('visible');
+        line.classList.add('highlight');
+        // Remove highlight from previous
+        const prev = line.previousElementSibling;
+        if (prev) prev.classList.remove('highlight');
+      });
+      codePane.scrollTop = codePane.scrollHeight;
+    }
+
+    // Render HTML
+    if (step.render) {
+      renderPane.insertAdjacentHTML('beforeend', step.render);
+      // Trigger animations on new elements
+      requestAnimationFrame(() => {
+        renderPane.querySelectorAll('.anim-fadein').forEach(el => {
+          el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+          el.style.opacity = '1';
+          el.classList.remove('anim-fadein');
+        });
+      });
+    }
+
+    // Render actions (list items, table rows, form fields, etc.)
+    if (step.renderAction) {
+      executeAction(step.renderAction);
+    }
+
+    stepIdx++;
+    currentTimeout = setTimeout(nextStep, step.delay || 400);
+  }
+
+  nextStep();
+}
+
+function executeAction(action) {
+  const parts = action.split(':');
+  const type = parts[0];
+  const targetId = parts[1];
+  const target = document.getElementById(targetId);
+
+  switch (type) {
+    case 'addLi': {
+      const li = document.createElement('li');
+      li.textContent = parts.slice(2).join(':');
+      li.style.color = ['#ff00ff', '#00ffff', '#ffff00', '#00ff88', '#ff8800'][target.children.length % 5];
+      target.appendChild(li);
+      requestAnimationFrame(() => li.classList.add('visible'));
+      break;
+    }
+    case 'addRow': {
+      const isHead = parts[2] === 'thead';
+      const cells = parts.slice(3).join(':').split(',');
+      let section = target.querySelector(parts[2]);
+      if (!section) {
+        section = document.createElement(parts[2]);
+        target.appendChild(section);
+      }
+      const tr = document.createElement('tr');
+      cells.forEach((cell, i) => {
+        const el = document.createElement(isHead ? 'th' : 'td');
+        el.innerHTML = cell;
+        tr.appendChild(el);
+        setTimeout(() => el.classList.add('visible'), i * 100);
+      });
+      section.appendChild(tr);
+      break;
+    }
+    case 'addFormField': {
+      const fieldType = parts[2];
+      const fieldVal = parts.slice(3).join(':');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form-element';
+
+      if (fieldType === 'label') {
+        const label = document.createElement('label');
+        label.textContent = fieldVal;
+        wrapper.appendChild(label);
+      } else if (fieldType === 'text' || fieldType === 'email') {
+        const input = document.createElement('input');
+        input.type = fieldType;
+        input.name = fieldVal;
+        input.placeholder = fieldType === 'text' ? 'CoolDude99' : 'me@geocities.com';
+        wrapper.appendChild(input);
+      } else if (fieldType === 'textarea') {
+        const ta = document.createElement('textarea');
+        ta.rows = 3;
+        ta.name = fieldVal;
+        ta.placeholder = 'Your message here...';
+        wrapper.appendChild(ta);
+      } else if (fieldType === 'submit') {
+        const btn = document.createElement('button');
+        btn.type = 'submit';
+        btn.textContent = fieldVal;
+        btn.addEventListener('click', e => e.preventDefault());
+        wrapper.appendChild(btn);
+      }
+
+      target.appendChild(wrapper);
+      requestAnimationFrame(() => wrapper.classList.add('visible'));
+      break;
+    }
+    case 'autoFill': {
+      const inputs = target.querySelectorAll('input, textarea');
+      const values = ['RetroFan2000', 'retro@angelfire.com', 'Cool site! Love the starfield effect. Reminds me of my BBS days. Keep it real! \\m/'];
+      inputs.forEach((input, i) => {
+        const val = values[i] || '';
+        let charIdx = 0;
+        const typeChar = () => {
+          if (charIdx < val.length) {
+            input.value += val[charIdx];
+            charIdx++;
+            setTimeout(typeChar, 30 + Math.random() * 40);
+          }
+        };
+        setTimeout(typeChar, i * 400);
+      });
+      break;
+    }
+    case 'autoSubmit': {
+      const btn = target.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.style.background = '#ff00ff44';
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          btn.style.transform = 'scale(1)';
+          btn.textContent = '&#10003; Submitted!';
+          btn.style.borderColor = '#00ff88';
+          btn.style.color = '#00ff88';
+          btn.style.background = '#00ff8822';
+        }, 200);
+      }
+      break;
+    }
+    case 'nestDiv': {
+      const cls = parts[2];
+      const color = parts[3];
+      const div = document.createElement('div');
+      nestCounter++;
+      div.id = `nest-${nestCounter}`;
+      div.style.border = `1px solid ${color}`;
+      div.style.padding = '10px';
+      div.style.margin = '6px 0 0 0';
+      div.style.opacity = '0';
+      div.style.fontSize = '0.55rem';
+      div.style.color = color + '66';
+      div.style.transition = 'opacity 0.3s ease';
+      div.innerHTML = `&lt;div class="${cls}"&gt;`;
+      target.appendChild(div);
+      requestAnimationFrame(() => { div.style.opacity = '1'; });
+      break;
+    }
+    case 'nestText': {
+      const text = parts.slice(2).join(':');
+      const p = document.createElement('p');
+      p.style.color = '#fff';
+      p.style.fontSize = '0.75rem';
+      p.style.textAlign = 'center';
+      p.style.padding = '0.5rem';
+      p.style.opacity = '0';
+      p.style.transition = 'opacity 0.3s ease';
+      p.textContent = text;
+      target.appendChild(p);
+      requestAnimationFrame(() => { p.style.opacity = '1'; });
+      break;
+    }
+    case 'addDt': {
+      const dt = document.createElement('dt');
+      dt.textContent = parts.slice(2).join(':');
+      dt.style.color = '#ff00ff';
+      dt.style.fontWeight = 'bold';
+      dt.style.fontSize = '0.9rem';
+      dt.style.marginTop = '0.8rem';
+      dt.style.opacity = '0';
+      dt.style.transform = 'translateX(-10px)';
+      dt.style.transition = 'all 0.3s ease';
+      target.appendChild(dt);
+      requestAnimationFrame(() => { dt.style.opacity = '1'; dt.style.transform = 'translateX(0)'; });
+      break;
+    }
+    case 'addDd': {
+      const dd = document.createElement('dd');
+      dd.textContent = parts.slice(2).join(':');
+      dd.style.color = '#999';
+      dd.style.fontSize = '0.75rem';
+      dd.style.marginLeft = '1.5rem';
+      dd.style.marginTop = '0.2rem';
+      dd.style.opacity = '0';
+      dd.style.transform = 'translateX(-10px)';
+      dd.style.transition = 'all 0.3s ease 0.1s';
+      target.appendChild(dd);
+      requestAnimationFrame(() => { dd.style.opacity = '1'; dd.style.transform = 'translateX(0)'; });
+      break;
+    }
+  }
+}
+
+// Add required animation keyframes
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes blinker { 50% { opacity: 0; } }
+  @keyframes marquee-scroll { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+`;
+document.head.appendChild(style);
+
+// Start first scene
+playScene(Object.keys(scenes)[0]);
+</script>
+</body>
+</html>

@@ -560,6 +560,125 @@
     to { opacity: 1; transform: scaleX(1.05); }
   }
 
+  /* === WEB FUN SECTION PREVIEWS === */
+  .tag--web { border-color: #ff5f8733; color: #ff5f8788; }
+
+  .preview-tagtheater {
+    background: #0c0c14;
+    display: flex; overflow: hidden;
+  }
+  .preview-tagtheater::before {
+    content: '<h1>  <ul>    <li>  <form>    <input>';
+    font-family: monospace; font-size: 0.65rem;
+    color: #ff5f87; white-space: pre-line;
+    padding: 1rem; line-height: 2;
+    text-shadow: 0 0 5px #ff5f8744;
+    animation: theater-type 3s steps(40) infinite;
+    overflow: hidden;
+    width: 50%;
+  }
+  .preview-tagtheater::after {
+    content: 'Heading\A\2022 List item\A [Submit]';
+    font-family: monospace; font-size: 0.65rem;
+    color: #87d787; white-space: pre-line;
+    padding: 1rem; line-height: 2;
+    border-left: 1px solid #222;
+    width: 50%;
+    animation: theater-render 3s ease infinite;
+  }
+
+  .preview-htmltree {
+    background: #0a0a12;
+    display: flex; align-items: flex-end; justify-content: center;
+    overflow: hidden; padding-bottom: 0.5rem;
+  }
+  .preview-htmltree::before {
+    content: '<html>\A  <body>\A    <main>';
+    font-family: monospace; font-size: 0.5rem; font-weight: bold;
+    color: #3a2a1a; white-space: pre;
+    background: #1a1a0f;
+    padding: 0.5rem; border: 1px solid #2a2a1a;
+    border-radius: 2px 2px 0 0;
+    width: 40px; height: 100px;
+    text-align: center;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1.5;
+  }
+  .preview-htmltree::after {
+    content: '';
+    position: absolute;
+    top: 10%; left: 30%; width: 40%; height: 30%;
+    background: radial-gradient(ellipse, rgba(0,100,0,0.15), transparent);
+    border-radius: 50%;
+  }
+
+  .preview-domtreemap {
+    background: #0a0a12;
+    display: flex; flex-wrap: wrap; gap: 2px; padding: 8px;
+    overflow: hidden; align-content: flex-start;
+  }
+  .preview-domtreemap::before {
+    content: ''; display: block;
+    width: 100%; height: 40%;
+    background: #5faf5f22; border: 1px solid #5faf5f44;
+  }
+  .preview-domtreemap::after {
+    content: ''; display: block;
+    width: 48%; height: 30%;
+    background: #ff5f8722; border: 1px solid #ff5f8744;
+  }
+
+  .preview-csschaos {
+    background: #0a0a12;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+  }
+  .preview-csschaos::before {
+    content: 'z-index: 99999';
+    font-family: monospace; font-size: 0.8rem; font-weight: bold;
+    color: #ff0066;
+    text-shadow: 0 0 10px #ff0066;
+    animation: bang-chaos 0.5s ease infinite alternate;
+  }
+  .preview-csschaos::after {
+    content: '!important';
+    position: absolute; bottom: 15%; right: 10%;
+    font-family: monospace; font-size: 0.7rem; font-weight: bold;
+    color: #ff0000;
+    text-shadow: 0 0 8px #ff0000;
+    animation: bang-chaos 0.3s ease infinite alternate-reverse;
+  }
+
+  .preview-cascade {
+    background: #0a0a12;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; overflow: hidden;
+  }
+  .preview-cascade::before {
+    content: '.box { color: blue }\A#id { color: red }\Astyle="" { color: pink }';
+    font-family: monospace; font-size: 0.5rem;
+    color: #5fafff; white-space: pre;
+    text-shadow: 0 0 5px #5fafff44;
+    animation: cascade-fall 2s ease-in infinite;
+  }
+
+  @keyframes theater-type {
+    from { max-height: 0; }
+    to { max-height: 200px; }
+  }
+  @keyframes theater-render {
+    0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 1; }
+  }
+  @keyframes bang-chaos {
+    from { transform: rotate(-3deg) scale(0.95); }
+    to { transform: rotate(3deg) scale(1.05); }
+  }
+  @keyframes cascade-fall {
+    0% { transform: translateY(-80px); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(80px); opacity: 0.3; }
+  }
+
   @keyframes twinkle {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
@@ -831,6 +950,57 @@
       <span class="tag tag--canvas">Canvas</span>
       <span class="tag tag--audio">Audio</span>
       <span class="tag tag--type">Type</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/tag-theater/">
+    <div class="card-preview preview-tagtheater"></div>
+    <div class="card-info">
+      <h2>Tag Theater</h2>
+      <p>Watch HTML write itself &mdash; syntax &amp; render side by side</p>
+      <span class="tag tag--web">Web</span>
+      <span class="tag tag--css">CSS</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/html-tree/">
+    <div class="card-preview preview-htmltree"></div>
+    <div class="card-info">
+      <h2>The HTML Tree</h2>
+      <p>A literal tree grown from nested HTML tags as bark and branches</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag tag--web">Web</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/dom-treemap/">
+    <div class="card-preview preview-domtreemap"></div>
+    <div class="card-info">
+      <h2>DOM Treemap</h2>
+      <p>Paste HTML and see its DOM structure as a retro-styled treemap</p>
+      <span class="tag tag--css">CSS</span>
+      <span class="tag tag--web">Web</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/css-chaos/">
+    <div class="card-preview preview-csschaos"></div>
+    <div class="card-info">
+      <h2>CSS Chaos</h2>
+      <p>Z-index wars, !important nukes, overflow breakouts &amp; specificity</p>
+      <span class="tag tag--css">CSS</span>
+      <span class="tag tag--web">Web</span>
+      <span class="tag">Comedy</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/cascade-falls/">
+    <div class="card-preview preview-cascade"></div>
+    <div class="card-info">
+      <h2>Cascade Falls</h2>
+      <p>The CSS cascade as a literal waterfall of rules onto DOM elements</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag tag--web">Web</span>
     </div>
   </a>
 </div>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOM Treemap // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a12; font-family: 'Courier New', monospace; color: #ccc; overflow-x: hidden; }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 20;
+  }
+  .back:hover { color: #ff00ff; }
+
+  .controls {
+    padding: 1rem 1.5rem;
+    background: #111; border-bottom: 1px solid #222;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .controls label {
+    font-size: 0.6rem; color: #555; letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .controls textarea {
+    flex: 1; min-width: 250px; height: 60px;
+    background: #0a0a12; border: 1px solid #333; color: #ccc;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    padding: 0.5rem; resize: vertical;
+  }
+  .controls textarea:focus { border-color: #ff00ff; outline: none; }
+  .controls button {
+    background: #ff00ff22; border: 1px solid #ff00ff; color: #ff00ff;
+    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    padding: 0.4rem 0.8rem; cursor: pointer; letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .controls button:hover { background: #ff00ff44; }
+  .preset-btns { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .preset-btn {
+    background: none; border: 1px solid #333; color: #666;
+    font-family: 'Courier New', monospace; font-size: 0.55rem;
+    padding: 0.25rem 0.5rem; cursor: pointer; letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .preset-btn:hover { border-color: #00ffff; color: #00ffff; }
+
+  #treemap {
+    padding: 1rem;
+    min-height: calc(100vh - 120px);
+    position: relative;
+  }
+
+  .tm-node {
+    position: absolute;
+    border: 1px solid rgba(255,255,255,0.1);
+    overflow: hidden;
+    transition: all 0.4s ease;
+    cursor: pointer;
+  }
+  .tm-node:hover {
+    border-color: rgba(255,255,255,0.4);
+    z-index: 10;
+  }
+  .tm-label {
+    position: absolute; top: 2px; left: 4px;
+    font-size: 0.55rem; color: rgba(255,255,255,0.7);
+    pointer-events: none; white-space: nowrap;
+    text-shadow: 0 0 3px rgba(0,0,0,0.8);
+    letter-spacing: 0.05em;
+  }
+  .tm-count {
+    position: absolute; bottom: 2px; right: 4px;
+    font-size: 0.5rem; color: rgba(255,255,255,0.3);
+    pointer-events: none;
+  }
+
+  .tooltip {
+    position: fixed; background: #1a1a2e; border: 1px solid #333;
+    padding: 0.5rem 0.8rem; font-size: 0.65rem; color: #ccc;
+    pointer-events: none; z-index: 100; display: none;
+    max-width: 300px;
+  }
+  .tooltip .path { color: #ff00ff; font-size: 0.55rem; }
+  .tooltip .info { color: #888; font-size: 0.55rem; margin-top: 0.2rem; }
+
+  .stats {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #111; border-top: 1px solid #222;
+    padding: 0.3rem 1rem; font-size: 0.55rem; color: #444;
+    display: flex; gap: 2rem; letter-spacing: 0.1em;
+  }
+  .stats span { color: #00ffff; }
+
+  body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+
+<div class="controls">
+  <div style="flex:1;min-width:250px;">
+    <label>Paste HTML markup</label><br>
+    <textarea id="htmlInput" spellcheck="false"></textarea>
+  </div>
+  <div>
+    <label>Presets</label>
+    <div class="preset-btns" id="presets"></div>
+    <br>
+    <button id="parseBtn">Visualize</button>
+  </div>
+</div>
+
+<div id="treemap"></div>
+
+<div class="tooltip" id="tooltip">
+  <div class="path" id="ttPath"></div>
+  <strong id="ttTag"></strong>
+  <div class="info" id="ttInfo"></div>
+</div>
+
+<div class="stats">
+  Elements: <span id="statElements">0</span> &nbsp;|&nbsp;
+  Depth: <span id="statDepth">0</span> &nbsp;|&nbsp;
+  Tags: <span id="statTags">0</span>
+</div>
+
+<script>
+const htmlInput = document.getElementById('htmlInput');
+const treemapEl = document.getElementById('treemap');
+const tooltip = document.getElementById('tooltip');
+
+const TAG_COLORS = {
+  html:'#ff5f87',head:'#d7af5f',body:'#5faf5f',meta:'#777',
+  title:'#d7af5f',link:'#5fafff',style:'#ff87ff',script:'#ffaf5f',
+  header:'#5fd787',nav:'#5fd7ff',main:'#87ff87',article:'#ffaf5f',
+  section:'#af87ff',aside:'#d7875f',footer:'#878787',div:'#af87af',
+  span:'#8787af',p:'#87afaf',a:'#5fafff',h1:'#ff5f5f',h2:'#ff875f',
+  h3:'#ffaf5f',h4:'#ffd75f',h5:'#d7ff5f',h6:'#afff5f',
+  ul:'#87ffaf',ol:'#5fff87',li:'#87d7af',table:'#d7af87',
+  tr:'#af8787',td:'#d7afaf',th:'#ffafaf',form:'#ffaf87',
+  input:'#ffff87',textarea:'#d7ff87',button:'#ff87af',select:'#ffafd7',
+  img:'#5fd7af',strong:'#ff8787',em:'#ffafaf',code:'#87ffd7',
+  pre:'#5fd7af',blockquote:'#af87d7',figure:'#87afaf',cite:'#afafd7',
+};
+
+function getTagColor(tag) { return TAG_COLORS[tag.toLowerCase()] || '#666'; }
+
+function parseHTML(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  function walk(node) {
+    if (node.nodeType !== 1) return null;
+    const tag = node.tagName.toLowerCase();
+    const children = [];
+    for (const child of node.childNodes) { const r = walk(child); if (r) children.push(r); }
+    return { tag, children, attrs: node.attributes ? node.attributes.length : 0 };
+  }
+  return walk(doc.documentElement);
+}
+
+function countNodes(node) {
+  let c = 1; for (const ch of node.children) c += countNodes(ch); return c;
+}
+function maxDepth(node, d) {
+  let m = d; for (const ch of node.children) m = Math.max(m, maxDepth(ch, d+1)); return m;
+}
+function uniqueTags(node, s) {
+  s = s || new Set(); s.add(node.tag); for (const ch of node.children) uniqueTags(ch, s); return s;
+}
+
+function layoutTreemap(node, x, y, w, h, depth, path) {
+  const result = [];
+  const total = countNodes(node);
+  result.push({ tag: node.tag, x, y, w, h, depth, path, node, count: total });
+  if (node.children.length === 0 || w < 4 || h < 4) return result;
+  const horizontal = w >= h;
+  let offset = 0;
+  const childCounts = node.children.map(c => countNodes(c));
+  const totalChildren = childCounts.reduce((a,b) => a+b, 0);
+  const pad = Math.min(14, Math.max(8, 20 - depth * 2));
+  const iX = x+1, iY = y+pad, iW = w-2, iH = h-pad-1;
+  if (iW < 2 || iH < 2) return result;
+  node.children.forEach((child, i) => {
+    const ratio = childCounts[i] / totalChildren;
+    let cx,cy,cw,ch;
+    if (horizontal) { cx=iX+offset; cy=iY; cw=iW*ratio; ch=iH; offset+=cw; }
+    else { cx=iX; cy=iY+offset; cw=iW; ch=iH*ratio; offset+=ch; }
+    result.push(...layoutTreemap(child, cx, cy, cw, ch, depth+1, path+' > '+child.tag));
+  });
+  return result;
+}
+
+function renderTreemap(tree) {
+  treemapEl.innerHTML = '';
+  const rect = treemapEl.getBoundingClientRect();
+  const w = rect.width - 2;
+  const h = Math.max(500, window.innerHeight - rect.top - 40);
+  treemapEl.style.height = h + 'px';
+  const layout = layoutTreemap(tree, 0, 0, w, h, 0, tree.tag);
+  document.getElementById('statElements').textContent = countNodes(tree);
+  document.getElementById('statDepth').textContent = maxDepth(tree, 0);
+  document.getElementById('statTags').textContent = uniqueTags(tree).size;
+
+  layout.forEach((node, i) => {
+    if (node.w < 2 || node.h < 2) return;
+    const div = document.createElement('div');
+    div.className = 'tm-node';
+    const color = getTagColor(node.tag);
+    const a = Math.max(0.08, 0.5 - node.depth * 0.06);
+    div.style.left = node.x+'px'; div.style.top = node.y+'px';
+    div.style.width = Math.max(0,node.w)+'px'; div.style.height = Math.max(0,node.h)+'px';
+    div.style.background = color + Math.floor(a*255).toString(16).padStart(2,'0');
+    div.style.borderColor = color + '44';
+    div.style.opacity = '0'; div.style.transform = 'scale(0.9)';
+    setTimeout(() => { div.style.opacity='1'; div.style.transform='scale(1)'; }, i*15+Math.random()*50);
+    if (node.w > 25 && node.h > 12) {
+      const lbl = document.createElement('div'); lbl.className='tm-label';
+      lbl.textContent = `<${node.tag}>`; lbl.style.color = color; div.appendChild(lbl);
+    }
+    if (node.w > 40 && node.h > 20 && node.count > 1) {
+      const cnt = document.createElement('div'); cnt.className='tm-count';
+      cnt.textContent = node.count; div.appendChild(cnt);
+    }
+    div.addEventListener('mouseenter', () => {
+      tooltip.style.display = 'block';
+      document.getElementById('ttPath').textContent = node.path;
+      document.getElementById('ttTag').textContent = `<${node.tag}>`;
+      document.getElementById('ttTag').style.color = color;
+      document.getElementById('ttInfo').textContent =
+        `${node.count} element${node.count>1?'s':''} | depth ${node.depth}`;
+    });
+    div.addEventListener('mousemove', (e) => {
+      tooltip.style.left = (e.clientX+12)+'px'; tooltip.style.top = (e.clientY+12)+'px';
+    });
+    div.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+    treemapEl.appendChild(div);
+  });
+}
+
+const presets = {
+  'Blog': `<html><head><title>Blog</title><meta charset="utf-8"><link rel="stylesheet" href="s.css"></head><body><header><nav><a href="/">Home</a><a href="/about">About</a><a href="/posts">Posts</a></nav><h1>My Blog</h1></header><main><article><h2>First Post</h2><p>Text with <strong>bold</strong> and <em>italic</em> and <a href="#">link</a>.</p><p>More text with <code>code</code>.</p><ul><li>One</li><li>Two</li><li>Three<ul><li>Nested A</li><li>Nested B</li></ul></li></ul></article><article><h2>Second Post</h2><p>Paragraph.</p><blockquote>Quote</blockquote></article><aside><div><h3>About</h3><img src="me.jpg"><p>I code.</p></div></aside></main><footer><p>2026</p><nav><a href="/rss">RSS</a><a href="/contact">Contact</a></nav></footer></body></html>`,
+  'Dashboard': `<html><head><title>Dash</title></head><body><header><nav><a href="/">Logo</a><div><a href="/home">Home</a><a href="/stats">Stats</a></div><div><span>User</span><button>Logout</button></div></nav></header><main><section><h2>Overview</h2><div><div><h3>Users</h3><p>1234</p></div><div><h3>Revenue</h3><p>56K</p></div><div><h3>Orders</h3><p>890</p></div></div></section><section><h2>Activity</h2><table><thead><tr><th>Date</th><th>Action</th><th>User</th></tr></thead><tbody><tr><td>Today</td><td>Buy</td><td>Alice</td></tr><tr><td>Today</td><td>Signup</td><td>Bob</td></tr></tbody></table></section><aside><h3>Actions</h3><form><input type="text"><button>Go</button></form><ul><li>New User</li><li>Reports</li></ul></aside></main><footer><p>v2.0</p></footer></body></html>`,
+  'Deep Nest': `<html><head><title>Deep</title></head><body><div><div><div><div><div><div><div><div><p>Layer 8</p></div><div><p>Sibling</p></div></div><div><div><p>Branch</p></div></div></div><div><span>Mid</span></div></div></div><div><div><div><ul><li>Deep<ul><li>Deeper<ul><li>Deepest</li></ul></li></ul></li></ul></div></div></div></div></div></div></body></html>`,
+};
+
+const presetContainer = document.getElementById('presets');
+Object.keys(presets).forEach(name => {
+  const btn = document.createElement('button');
+  btn.className = 'preset-btn'; btn.textContent = name;
+  btn.addEventListener('click', () => { htmlInput.value = presets[name]; visualize(); });
+  presetContainer.appendChild(btn);
+});
+document.getElementById('parseBtn').addEventListener('click', visualize);
+
+function visualize() {
+  const html = htmlInput.value.trim();
+  if (!html) return;
+  const tree = parseHTML(html);
+  if (tree) renderTreemap(tree);
+}
+
+htmlInput.value = presets['Blog'];
+visualize();
+</script>
+</body>
+</html>

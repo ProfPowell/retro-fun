@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cascade Falls // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a12; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas { display: block; }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #333; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 10;
+  }
+  .back:hover { color: #00ffff; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+// The CSS Cascade - visualized as a literal waterfall
+// CSS rules fall from the sky (stylesheets), cascade down through
+// specificity layers, and land on DOM elements at the bottom
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// CSS rules that will rain down
+const cssRules = [
+  { sel: '* { margin: 0 }', color: '#555', specificity: 0 },
+  { sel: 'body { font-size: 16px }', color: '#5fafff', specificity: 1 },
+  { sel: 'div { display: block }', color: '#87afaf', specificity: 1 },
+  { sel: 'p { line-height: 1.5 }', color: '#87afaf', specificity: 1 },
+  { sel: 'a { color: blue }', color: '#5fafff', specificity: 1 },
+  { sel: 'h1 { font-size: 2em }', color: '#ff875f', specificity: 1 },
+  { sel: '.box { padding: 1rem }', color: '#87d787', specificity: 10 },
+  { sel: '.hero { bg: #000 }', color: '#87d787', specificity: 10 },
+  { sel: '.nav a { color: #fff }', color: '#5fd7af', specificity: 11 },
+  { sel: '.btn { border-radius: 4px }', color: '#87d787', specificity: 10 },
+  { sel: '#main { width: 100% }', color: '#ff5f87', specificity: 100 },
+  { sel: '#header { position: fixed }', color: '#ff5f87', specificity: 100 },
+  { sel: '#nav .item { color: red }', color: '#ff87af', specificity: 110 },
+  { sel: 'style="" (inline)', color: '#ff00ff', specificity: 1000 },
+  { sel: '!important', color: '#ff0000', specificity: 9999 },
+  { sel: '.card { box-shadow: ... }', color: '#87d787', specificity: 10 },
+  { sel: 'li:nth-child(2n) {}', color: '#af87ff', specificity: 11 },
+  { sel: 'input[type="text"] {}', color: '#d7af5f', specificity: 11 },
+  { sel: '::before { content: "" }', color: '#af87ff', specificity: 1 },
+  { sel: ':hover { opacity: 0.8 }', color: '#5fd7ff', specificity: 10 },
+  { sel: '@media { .x { ... } }', color: '#d787af', specificity: 10 },
+  { sel: ':root { --color: #f0f }', color: '#ff87ff', specificity: 10 },
+  { sel: '.a .b .c { color: red }', color: '#5fff87', specificity: 30 },
+  { sel: 'div > p + span { }', color: '#87afaf', specificity: 3 },
+];
+
+// DOM elements at the bottom that "receive" the rules
+const domElements = [
+  { tag: '<html>', x: 0, w: 1, color: '#ff5f87', rules: [] },
+  { tag: '<head>', x: 0, w: 0.3, color: '#d7af5f', rules: [] },
+  { tag: '<body>', x: 0.3, w: 0.7, color: '#87d787', rules: [] },
+  { tag: '<header>', x: 0.3, w: 0.2, color: '#5fd787', rules: [] },
+  { tag: '<main>', x: 0.5, w: 0.3, color: '#5fff87', rules: [] },
+  { tag: '<footer>', x: 0.8, w: 0.2, color: '#878787', rules: [] },
+];
+
+// Waterfall particles
+class RuleDrop {
+  constructor() {
+    this.reset();
+  }
+
+  reset() {
+    const rule = cssRules[Math.floor(Math.random() * cssRules.length)];
+    this.text = rule.sel;
+    this.color = rule.color;
+    this.specificity = rule.specificity;
+    this.x = Math.random() * W;
+    this.y = -20 - Math.random() * 200;
+    this.vy = 1 + Math.random() * 2;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.size = 8 + Math.random() * 4;
+    this.alpha = 0.6 + Math.random() * 0.4;
+    this.rotation = (Math.random() - 0.5) * 0.3;
+    this.rotSpeed = (Math.random() - 0.5) * 0.01;
+    this.trail = [];
+    this.alive = true;
+    this.landed = false;
+    this.landY = 0;
+    this.fadeout = 1;
+  }
+
+  update() {
+    if (this.landed) {
+      this.fadeout -= 0.02;
+      if (this.fadeout <= 0) this.reset();
+      return;
+    }
+
+    // Waterfall physics
+    this.vy += 0.03; // gravity
+    this.y += this.vy;
+    this.x += this.vx;
+    this.rotation += this.rotSpeed;
+
+    // Cascade layers - slow down in middle zones
+    const cascadeZone = H * 0.4;
+    if (this.y > cascadeZone && this.y < cascadeZone + 100) {
+      this.vy *= 0.98;
+      // Specificity sorting - higher specificity rules drift right
+      this.vx += (this.specificity / 10000 - 0.005) * 0.3;
+    }
+
+    // Trail
+    if (this.vy > 1.5) {
+      this.trail.push({ x: this.x, y: this.y, alpha: 0.3, size: this.size * 0.6 });
+    }
+    for (let i = this.trail.length - 1; i >= 0; i--) {
+      this.trail[i].alpha -= 0.02;
+      if (this.trail[i].alpha <= 0) this.trail.splice(i, 1);
+    }
+
+    // Land on DOM elements
+    const groundY = H - 120;
+    if (this.y > groundY) {
+      this.landed = true;
+      this.y = groundY;
+      this.landY = groundY;
+
+      // Find which DOM element it lands on
+      const normX = this.x / W;
+      for (const el of domElements) {
+        if (normX >= el.x && normX <= el.x + el.w) {
+          el.rules.push({ text: this.text, color: this.color, time: 1 });
+          if (el.rules.length > 5) el.rules.shift();
+          break;
+        }
+      }
+    }
+
+    // Wrap horizontally
+    if (this.x < -50) this.x = W + 50;
+    if (this.x > W + 50) this.x = -50;
+  }
+
+  draw(ctx) {
+    // Trail
+    for (const t of this.trail) {
+      ctx.save();
+      ctx.globalAlpha = t.alpha * 0.5;
+      ctx.fillStyle = this.color;
+      ctx.fillRect(t.x - 1, t.y, 2, t.size * 0.5);
+      ctx.restore();
+    }
+
+    // The rule itself
+    ctx.save();
+    const alpha = this.landed ? this.fadeout * this.alpha : this.alpha;
+    ctx.globalAlpha = alpha;
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.font = `${this.size}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Glow
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = this.color;
+    ctx.fillText(this.text, 0, 0);
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+  }
+}
+
+// Initialize drops
+const NUM_DROPS = 80;
+const drops = [];
+for (let i = 0; i < NUM_DROPS; i++) {
+  const drop = new RuleDrop();
+  drop.y = -Math.random() * H * 1.5; // Stagger initial positions
+  drops.push(drop);
+}
+
+// Waterfall mist particles
+const mist = [];
+for (let i = 0; i < 40; i++) {
+  mist.push({
+    x: Math.random() * W,
+    y: H * 0.35 + Math.random() * 100,
+    size: 1 + Math.random() * 2,
+    alpha: Math.random() * 0.15,
+    vx: (Math.random() - 0.5) * 0.5,
+    vy: -0.2 - Math.random() * 0.3,
+  });
+}
+
+let time = 0;
+
+function drawCascadeLayers() {
+  // "Stylesheet" source at top
+  ctx.fillStyle = '#ffffff08';
+  ctx.fillRect(0, 0, W, 40);
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#333';
+  ctx.textAlign = 'center';
+  ctx.fillText('STYLESHEETS (User Agent / Author / Inline)', W / 2, 25);
+
+  // Cascade layers
+  const layers = [
+    { y: H * 0.2, label: 'ORIGIN & IMPORTANCE', color: '#ff000020' },
+    { y: H * 0.35, label: 'SPECIFICITY', color: '#ff00ff10' },
+    { y: H * 0.55, label: 'ORDER OF APPEARANCE', color: '#00ffff10' },
+  ];
+
+  layers.forEach(layer => {
+    ctx.fillStyle = layer.color;
+    ctx.fillRect(0, layer.y - 15, W, 30);
+    ctx.strokeStyle = '#ffffff08';
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(0, layer.y);
+    ctx.lineTo(W, layer.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = '8px monospace';
+    ctx.fillStyle = '#333';
+    ctx.textAlign = 'right';
+    ctx.fillText(layer.label, W - 10, layer.y + 3);
+  });
+}
+
+function drawDOMElements() {
+  const groundY = H - 120;
+  const barH = 100;
+
+  domElements.forEach(el => {
+    const x = el.x * W;
+    const w = el.w * W;
+
+    // Element bar
+    ctx.fillStyle = el.color + '15';
+    ctx.fillRect(x + 2, groundY, w - 4, barH);
+    ctx.strokeStyle = el.color + '44';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 2, groundY, w - 4, barH);
+
+    // Tag label
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = el.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(el.tag, x + w / 2, groundY + 15);
+
+    // Show applied rules
+    el.rules.forEach((rule, i) => {
+      rule.time -= 0.005;
+      if (rule.time <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = rule.time * 0.7;
+      ctx.font = '7px monospace';
+      ctx.fillStyle = rule.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(rule.text, x + w / 2, groundY + 30 + i * 12);
+      ctx.restore();
+    });
+
+    // Clean up dead rules
+    el.rules = el.rules.filter(r => r.time > 0);
+  });
+
+  // Ground label
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#333';
+  ctx.textAlign = 'center';
+  ctx.fillText('DOM ELEMENTS (Computed Styles)', W / 2, H - 8);
+}
+
+function drawMist() {
+  for (const m of mist) {
+    m.x += m.vx + Math.sin(time * 2 + m.x * 0.01) * 0.3;
+    m.y += m.vy;
+    m.alpha = 0.05 + Math.sin(time + m.x * 0.01) * 0.05;
+
+    if (m.y < H * 0.2) {
+      m.y = H * 0.45;
+      m.x = Math.random() * W;
+    }
+
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(100, 150, 255, ${m.alpha})`;
+    ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Waterfall rocks on the sides
+function drawCliffs() {
+  // Left cliff
+  ctx.fillStyle = '#0f0f18';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(W * 0.08, 0);
+  ctx.lineTo(W * 0.05, H * 0.3);
+  ctx.lineTo(W * 0.1, H * 0.5);
+  ctx.lineTo(W * 0.03, H * 0.7);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right cliff
+  ctx.beginPath();
+  ctx.moveTo(W, 0);
+  ctx.lineTo(W * 0.92, 0);
+  ctx.lineTo(W * 0.95, H * 0.25);
+  ctx.lineTo(W * 0.9, H * 0.55);
+  ctx.lineTo(W * 0.97, H * 0.75);
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cliff tag textures
+  ctx.font = '6px monospace';
+  ctx.fillStyle = '#1a1a25';
+  const cliffTags = ['<aside>', '<nav>', '<div>', '<section>', '<header>'];
+  for (let y = 0; y < H; y += 20) {
+    const tag = cliffTags[Math.floor(y / 20) % cliffTags.length];
+    ctx.fillText(tag, 5, y + 10);
+    ctx.fillText(tag, W - 45, y + 15);
+  }
+}
+
+function draw() {
+  // Fade
+  ctx.fillStyle = 'rgba(10, 10, 18, 0.25)';
+  ctx.fillRect(0, 0, W, H);
+
+  drawCliffs();
+  drawCascadeLayers();
+  drawDOMElements();
+  drawMist();
+
+  // Update and draw drops
+  for (const drop of drops) {
+    drop.update();
+    drop.draw(ctx);
+  }
+
+  // Title
+  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#ffffff15';
+  ctx.textAlign = 'center';
+  ctx.fillText('THE CASCADE', W / 2, H * 0.12);
+
+  // Scanlines
+  ctx.fillStyle = 'rgba(0,0,0,0.04)';
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
