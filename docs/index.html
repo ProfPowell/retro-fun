@@ -562,6 +562,34 @@
 
   /* === GAME SECTION PREVIEWS === */
   .tag--game { border-color: #ff224433; color: #ff224488; }
+  .tag--chat { border-color: #33ff3333; color: #33ff3388; }
+
+  .preview-replyguy {
+    background: #0a0a0a;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+  }
+  .preview-replyguy::before {
+    content: 'Well, actually...';
+    font-family: monospace; font-size: 1.1rem; font-weight: bold;
+    color: #33ff33;
+    text-shadow: 0 0 8px #33ff33, 0 0 16px #33ff3344;
+    animation: replyguy-pulse 2s ease-in-out infinite;
+  }
+  .preview-replyguy::after {
+    content: '\u261d';
+    position: absolute; top: 15%; right: 20%;
+    font-size: 1.8rem;
+    animation: replyguy-finger 1.5s ease-in-out infinite alternate;
+  }
+  @keyframes replyguy-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.97); }
+    50% { opacity: 1; transform: scale(1.03); }
+  }
+  @keyframes replyguy-finger {
+    from { transform: translateY(0) rotate(-10deg); }
+    to { transform: translateY(-8px) rotate(10deg); }
+  }
 
   .preview-divvaders {
     background: #000008;
@@ -798,6 +826,17 @@
       <span class="tag tag--canvas">Canvas</span>
       <span class="tag tag--audio">Audio</span>
       <span class="tag tag--game">Game</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/reply-guy/">
+    <div class="card-preview preview-replyguy"></div>
+    <div class="card-info">
+      <h2>Reply Guy Chat</h2>
+      <p>DM a Reply Guy who "well actually"s everything &mdash; with voice &amp; monologue mode</p>
+      <span class="tag tag--chat">Chat</span>
+      <span class="tag tag--audio">Audio</span>
+      <span class="tag">Satire</span>
     </div>
   </a>
 

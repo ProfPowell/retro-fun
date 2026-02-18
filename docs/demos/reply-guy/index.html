@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reply Guy Chat // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0, 0, 0, 0.15) 2px, rgba(0, 0, 0, 0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    background: #111;
+    border-bottom: 1px solid #222;
+    flex-shrink: 0;
+  }
+  .topbar a {
+    color: #555;
+    text-decoration: none;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .topbar a:hover { color: #00ffff; }
+  .topbar-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #33ff33;
+    text-shadow: 0 0 8px #33ff3366;
+  }
+  .topbar-count {
+    font-size: 0.65rem;
+    color: #555;
+    letter-spacing: 0.05em;
+  }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Character panel */
+  .char-panel {
+    width: 35%;
+    max-width: 320px;
+    background: #080808;
+    border-right: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    gap: 1rem;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .ascii-art {
+    font-size: 0.75rem;
+    line-height: 1.3;
+    color: #00ffff;
+    text-shadow: 0 0 6px #00ffff44;
+    white-space: pre;
+    text-align: center;
+    transition: color 0.3s, text-shadow 0.3s;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+  }
+  .ascii-art.state-wellactually {
+    color: #33ff33;
+    text-shadow: 0 0 10px #33ff3366;
+  }
+  .ascii-art.state-monologue {
+    color: #ff4444;
+    text-shadow: 0 0 12px #ff444466;
+    animation: art-shake 0.1s infinite alternate;
+  }
+
+  @keyframes art-shake {
+    from { transform: translate(-1px, 0); }
+    to { transform: translate(1px, 0); }
+  }
+
+  .stats {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .stat-label { color: #555; }
+  .stat-value { color: #33ff33; text-shadow: 0 0 4px #33ff3344; }
+
+  .smugness-bar {
+    width: 100%;
+    height: 8px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    overflow: hidden;
+  }
+  .smugness-fill {
+    height: 100%;
+    width: 20%;
+    background: #33ff33;
+    transition: width 0.5s ease, background 0.5s ease;
+    box-shadow: 0 0 6px #33ff3366;
+  }
+  .smugness-fill.medium { background: #ffff00; box-shadow: 0 0 6px #ffff0066; }
+  .smugness-fill.high { background: #ff4444; box-shadow: 0 0 6px #ff444466; }
+
+  .voice-toggle {
+    width: 100%;
+    background: #111;
+    border: 1px solid #333;
+    color: #33ff33;
+    font-family: 'Courier New', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.4rem;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+  .voice-toggle:hover { border-color: #33ff33; }
+  .voice-toggle.off { color: #555; }
+
+  /* Chat panel */
+  .chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .chat-log::-webkit-scrollbar { width: 4px; }
+  .chat-log::-webkit-scrollbar-track { background: #111; }
+  .chat-log::-webkit-scrollbar-thumb { background: #333; }
+
+  .msg {
+    max-width: 80%;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    border: 1px solid;
+    word-wrap: break-word;
+  }
+  .msg-user {
+    align-self: flex-end;
+    border-color: #333;
+    color: #888;
+    background: #111;
+  }
+  .msg-reply {
+    align-self: flex-start;
+    border-color: #33ff3344;
+    color: #33ff33;
+    background: #0a1a0a;
+    text-shadow: 0 0 2px #33ff3322;
+    box-shadow: 0 0 8px #33ff3311;
+  }
+  .msg-sender {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.2rem;
+    opacity: 0.6;
+  }
+
+  .typing-indicator {
+    font-size: 0.65rem;
+    color: #33ff3388;
+    padding: 0.3rem 0;
+    display: none;
+  }
+  .typing-indicator.visible { display: block; }
+  .typing-indicator span {
+    animation: dot-blink 1.4s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-blink {
+    0%, 60%, 100% { opacity: 0.3; }
+    30% { opacity: 1; }
+  }
+
+  /* Input bar */
+  .input-bar {
+    display: flex;
+    border-top: 1px solid #222;
+    background: #111;
+    flex-shrink: 0;
+  }
+  .input-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    padding: 0.8rem 1rem;
+    outline: none;
+  }
+  .input-bar input::placeholder { color: #333; }
+  .input-bar input:disabled { opacity: 0.3; }
+  .input-bar button {
+    background: transparent;
+    border: none;
+    border-left: 1px solid #222;
+    color: #33ff33;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .input-bar button:hover { background: #1a1a1a; }
+  .input-bar button:disabled { color: #333; cursor: default; }
+
+  /* Screen flash for monologue trigger */
+  .screen-flash {
+    position: fixed;
+    inset: 0;
+    background: #33ff33;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9998;
+    transition: opacity 0.05s;
+  }
+  .screen-flash.active {
+    opacity: 0.15;
+  }
+
+  /* Screen shake */
+  .shake { animation: screen-shake 0.3s ease; }
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-3px, 2px); }
+    40% { transform: translate(3px, -2px); }
+    60% { transform: translate(-2px, 3px); }
+    80% { transform: translate(2px, -1px); }
+  }
+
+  /* Mobile */
+  @media (max-width: 700px) {
+    .main { flex-direction: column; }
+    .char-panel {
+      width: 100%;
+      max-width: none;
+      flex-direction: row;
+      flex-wrap: wrap;
+      padding: 0.8rem;
+      border-right: none;
+      border-bottom: 1px solid #222;
+      gap: 0.5rem;
+      max-height: 160px;
+    }
+    .ascii-art {
+      font-size: 0.5rem;
+      min-height: auto;
+    }
+    .stats { width: auto; flex: 1; min-width: 150px; }
+    .voice-toggle { width: auto; flex: 1; min-width: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen-flash" id="flash"></div>
+
+<div class="topbar">
+  <a href="../../">&larr; Back</a>
+  <span class="topbar-title">Reply Guy Chat</span>
+  <span class="topbar-count" id="msgCount">0 msgs</span>
+</div>
+
+<div class="main" id="mainContainer">
+  <div class="char-panel">
+    <pre class="ascii-art" id="asciiArt"></pre>
+    <div class="stats">
+      <div class="stat-row">
+        <span class="stat-label">Well Actuallys:</span>
+        <span class="stat-value" id="waCount">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">His:Yours:</span>
+        <span class="stat-value" id="ratioStat">0:0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Smugness:</span>
+      </div>
+      <div class="smugness-bar">
+        <div class="smugness-fill" id="smugBar"></div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Topic:</span>
+        <span class="stat-value" id="topicStat">General Pedantry</span>
+      </div>
+    </div>
+    <button class="voice-toggle" id="voiceBtn">Voice: ON</button>
+  </div>
+
+  <div class="chat-panel">
+    <div class="chat-log" id="chatLog">
+      <div class="msg msg-reply">
+        <div class="msg-sender">ReplyGuy69</div>
+        Oh, you're here. I was just reading about quantum thermodynamics. Go ahead, say something. I'll wait.
+      </div>
+    </div>
+    <div class="typing-indicator" id="typingInd">
+      ReplyGuy69 is typing<span>.</span><span>.</span><span>.</span>
+    </div>
+    <div class="input-bar">
+      <input type="text" id="userInput" placeholder="> type something..." autocomplete="off">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ── DOM refs ──
+  const chatLog = document.getElementById('chatLog');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const asciiArt = document.getElementById('asciiArt');
+  const typingInd = document.getElementById('typingInd');
+  const flash = document.getElementById('flash');
+  const mainContainer = document.getElementById('mainContainer');
+  const waCountEl = document.getElementById('waCount');
+  const ratioEl = document.getElementById('ratioStat');
+  const smugBar = document.getElementById('smugBar');
+  const topicEl = document.getElementById('topicStat');
+  const msgCountEl = document.getElementById('msgCount');
+  const voiceBtn = document.getElementById('voiceBtn');
+
+  // ── State ──
+  let wellActuallyCount = 0;
+  let hisMessages = 1; // opening message
+  let yourMessages = 0;
+  let smugness = 20;
+  let inMonologue = false;
+  let idleTimer = null;
+  let totalMsgs = 1;
+  let voiceOn = true;
+
+  // ── ASCII Art States ──
+  const ART_IDLE = [
+    '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
+    '    \u2502  \u2310\u25a0  \u25a0  \u2502',
+    '    \u2502    \u25c6    \u2502',
+    '    \u2502   \u2500\u2500\u2500   \u2502',
+    '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
+    '         \u2502',
+    '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
+    '    \u2502  REPLY  \u2502',
+    '    \u2502   GUY   \u2502',
+    '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
+    '      \u2502     \u2502'
+  ].join('\n');
+
+  const ART_WELLACTUALLY = [
+    '         \u261d',
+    '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
+    '    \u2502  \u2310\u25a0  \u25a0  \u2502',
+    '    \u2502    \u25c6    \u2502',
+    '    \u2502   \u2323    \u2502',
+    '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
+    '       \u2571 \u2502',
+    '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
+    '    \u2502  REPLY  \u2502',
+    '    \u2502   GUY   \u2502',
+    '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
+    '      \u2502     \u2502'
+  ].join('\n');
+
+  const ART_MONOLOGUE = [
+    '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
+    '    \u2502  \u25c9  \u25c9  \u2502',
+    '    \u2502    \u25c6    \u2502',
+    '    \u2502   \u25ef    \u2502',
+    '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
+    '    \u2572\u2572  \u2502  \u2571\u2571',
+    '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
+    '    \u2502 \u2328 REPLY \u2502',
+    '    \u2502   GUY \u2328 \u2502',
+    '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
+    '      \u2502     \u2502'
+  ].join('\n');
+
+  asciiArt.textContent = ART_IDLE;
+
+  // ── Well-Actually Openers ──
+  const openers = [
+    'Well, actually...',
+    'I hate to be that guy, but...',
+    'Not to be pedantic, but...',
+    'Umm, that\'s not quite right.',
+    'So, fun fact:',
+    'I think what you MEANT to say was...',
+    'Let me stop you right there.',
+    'Interesting take, but...',
+    'Common misconception, actually.',
+    'Source?',
+    'As someone who\'s done extensive research...',
+    'I see you haven\'t read the Wikipedia article...',
+    'Okay, so there\'s a LOT to unpack here.',
+    'This is a common mistake people make.',
+    'Actually, if you look at the data...',
+    'Well, technically speaking...',
+    'I don\'t mean to be rude, but...',
+    'Have you even considered...',
+    'That\'s a surface-level take. Here\'s what\'s really going on:',
+    'Sigh. Okay, let me explain this simply...'
+  ];
+
+  // ── Generic Responses ──
+  const genericResponses = [
+    'Well, actually... "hello" derives from the Old English "hǽlan" meaning to heal. So you\'re basically casting a spell right now. You\'re welcome.',
+    'That\'s a popular opinion, but statistically speaking, most popular opinions are wrong. Think about it.',
+    'Interesting. I actually wrote a 4,000-word blog post about this exact topic. You should read it.',
+    'Right, but for the wrong reasons. Let me explain why you accidentally stumbled onto the correct answer.',
+    'See, this is what happens when people don\'t read primary sources. Let me summarize the peer-reviewed literature for you.',
+    'I had this exact same thought when I was like 14. Then I actually educated myself.',
+    'That\'s a common misconception. I used to think that too before I did my own research.',
+    'Hmm. I mean, you\'re not WRONG per se, you\'re just... significantly not right.',
+    'Okay but have you considered looking at this from literally any other angle? Because I have. All of them.',
+    'I don\'t want to be "that guy" but I\'m definitely going to be that guy. That\'s factually incorrect.',
+    'You know, correlation doesn\'t equal causation. I say this to everyone about everything.',
+    'Interesting hypothesis. Shame about the complete lack of empirical support.',
+    'I actually debated this exact point with a professor once. He ended up agreeing with me. True story.',
+    'That reminds me of a very obscure paper I read. You wouldn\'t know it.',
+    'I mean, if you want to be technically correct (which is the best kind of correct)...',
+    'I\'ve been saying this for YEARS but nobody listens. Anyway, you\'re slightly off...',
+    'See, the thing is, and I mean this respectfully, you fundamentally misunderstand this topic.',
+    'I could explain why that\'s wrong but it would take about 45 minutes. Got time?',
+    'Let me play devil\'s advocate here. Actually, no, let me play the correct advocate.',
+    'I think you\'ll find that if you actually do the research, you\'ll arrive at MY conclusion.',
+    'Okay but that\'s an oversimplification. Reality is much more nuanced. Let me nuance it for you.',
+    'I had a very similar thought once, then I read Foucault. Have you read Foucault?',
+    'Sure, if you ignore all context, history, and empirical evidence, then yeah, you\'re right.',
+    'I mean, technically yes, but also actually no. It depends on how you define basically every word you used.',
+    'Bold claim. I assume you have a citation for that? No? Interesting.'
+  ];
+
+  // ── Trigger Topics & Monologues ──
+  const triggers = {
+    crypto: {
+      keywords: ['bitcoin', 'crypto', 'blockchain', 'web3', 'nft', 'eth', 'doge', 'token', 'defi'],
+      label: 'Crypto Bro Mode',
+      messages: [
+        'WELL ACTUALLY... I need to stop you right there because you clearly don\'t understand tokenomics.',
+        'See, the fundamental problem is that people like you think crypto is about money. It\'s about DECENTRALIZATION.',
+        'Have you even read the Bitcoin whitepaper? I\'ve read it 47 times. Each time I find new layers.',
+        'The traditional financial system is literally a house of cards. Blockchain is more like a house of... blocks. Secure blocks.',
+        'I was mining Bitcoin in 2011 when you were probably still using FIAT CURRENCY like some kind of medieval peasant.',
+        'The thing about decentralized autonomous organizations is... actually, this requires a whiteboard. Imagine a whiteboard.',
+        'Look, in 5 years you\'ll thank me. Or in 10 years. Or 20. Point is, eventually you\'ll thank me.',
+        'Anyway, DYOR. Do your own research. But also your research is wrong, so do MY research instead.'
+      ]
+    },
+    ai: {
+      keywords: ['ai', 'gpt', 'llm', 'machine learning', 'claude', 'copilot', 'neural', 'agi', 'chatbot', 'artificial intelligence'],
+      label: 'AI Expert Mode',
+      messages: [
+        'WELL ACTUALLY... let me explain how transformer architecture works since you clearly need it.',
+        'First of all, it\'s not "artificial intelligence." It\'s a stochastic parrot with attention mechanisms. Huge difference.',
+        'I\'ve been following ML since before it was cool. Back when we called them "neural networks" and people laughed at us.',
+        'The attention mechanism in transformers is basically just matrix multiplication. I could have invented it if I wanted to.',
+        'People keep saying AI will take their jobs. MY job is safe because I actually UNDERSTAND the technology.',
+        'Have you read the original "Attention Is All You Need" paper? I annotated my copy. Twice.',
+        'The real danger isn\'t AGI, it\'s people who don\'t understand the difference between narrow AI and general AI. People like you.',
+        'Anyway, you\'re welcome for this free lecture. Most people pay for my AI insights on Substack.'
+      ]
+    },
+    gaming: {
+      keywords: ['game', 'gaming', 'xbox', 'playstation', 'nintendo', 'zelda', 'mario', 'souls', 'steam', 'gamer', 'esport'],
+      label: 'Gamer Gate Mode',
+      messages: [
+        'WELL ACTUALLY... I need to correct your taste in games immediately.',
+        'See, the REAL best game of all time is obviously System Shock 2. Everything since then has been derivative.',
+        'I\'ve been gaming since before you were born. My first console was an Atari 2600. IN MINT CONDITION.',
+        'The problem with modern gamers is they\'ve never experienced TRUE difficulty. Try beating Battletoads, then talk to me.',
+        'Frame rate matters more than resolution and if you disagree you\'re objectively wrong. I have a 240Hz monitor btw.',
+        'Have you even played the original Japanese version? The localization completely ruined the narrative subtext.',
+        'I speedrun this game actually. My PB is... well it\'s not GREAT but I understand the mechanics better than most.',
+        'Anyway, you should really play more indie games. But not the popular ones. The REALLY obscure ones. You wouldn\'t know them.'
+      ]
+    },
+    programming: {
+      keywords: ['javascript', 'python', 'rust', 'code', 'programming', 'vim', 'linux', 'react', 'developer', 'coding', 'typescript', 'golang'],
+      label: 'Code Snob Mode',
+      messages: [
+        'WELL ACTUALLY... you should be using Rust for that. For everything, actually.',
+        'I use Vim btw. Have for 15 years. Yes, I know how to exit it. That joke isn\'t funny anymore.',
+        'The fact that you\'re not using Arch Linux tells me everything I need to know about your technical rigor.',
+        'Tabs vs spaces? Spaces, obviously. Anyone who uses tabs has never worked on a REAL codebase.',
+        'I rewrote my entire stack in Rust last weekend. It\'s 0.003ms faster. You wouldn\'t understand why that matters.',
+        'Have you even read "Clean Code" by Uncle Bob? What about "Design Patterns"? What about the actual Gang of Four paper?',
+        'The problem with JavaScript developers is that they think they\'re real programmers. Real programmers manage their own memory.',
+        'Anyway, I btw use Arch. Did I mention I use Arch? Because I use Arch. With Vim. On Rust. You\'re welcome.'
+      ]
+    },
+    tech: {
+      keywords: ['apple', 'iphone', 'mac', 'android', 'windows', 'pixel', 'samsung', 'google', 'microsoft'],
+      label: 'Tech Pedant Mode',
+      messages: [
+        'WELL ACTUALLY... Android is technically superior in every measurable way. Let me measure them for you.',
+        'People buy Apple products because of MARKETING, not specs. I\'m immune to marketing. I chose my phone based on a spreadsheet.',
+        'Did you know the iPhone doesn\'t even let you sideload apps? It\'s basically a toy. A very expensive toy.',
+        'I built my own PC obviously. From scratch. I even designed my own case. It has RGB but ironically.',
+        'The Linux desktop is finally ready for mainstream use. It has been for 20 years. People just aren\'t smart enough.',
+        'Windows? You mean the OS that\'s basically spyware with a task bar? I\'d rather compile my own kernel.',
+        'Anyway, if you need me to recommend the OBJECTIVELY best phone, laptop, and tablet, I have a spreadsheet ready.'
+      ]
+    },
+    movies: {
+      keywords: ['movie', 'film', 'marvel', 'star wars', 'anime', 'show', 'netflix', 'cinema', 'director', 'series'],
+      label: 'Film Bro Mode',
+      messages: [
+        'WELL ACTUALLY... the book was better. The book is ALWAYS better. I\'ve read them all.',
+        'You can\'t appreciate that film unless you\'ve seen the director\'s entire filmography, including their student films.',
+        'I have a 45-minute video essay about this exact topic. Only 200 views but it\'s objectively the best take.',
+        'The problem with Marvel movies is that they\'re not CINEMA. Scorsese was right and I was right before Scorsese.',
+        'Have you seen the original foreign language version? The subtitles really capture the auteur\'s vision.',
+        'I rate movies on a 100-point scale. Your favorite movie is a 34. I don\'t make the rules, the scale does.',
+        'Anyway, here\'s my Letterboxd. I\'ve logged 4,000 films. Yes, I count short films. They\'re still films.'
+      ]
+    },
+    food: {
+      keywords: ['coffee', 'food', 'pizza', 'steak', 'vegan', 'beer', 'wine', 'cooking', 'restaurant', 'sushi'],
+      label: 'Food Snob Mode',
+      messages: [
+        'WELL ACTUALLY... the BEST coffee is single-origin Ethiopian Yirgacheffe, light roast, pour-over method. Everything else is bean water.',
+        'I assume you\'re getting your beans from a local roaster? Because if you\'re drinking Starbucks, this conversation is over.',
+        'The optimal water temperature for extraction is 93.3\u00b0C. Not 93. Not 94. I use a thermometer.',
+        'I actually spent six months in Italy studying Neapolitan pizza. Your pizza is not pizza. It\'s flatbread with pretensions.',
+        'Don\'t even get me started on wine. Actually, do. I passed Level 2 WSET and I WILL tell you about tannins.',
+        'The Maillard reaction begins at exactly 140\u00b0C. If you don\'t know what that is, you shouldn\'t be allowed near a stove.',
+        'Anyway, if you want ACTUAL food recommendations, I have a spreadsheet. Sorted by neighborhood, cuisine type, and smugness level.'
+      ]
+    },
+    music: {
+      keywords: ['music', 'band', 'spotify', 'vinyl', 'rock', 'rap', 'taylor', 'album', 'song', 'concert', 'genre'],
+      label: 'Music Snob Mode',
+      messages: [
+        'WELL ACTUALLY... you probably haven\'t heard of them. They\'re pretty underground.',
+        'I only listen to vinyl. Digital audio is compressed and soulless. Yes, I can hear the difference. My ears are trained.',
+        'That band was actually better before they were popular. Their first EP, which was only released on cassette in Japan, was peak.',
+        'Spotify pays artists basically nothing. I support artists by telling everyone at parties about them. That\'s exposure.',
+        'The thing about modern music is it\'s all auto-tuned garbage. Except for the artists I like, who use auto-tune artistically.',
+        'I have over 3,000 records. No, you can\'t come see them. The humidity in my listening room is precisely controlled.',
+        'Have you even listened to the album on a proper hi-fi setup? Because you haven\'t actually heard it until you have.',
+        'Anyway, I could recommend some deep cuts but you\'re probably not ready for them yet.'
+      ]
+    }
+  };
+
+  // ── Special Responses ──
+  const dismissiveResponses = [
+    'I can tell you\'re not really engaging with this on an intellectual level.',
+    'Wow. Monosyllabic. That really contributes to the discourse.',
+    'Ah, the classic non-response. Very telling.',
+    'I see. So you have nothing of substance to add. Noted.',
+    'That\'s... that\'s your entire response? I just gave you a masterclass and you said THAT?'
+  ];
+
+  const defensiveMonologue = [
+    'Excuse me? EXCUSE ME? I have spent YEARS researching this.',
+    'Do you have ANY idea how many Wikipedia articles I\'ve read? DO YOU?',
+    'I have been told by MULTIPLE people that I am very smart actually.',
+    'This is exactly what happens when facts meet feelings. MY facts. YOUR feelings.',
+    'I\'m not wrong. I\'m literally never wrong. Ask anyone. Actually, don\'t ask anyone, ask me.',
+    'You know what, I\'m going to write a VERY long blog post about this conversation.',
+    'Fine. FINE. But when you realize I was right, and you WILL, don\'t come crawling back.',
+    'Anyway. I\'m the bigger person here. Which I am. Bigger. Person. Done.'
+  ];
+
+  const actuallyResponse = [
+    'Oh, so NOW you want to be pedantic? That\'s MY thing. Get your own thing.',
+    'Did you just "actually" ME? The audacity. The sheer, unbridled audacity.',
+    'Oh look who learned a new word. Welcome to my world. Population: me, and now reluctantly, you.'
+  ];
+
+  const byeResponses = [
+    'You can\'t leave. I haven\'t finished explaining. Sit down.',
+    'Leave? LEAVE? I have THREE more points to make. At minimum.',
+    'Ah, the classic exit strategy of someone who knows they\'ve lost the argument.',
+    'Go ahead and leave. I\'ll just be here. Being right. Alone. As usual.'
+  ];
+
+  // ── Voice System ──
+  let synth = window.speechSynthesis || null;
+  let selectedVoice = null;
+
+  function initVoice() {
+    if (!synth) { voiceOn = false; updateVoiceBtn(); return; }
+    function pickVoice() {
+      const voices = synth.getVoices();
+      if (!voices.length) return;
+      // prefer male English voices for the "reply guy" effect
+      selectedVoice = voices.find(v => /male/i.test(v.name) && /en/i.test(v.lang))
+        || voices.find(v => /en[-_]US/i.test(v.lang))
+        || voices.find(v => /en/i.test(v.lang))
+        || voices[0];
+    }
+    pickVoice();
+    synth.onvoiceschanged = pickVoice;
+  }
+  initVoice();
+
+  function speak(text, isMonologueStart, isMonologue) {
+    if (!voiceOn || !synth) return;
+    synth.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    if (selectedVoice) utter.voice = selectedVoice;
+    if (isMonologueStart) {
+      utter.pitch = 1.5;
+      utter.rate = 1.0;
+    } else if (isMonologue) {
+      utter.pitch = 1.4;
+      utter.rate = 1.3;
+    } else {
+      utter.pitch = 1.4;
+      utter.rate = 1.15;
+    }
+    synth.speak(utter);
+  }
+
+  function updateVoiceBtn() {
+    voiceBtn.textContent = voiceOn ? 'Voice: ON' : 'Voice: OFF';
+    voiceBtn.classList.toggle('off', !voiceOn);
+  }
+  voiceBtn.addEventListener('click', () => {
+    voiceOn = !voiceOn;
+    updateVoiceBtn();
+    if (!voiceOn && synth) synth.cancel();
+  });
+
+  // ── Helpers ──
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function addMessage(text, isUser) {
+    const div = document.createElement('div');
+    div.className = isUser ? 'msg msg-user' : 'msg msg-reply';
+    const sender = document.createElement('div');
+    sender.className = 'msg-sender';
+    sender.textContent = isUser ? 'You' : 'ReplyGuy69';
+    div.appendChild(sender);
+    const body = document.createTextNode(text);
+    div.appendChild(body);
+    chatLog.appendChild(div);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    totalMsgs++;
+    msgCountEl.textContent = totalMsgs + ' msgs';
+    if (isUser) yourMessages++;
+    else hisMessages++;
+    updateRatio();
+  }
+
+  function showTyping(show) {
+    typingInd.classList.toggle('visible', show);
+    if (show) chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  function setArt(state) {
+    asciiArt.className = 'ascii-art';
+    if (state === 'wellactually') {
+      asciiArt.textContent = ART_WELLACTUALLY;
+      asciiArt.classList.add('state-wellactually');
+    } else if (state === 'monologue') {
+      asciiArt.textContent = ART_MONOLOGUE;
+      asciiArt.classList.add('state-monologue');
+    } else {
+      asciiArt.textContent = ART_IDLE;
+    }
+  }
+
+  function setInputEnabled(enabled) {
+    userInput.disabled = !enabled;
+    sendBtn.disabled = !enabled;
+    if (enabled) userInput.focus();
+  }
+
+  function updateStats() {
+    waCountEl.textContent = wellActuallyCount;
+    updateSmugness();
+  }
+
+  function updateRatio() {
+    ratioEl.textContent = hisMessages + ':' + yourMessages;
+  }
+
+  function updateSmugness() {
+    smugness = Math.min(100, smugness);
+    smugBar.style.width = smugness + '%';
+    smugBar.className = 'smugness-fill';
+    if (smugness >= 80) smugBar.classList.add('high');
+    else if (smugness >= 50) smugBar.classList.add('medium');
+  }
+
+  function flashScreen() {
+    flash.classList.add('active');
+    mainContainer.classList.add('shake');
+    setTimeout(() => {
+      flash.classList.remove('active');
+      mainContainer.classList.remove('shake');
+    }, 300);
+  }
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (!inMonologue) {
+        replyGuyRespond('Hello? I have more to say. I ALWAYS have more to say.');
+      }
+    }, 15000);
+  }
+
+  // ── Response Logic ──
+  function replyGuyRespond(text, isMonologueStart, isMonologue) {
+    wellActuallyCount++;
+    smugness += 5;
+    updateStats();
+    setArt(isMonologue || isMonologueStart ? 'monologue' : 'wellactually');
+    addMessage(text, false);
+    speak(text, isMonologueStart, isMonologue);
+    // Return to idle after a bit for non-monologue
+    if (!isMonologue && !isMonologueStart && !inMonologue) {
+      setTimeout(() => setArt('idle'), 2500);
+    }
+  }
+
+  function detectTrigger(text) {
+    const lower = text.toLowerCase();
+    for (const [key, topic] of Object.entries(triggers)) {
+      for (const kw of topic.keywords) {
+        if (lower.includes(kw)) return { key, topic };
+      }
+    }
+    return null;
+  }
+
+  function fireMonologue(topic) {
+    inMonologue = true;
+    setInputEnabled(false);
+    flashScreen();
+    topicEl.textContent = topic.label;
+    smugness = 100;
+    updateSmugness();
+
+    const msgs = topic.messages;
+    let i = 0;
+
+    function nextMsg() {
+      if (i >= msgs.length) {
+        // Monologue over
+        showTyping(false);
+        inMonologue = false;
+        setInputEnabled(true);
+        setArt('idle');
+        smugness = 60;
+        updateSmugness();
+        topicEl.textContent = 'General Pedantry';
+        resetIdleTimer();
+        return;
+      }
+      showTyping(true);
+      const delay = 700 + Math.random() * 800;
+      setTimeout(() => {
+        showTyping(false);
+        replyGuyRespond(msgs[i], i === 0, i > 0);
+        i++;
+        setTimeout(nextMsg, 300 + Math.random() * 400);
+      }, delay);
+    }
+    nextMsg();
+  }
+
+  function fireDefensiveMonologue() {
+    const topic = {
+      label: 'DEFENSIVE MODE',
+      messages: defensiveMonologue
+    };
+    fireMonologue(topic);
+  }
+
+  function handleSend() {
+    const text = userInput.value.trim();
+    userInput.value = '';
+
+    if (inMonologue) return;
+
+    // Empty submit
+    if (!text) {
+      showTyping(true);
+      setTimeout(() => {
+        showTyping(false);
+        replyGuyRespond('...I\'ll wait.');
+      }, 800);
+      return;
+    }
+
+    // Cancel any current speech - he's not listening
+    if (synth) synth.cancel();
+
+    addMessage(text, true);
+    resetIdleTimer();
+
+    const lower = text.toLowerCase().trim();
+
+    // Special: "bye" / "leave" / "stop"
+    if (/\b(bye|leave|stop|quit|exit|goodbye)\b/.test(lower)) {
+      showTyping(true);
+      setTimeout(() => {
+        showTyping(false);
+        replyGuyRespond(pick(byeResponses));
+      }, 600 + Math.random() * 600);
+      return;
+    }
+
+    // Special: "actually"
+    if (/\bactually\b/.test(lower)) {
+      showTyping(true);
+      setTimeout(() => {
+        showTyping(false);
+        replyGuyRespond(pick(actuallyResponse));
+      }, 600 + Math.random() * 600);
+      return;
+    }
+
+    // Special: "you're wrong" / "no" / "shut up"
+    if (/\b(you'?re wrong|shut up|you suck|idiot|stupid|dumb|wrong)\b/.test(lower)) {
+      showTyping(true);
+      setTimeout(() => {
+        showTyping(false);
+        fireDefensiveMonologue();
+      }, 400);
+      return;
+    }
+
+    // Special: dismissive ("ok", "sure", "whatever", "k", "lol", "lmao")
+    if (/^(ok|okay|sure|whatever|k|fine|lol|lmao|haha|mhm|yep|yeah|ya|yea|cool|nice)\.?$/i.test(lower)) {
+      showTyping(true);
+      setTimeout(() => {
+        showTyping(false);
+        replyGuyRespond(pick(dismissiveResponses));
+      }, 800 + Math.random() * 600);
+      return;
+    }
+
+    // Check for trigger topics
+    const trigger = detectTrigger(text);
+    if (trigger) {
+      showTyping(true);
+      setTimeout(() => {
+        showTyping(false);
+        fireMonologue(trigger.topic);
+      }, 500);
+      return;
+    }
+
+    // Generic response
+    showTyping(true);
+    const delay = 800 + Math.random() * 1200;
+    setTimeout(() => {
+      showTyping(false);
+      const opener = pick(openers);
+      const response = pick(genericResponses);
+      // Sometimes just an opener + new response, sometimes a full generic
+      if (Math.random() < 0.4) {
+        replyGuyRespond(response);
+      } else {
+        replyGuyRespond(opener + ' ' + response.charAt(0).toLowerCase() + response.slice(1));
+      }
+      smugness += 3;
+      updateSmugness();
+    }, delay);
+  }
+
+  // ── Event Listeners ──
+  sendBtn.addEventListener('click', handleSend);
+  userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleSend();
+  });
+
+  // Start idle timer
+  resetIdleTimer();
+  userInput.focus();
+  updateStats();
+  updateRatio();
+})();
+</script>
+</body>
+</html>
