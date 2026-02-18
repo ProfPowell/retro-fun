@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Div Vaders // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas { display: block; image-rendering: pixelated; }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #333; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 10;
+  }
+  .back:hover { color: #00ffff; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+// =====================================================================
+// DIV VADERS - The Markup Battle
+// Can you save the web from meaningless divs and obsolete tags?
+// =====================================================================
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// =====================================================================
+// AUDIO ENGINE - 8-bit sound effects via Web Audio API
+// =====================================================================
+
+let audioCtx;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  switch (type) {
+    case 'shoot': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.08);
+      break;
+    }
+    case 'hit-bad': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.2);
+      // Noise burst
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const ng = audioCtx.createGain();
+      ng.gain.setValueAtTime(0.08, now);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      src.connect(ng); ng.connect(audioCtx.destination);
+      src.start(now); src.stop(now + 0.1);
+      break;
+    }
+    case 'hit-good': {
+      // Sad descending tone - you shot a friendly!
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.linearRampToValueAtTime(180, now + 0.35);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.35);
+      break;
+    }
+    case 'hit-armor': {
+      // Ping - tag took a hit but survived
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.setValueAtTime(800, now + 0.03);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.06);
+      break;
+    }
+    case 'enemy-fire': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(90, now + 0.15);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.15);
+      break;
+    }
+    case 'player-die': {
+      // Long chunky explosion
+      for (let k = 0; k < 4; k++) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300 - k * 50, now + k * 0.1);
+        osc.frequency.exponentialRampToValueAtTime(20, now + k * 0.1 + 0.2);
+        gain.gain.setValueAtTime(0.1, now + k * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + k * 0.1 + 0.2);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + k * 0.1); osc.stop(now + k * 0.1 + 0.2);
+      }
+      break;
+    }
+    case 'wave-clear': {
+      // Victory fanfare
+      [523, 659, 784, 1047].forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, now + i * 0.12);
+        gain.gain.linearRampToValueAtTime(0.07, now + i * 0.12 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.3);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.12); osc.stop(now + i * 0.12 + 0.3);
+      });
+      break;
+    }
+    case 'game-over': {
+      [440, 370, 311, 262].forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, now + i * 0.3);
+        gain.gain.linearRampToValueAtTime(0.1, now + i * 0.3 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.3 + 0.5);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.3); osc.stop(now + i * 0.3 + 0.5);
+      });
+      break;
+    }
+    case 'saucer-hum': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(490, now + 0.06);
+      osc.frequency.setValueAtTime(440, now + 0.12);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.12);
+      break;
+    }
+    case 'saucer-drop': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(660, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.12);
+      break;
+    }
+    case 'meter-warn': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.setValueAtTime(260, now + 0.08);
+      osc.frequency.setValueAtTime(220, now + 0.16);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.2);
+      break;
+    }
+  }
+}
+
+// =====================================================================
+// TAG DATA
+// =====================================================================
+
+const GOOD_TAGS = [
+  '<header>', '<nav>', '<main>', '<section>', '<article>',
+  '<aside>', '<footer>', '<figure>', '<details>', '<summary>',
+  '<time>', '<mark>', '<address>', '<output>', '<dialog>',
+  '<figcaption>', '<abbr>', '<cite>', '<blockquote>',
+];
+
+const BAD_TAGS_COMMON = ['<div>'];
+
+const BAD_TAGS_OBSOLETE = [
+  '<font>', '<center>', '<blink>', '<spacer>',
+  '<big>', '<tt>', '<strike>', '<frame>',
+  '<frameset>', '<applet>', '<basefont>', '<isindex>',
+  '<acronym>', '<dir>', '<xmp>',
+];
+
+function randomBadTag() {
+  // 60% div, 40% obsolete
+  if (Math.random() < 0.6) return '<div>';
+  return BAD_TAGS_OBSOLETE[Math.floor(Math.random() * BAD_TAGS_OBSOLETE.length)];
+}
+
+function randomGoodTag() {
+  return GOOD_TAGS[Math.floor(Math.random() * GOOD_TAGS.length)];
+}
+
+// =====================================================================
+// GAME STATE
+// =====================================================================
+
+const STATE = { TITLE: 0, PLAYING: 1, DYING: 2, WAVE_CLEAR: 3, GAME_OVER: 4 };
+let gameState = STATE.TITLE;
+let score = 0;
+let highScore = parseInt(localStorage.getItem('divvaders-hi') || '0', 10);
+let wave = 0;
+let techDebt = 0;
+let semantics = 100;
+let meterWarnTimer = 0;
+
+// Player
+let player = { x: 0, y: 0, w: 56, h: 22, alive: true, flash: 0, deathTimer: 0 };
+
+// Bullets
+let playerBullets = [];
+let enemyBullets = [];
+let shootCooldown = 0;
+
+// Enemies
+let enemies = [];
+let formationX = 0, formationY = 0;
+let formationDir = 1;
+let formationSpeed = 0.4;
+let moveTimer = 0;
+let moveInterval = 40;
+let enemyShootTimer = 0;
+
+// Saucer
+let saucer = null;
+let saucerTimer = 0;
+let saucerDrops = [];
+let saucerHumTimer = 0;
+
+// Particles
+let particles = [];
+
+// Screen shake
+let shakeX = 0, shakeY = 0, shakeMag = 0;
+
+// UI timers
+let waveClearTimer = 0;
+let titleBlink = 0;
+let titleStars = [];
+for (let i = 0; i < 120; i++) {
+  titleStars.push({
+    x: Math.random(), y: Math.random(),
+    speed: 0.0005 + Math.random() * 0.002,
+    bright: Math.random(),
+  });
+}
+
+// Flash messages
+let flashMessages = [];
+
+// =====================================================================
+// INPUT
+// =====================================================================
+
+const keys = {};
+
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  keys[e.code] = true;
+  if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
+    e.preventDefault();
+  }
+  if (gameState === STATE.TITLE && (e.code === 'Space' || e.code === 'Enter')) {
+    initAudio();
+    startGame();
+  }
+  if (gameState === STATE.GAME_OVER && (e.code === 'Space' || e.code === 'Enter')) {
+    gameState = STATE.TITLE;
+    titleBlink = 0;
+  }
+});
+
+window.addEventListener('keyup', e => {
+  keys[e.key] = false;
+  keys[e.code] = false;
+});
+
+// Touch / click support for start
+canvas.addEventListener('click', () => {
+  if (gameState === STATE.TITLE) {
+    initAudio();
+    startGame();
+  } else if (gameState === STATE.GAME_OVER) {
+    gameState = STATE.TITLE;
+    titleBlink = 0;
+  }
+});
+
+// =====================================================================
+// GAME LOGIC
+// =====================================================================
+
+function startGame() {
+  gameState = STATE.PLAYING;
+  score = 0;
+  wave = 0;
+  techDebt = 0;
+  semantics = 100;
+  player.alive = true;
+  player.flash = 0;
+  player.x = W / 2;
+  player.y = H - 60;
+  playerBullets = [];
+  enemyBullets = [];
+  enemies = [];
+  particles = [];
+  flashMessages = [];
+  saucer = null;
+  saucerDrops = [];
+  saucerTimer = 400;
+  shakeMag = 0;
+  spawnWave();
+}
+
+function spawnWave() {
+  wave++;
+  enemies = [];
+  enemyBullets = [];
+  saucerDrops = [];
+
+  // Grid size scales with wave
+  const cols = Math.min(11, 6 + Math.floor(wave * 0.4));
+  const rows = Math.min(5, 3 + Math.floor(wave * 0.2));
+
+  // Tag cell sizing
+  const tagW = Math.min(72, Math.floor((W - 80) / cols - 6));
+  const tagH = 26;
+  const gapX = 6;
+  const gapY = 6;
+
+  // More bad tags as waves progress
+  const badRatio = Math.min(0.85, 0.3 + wave * 0.045);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const isBad = Math.random() < badRatio;
+      const tag = isBad ? randomBadTag() : randomGoodTag();
+      const isObsolete = isBad && tag !== '<div>';
+
+      enemies.push({
+        tag, bad: isBad,
+        col: c, row: r,
+        localX: c * (tagW + gapX),
+        localY: r * (tagH + gapY),
+        w: tagW, h: tagH,
+        alive: true,
+        flash: 0,
+        hp: isObsolete ? 2 : 1,
+        maxHp: isObsolete ? 2 : 1,
+        points: isBad ? (tag === '<div>' ? 10 : 30) : -20,
+      });
+    }
+  }
+
+  // Center the formation
+  const formW = cols * (tagW + gapX);
+  formationX = (W - formW) / 2;
+  formationY = 55;
+  formationDir = 1;
+  formationSpeed = 0.3 + wave * 0.1;
+  moveInterval = Math.max(6, 35 - wave * 2);
+  moveTimer = 0;
+  enemyShootTimer = 0;
+  if (!saucer) saucerTimer = 200 + Math.random() * 200;
+}
+
+function addFlash(text, x, y, color) {
+  flashMessages.push({ text, x, y, color, life: 1 });
+}
+
+function spawnExplosion(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 4;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1,
+      life: 1,
+      decay: 0.015 + Math.random() * 0.02,
+      size: 2 + Math.random() * 4,
+      color,
+    });
+  }
+}
+
+function spawnTextDebris(text, x, y, color) {
+  // Individual characters fly out
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '<' || ch === '>' || ch === ' ') continue;
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
+    const speed = 2 + Math.random() * 3;
+    particles.push({
+      x: x + (i - text.length / 2) * 6,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.01 + Math.random() * 0.01,
+      size: 8,
+      color,
+      char: ch,
+    });
+  }
+}
+
+function playerHit() {
+  if (!player.alive || player.flash > 0) return;
+  player.alive = false;
+  player.deathTimer = 90;
+  gameState = STATE.DYING;
+  spawnExplosion(player.x, player.y, '#00ffff', 20);
+  spawnTextDebris('<body>', player.x, player.y, '#00ffff');
+  shakeMag = 8;
+  playSound('player-die');
+}
+
+function checkGameOver() {
+  if (techDebt >= 100 && semantics <= 0) {
+    gameState = STATE.GAME_OVER;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('divvaders-hi', String(highScore));
+    }
+    playSound('game-over');
+  }
+}
+
+function update() {
+  // Shake decay
+  if (shakeMag > 0) {
+    shakeX = (Math.random() - 0.5) * shakeMag;
+    shakeY = (Math.random() - 0.5) * shakeMag;
+    shakeMag *= 0.9;
+    if (shakeMag < 0.3) { shakeMag = 0; shakeX = 0; shakeY = 0; }
+  }
+
+  // Update particles always
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.05; // gravity on debris
+    p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  // Update flash messages
+  for (let i = flashMessages.length - 1; i >= 0; i--) {
+    flashMessages[i].life -= 0.025;
+    flashMessages[i].y -= 0.8;
+    if (flashMessages[i].life <= 0) flashMessages.splice(i, 1);
+  }
+
+  // Wave clear state
+  if (gameState === STATE.WAVE_CLEAR) {
+    waveClearTimer--;
+    if (waveClearTimer <= 0) {
+      techDebt = Math.max(0, techDebt - 25);
+      semantics = Math.min(100, semantics + 25);
+      spawnWave();
+      gameState = STATE.PLAYING;
+    }
+    return;
+  }
+
+  // Dying state - respawn timer
+  if (gameState === STATE.DYING) {
+    player.deathTimer--;
+    if (player.deathTimer <= 0) {
+      player.alive = true;
+      player.flash = 90; // invincibility
+      player.x = W / 2;
+      gameState = STATE.PLAYING;
+    }
+    // Still update enemies etc while dying
+  }
+
+  // Meter warning
+  if (techDebt > 75 || semantics < 25) {
+    meterWarnTimer++;
+    if (meterWarnTimer % 180 === 0) playSound('meter-warn');
+  } else {
+    meterWarnTimer = 0;
+  }
+
+  // --- Player ---
+  if (player.alive) {
+    const speed = 5;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) player.x -= speed;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) player.x += speed;
+    player.x = Math.max(player.w / 2, Math.min(W - player.w / 2, player.x));
+    player.y = H - 60;
+
+    if (player.flash > 0) player.flash--;
+
+    // Shooting
+    if (shootCooldown > 0) shootCooldown--;
+    if ((keys['Space'] || keys['ArrowUp'] || keys['w'] || keys['W']) && shootCooldown === 0) {
+      if (playerBullets.length < 3) {
+        playerBullets.push({
+          x: player.x,
+          y: player.y - player.h / 2 - 6,
+          vy: -9,
+        });
+        shootCooldown = 10;
+        playSound('shoot');
+      }
+    }
+  }
+
+  // --- Player bullets ---
+  for (let i = playerBullets.length - 1; i >= 0; i--) {
+    playerBullets[i].y += playerBullets[i].vy;
+    if (playerBullets[i].y < -20) { playerBullets.splice(i, 1); continue; }
+
+    const b = playerBullets[i];
+    if (!b) continue;
+    let hit = false;
+
+    // Hit enemies
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const ex = formationX + e.localX;
+      const ey = formationY + e.localY;
+      if (b.x > ex - 2 && b.x < ex + e.w + 2 && b.y > ey - 2 && b.y < ey + e.h + 2) {
+        e.hp--;
+        if (e.hp <= 0) {
+          e.alive = false;
+          score = Math.max(0, score + e.points);
+          if (e.bad) {
+            playSound('hit-bad');
+            spawnExplosion(ex + e.w / 2, ey + e.h / 2, '#ff4444', 10);
+            spawnTextDebris(e.tag, ex + e.w / 2, ey + e.h / 2, '#ff6644');
+            addFlash('+' + Math.abs(e.points), ex + e.w / 2, ey, '#ffff00');
+          } else {
+            playSound('hit-good');
+            semantics = Math.max(0, semantics - 3);
+            techDebt = Math.min(100, techDebt + 2);
+            spawnExplosion(ex + e.w / 2, ey + e.h / 2, '#00ff88', 6);
+            addFlash('FRIENDLY FIRE!', ex + e.w / 2, ey, '#ff8800');
+            addFlash(e.points.toString(), ex + e.w / 2, ey + 16, '#ff4444');
+            checkGameOver();
+          }
+        } else {
+          e.flash = 8;
+          playSound('hit-armor');
+          addFlash('ARMOR!', ex + e.w / 2, ey, '#ffaa44');
+        }
+        hit = true;
+        break;
+      }
+    }
+
+    // Hit saucer
+    if (!hit && saucer) {
+      if (b.x > saucer.x - saucer.w / 2 && b.x < saucer.x + saucer.w / 2 &&
+          b.y > saucer.y - 12 && b.y < saucer.y + 12) {
+        score += 50;
+        addFlash('+50', saucer.x, saucer.y - 15, '#ff00ff');
+        spawnExplosion(saucer.x, saucer.y, '#ff00ff', 15);
+        spawnTextDebris('<marquee>', saucer.x, saucer.y, '#ff88ff');
+        playSound('hit-bad');
+        saucer = null;
+        hit = true;
+      }
+    }
+
+    // Hit saucer drops
+    if (!hit) {
+      for (let di = saucerDrops.length - 1; di >= 0; di--) {
+        const d = saucerDrops[di];
+        if (Math.abs(b.x - d.x) < 22 && Math.abs(b.y - d.y) < 14) {
+          score += 5;
+          addFlash('+5', d.x, d.y - 10, '#ffff00');
+          spawnExplosion(d.x, d.y, '#ff4444', 5);
+          playSound('hit-bad');
+          saucerDrops.splice(di, 1);
+          hit = true;
+          break;
+        }
+      }
+    }
+
+    if (hit) playerBullets.splice(i, 1);
+  }
+
+  // --- Enemy formation movement ---
+  moveTimer++;
+  if (moveTimer >= moveInterval) {
+    moveTimer = 0;
+
+    // Find alive bounds
+    let minX = Infinity, maxX = -Infinity;
+    let aliveCount = 0;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      aliveCount++;
+      const ex = formationX + e.localX;
+      minX = Math.min(minX, ex);
+      maxX = Math.max(maxX, ex + e.w);
+    }
+
+    if (aliveCount > 0) {
+      // Speed up as fewer enemies remain
+      const speedMult = 1 + (1 - aliveCount / enemies.length) * 2;
+      const stepX = formationDir * formationSpeed * 8 * speedMult;
+      const nextMin = minX + stepX;
+      const nextMax = maxX + stepX;
+
+      if (nextMax > W - 10 || nextMin < 10) {
+        formationDir *= -1;
+        formationY += 12;
+      } else {
+        formationX += stepX;
+      }
+    }
+  }
+
+  // --- Enemy shooting ---
+  enemyShootTimer++;
+  const shootInterval = Math.max(25, 100 - wave * 8);
+  if (enemyShootTimer >= shootInterval && gameState === STATE.PLAYING) {
+    enemyShootTimer = 0;
+    // Bottom-most enemy in each column
+    const colBottoms = {};
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      if (!colBottoms[e.col] || e.row > colBottoms[e.col].row) {
+        colBottoms[e.col] = e;
+      }
+    }
+    const shooters = Object.values(colBottoms);
+    if (shooters.length > 0) {
+      const s = shooters[Math.floor(Math.random() * shooters.length)];
+      const ex = formationX + s.localX + s.w / 2;
+      const ey = formationY + s.localY + s.h;
+      enemyBullets.push({
+        x: ex, y: ey,
+        vy: 3.5 + wave * 0.25,
+        tag: s.tag, bad: s.bad,
+      });
+      playSound('enemy-fire');
+    }
+  }
+
+  // --- Enemy bullets ---
+  for (let i = enemyBullets.length - 1; i >= 0; i--) {
+    const b = enemyBullets[i];
+    b.y += b.vy;
+    if (b.y > H + 20) { enemyBullets.splice(i, 1); continue; }
+
+    // Hit player
+    if (player.alive && player.flash === 0) {
+      if (Math.abs(b.x - player.x) < player.w / 2 + 3 &&
+          Math.abs(b.y - player.y) < player.h / 2 + 5) {
+        enemyBullets.splice(i, 1);
+        playerHit();
+        continue;
+      }
+    }
+
+    // Hit ground - bad tags landing hurts meters
+    if (b.y > H - 35 && b.bad) {
+      techDebt = Math.min(100, techDebt + 1);
+      semantics = Math.max(0, semantics - 0.5);
+      spawnExplosion(b.x, H - 35, '#ff444466', 3);
+      enemyBullets.splice(i, 1);
+      checkGameOver();
+    }
+  }
+
+  // --- Saucer drops ---
+  for (let i = saucerDrops.length - 1; i >= 0; i--) {
+    const d = saucerDrops[i];
+    d.y += d.vy;
+    d.vy += 0.04;
+    d.wobble = (d.wobble || 0) + 0.15;
+    d.x += Math.sin(d.wobble) * 0.5;
+
+    if (d.y > H + 30) { saucerDrops.splice(i, 1); continue; }
+
+    // Hit player
+    if (player.alive && player.flash === 0) {
+      if (Math.abs(d.x - player.x) < player.w / 2 + 16 &&
+          Math.abs(d.y - player.y) < player.h / 2 + 10) {
+        saucerDrops.splice(i, 1);
+        playerHit();
+        continue;
+      }
+    }
+
+    // Hit ground
+    if (saucerDrops[i] && d.y > H - 35) {
+      techDebt = Math.min(100, techDebt + 2);
+      semantics = Math.max(0, semantics - 1);
+      spawnExplosion(d.x, H - 35, '#ff4444', 4);
+      addFlash('<div> LANDED!', d.x, H - 50, '#ff4444');
+      saucerDrops.splice(i, 1);
+      checkGameOver();
+    }
+  }
+
+  // --- Enemies reaching the ground ---
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const ey = formationY + e.localY + e.h;
+    if (ey > H - 45) {
+      if (e.bad) {
+        techDebt = Math.min(100, techDebt + 4);
+        semantics = Math.max(0, semantics - 3);
+        addFlash('INVADED!', formationX + e.localX + e.w / 2, H - 55, '#ff0000');
+      }
+      e.alive = false;
+      spawnExplosion(formationX + e.localX + e.w / 2, ey, e.bad ? '#ff0000' : '#00ff00', 4);
+      shakeMag = Math.max(shakeMag, 3);
+      checkGameOver();
+    }
+  }
+
+  // --- Saucer ---
+  saucerTimer--;
+  if (saucerTimer <= 0 && !saucer && gameState === STATE.PLAYING) {
+    const dir = Math.random() > 0.5 ? 1 : -1;
+    saucer = {
+      x: dir > 0 ? -90 : W + 90,
+      y: 32,
+      dir, speed: 1.5 + wave * 0.15,
+      w: 90,
+      dropTimer: 40 + Math.random() * 30,
+      dropInterval: Math.max(15, 45 - wave * 2),
+    };
+    saucerTimer = 500 + Math.random() * 500;
+  }
+
+  if (saucer) {
+    saucer.x += saucer.dir * saucer.speed;
+
+    saucerHumTimer++;
+    if (saucerHumTimer % 20 === 0) playSound('saucer-hum');
+
+    saucer.dropTimer--;
+    if (saucer.dropTimer <= 0 && gameState === STATE.PLAYING) {
+      saucer.dropTimer = saucer.dropInterval;
+      saucerDrops.push({
+        x: saucer.x, y: saucer.y + 14,
+        vy: 1.5 + wave * 0.1,
+        wobble: Math.random() * Math.PI * 2,
+      });
+      playSound('saucer-drop');
+    }
+
+    if ((saucer.dir > 0 && saucer.x > W + 120) ||
+        (saucer.dir < 0 && saucer.x < -120)) {
+      saucer = null;
+      saucerHumTimer = 0;
+    }
+  }
+
+  // --- Check wave clear ---
+  const aliveBad = enemies.filter(e => e.alive && e.bad);
+  if (aliveBad.length === 0 && enemies.length > 0 && gameState === STATE.PLAYING) {
+    // All bad tags destroyed! Wave clear!
+    for (const e of enemies) {
+      if (e.alive) {
+        e.alive = false;
+        const ex = formationX + e.localX + e.w / 2;
+        const ey = formationY + e.localY + e.h / 2;
+        spawnExplosion(ex, ey, '#00ff88', 3);
+      }
+    }
+    gameState = STATE.WAVE_CLEAR;
+    waveClearTimer = 150;
+    saucerDrops = [];
+    enemyBullets = [];
+    playSound('wave-clear');
+  }
+}
+
+// =====================================================================
+// RENDERING
+// =====================================================================
+
+function drawTag(text, x, y, w, h, bad, flash, hp, maxHp) {
+  const baseColor = bad ? '#ff2244' : '#00cc66';
+  const bgColor = bad ? (flash > 0 ? '#660022' : '#220011') : (flash > 0 ? '#005522' : '#001a0a');
+  const borderColor = flash > 0 ? '#ffffff' : (bad ? '#ff446688' : '#00ff8866');
+
+  // Background
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(x, y, w, h);
+
+  // Border
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = flash > 0 ? 2 : 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+
+  // HP bar for armored tags
+  if (maxHp > 1 && hp > 0) {
+    const hpW = (w - 6) * (hp / maxHp);
+    ctx.fillStyle = '#ffaa0066';
+    ctx.fillRect(x + 3, y + h - 5, hpW, 3);
+  }
+
+  // Tag text
+  const fontSize = Math.min(11, Math.max(7, w / text.length * 1.2));
+  ctx.font = `bold ${fontSize}px monospace`;
+  ctx.fillStyle = baseColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (bad) {
+    ctx.shadowColor = '#ff0044';
+    ctx.shadowBlur = flash > 0 ? 10 : 4;
+  } else {
+    ctx.shadowColor = '#00ff88';
+    ctx.shadowBlur = flash > 0 ? 8 : 3;
+  }
+  ctx.fillText(text, x + w / 2, y + h / 2 - (maxHp > 1 ? 2 : 0));
+  ctx.shadowBlur = 0;
+}
+
+function drawPlayer() {
+  if (!player.alive) return;
+  if (player.flash > 0 && Math.floor(player.flash / 3) % 2) return;
+
+  const x = player.x;
+  const y = player.y;
+  const w = player.w;
+  const h = player.h;
+
+  // Ship body
+  ctx.fillStyle = '#00bbdd';
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y + h / 2);
+  ctx.lineTo(x - w / 2 + 6, y - h / 2);
+  ctx.lineTo(x + w / 2 - 6, y - h / 2);
+  ctx.lineTo(x + w / 2, y + h / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cannon
+  ctx.fillStyle = '#00eeff';
+  ctx.fillRect(x - 2, y - h / 2 - 8, 4, 10);
+
+  // Cockpit stripe
+  ctx.fillStyle = '#004455';
+  ctx.fillRect(x - w / 2 + 8, y - h / 2 + 3, w - 16, 4);
+
+  // Label
+  ctx.font = 'bold 7px monospace';
+  ctx.fillStyle = '#001a22';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('<body>', x, y + 3);
+
+  // Glow
+  ctx.shadowColor = '#00ffff';
+  ctx.shadowBlur = 10;
+  ctx.strokeStyle = '#00ffff44';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y + h / 2);
+  ctx.lineTo(x - w / 2 + 6, y - h / 2);
+  ctx.lineTo(x + w / 2 - 6, y - h / 2);
+  ctx.lineTo(x + w / 2, y + h / 2);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Engine glow
+  ctx.fillStyle = '#00ffff44';
+  ctx.fillRect(x - 8, y + h / 2, 4, 3 + Math.random() * 4);
+  ctx.fillRect(x + 4, y + h / 2, 4, 3 + Math.random() * 4);
+}
+
+function drawBullets() {
+  // Player bullets - linter bolts
+  for (const b of playerBullets) {
+    ctx.fillStyle = '#00ffff';
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 8;
+    ctx.fillRect(b.x - 1.5, b.y - 6, 3, 12);
+    ctx.shadowBlur = 0;
+    // Trail
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#00ffff';
+    ctx.fillRect(b.x - 1, b.y + 6, 2, 10);
+    ctx.globalAlpha = 0.1;
+    ctx.fillRect(b.x - 0.5, b.y + 16, 1, 8);
+    ctx.globalAlpha = 1;
+  }
+
+  // Enemy bullets
+  for (const b of enemyBullets) {
+    const color = b.bad ? '#ff4444' : '#ffcc00';
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 5;
+    ctx.fillRect(b.x - 2, b.y - 5, 4, 10);
+    ctx.shadowBlur = 0;
+    // Tag label
+    ctx.font = '6px monospace';
+    ctx.fillStyle = color + '88';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.tag, b.x, b.y + 12);
+  }
+
+  // Saucer drops - falling divs!
+  for (const d of saucerDrops) {
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(Math.sin(d.wobble || 0) * 0.2);
+    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = '#ff3344';
+    ctx.shadowColor = '#ff0022';
+    ctx.shadowBlur = 8;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('<div>', 0, 0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+}
+
+function drawSaucer() {
+  if (!saucer) return;
+  const x = saucer.x;
+  const y = saucer.y;
+  const pulse = 0.7 + Math.sin(Date.now() * 0.008) * 0.3;
+
+  // Saucer body
+  ctx.fillStyle = `rgba(255, 0, 255, ${pulse * 0.6})`;
+  ctx.shadowColor = '#ff00ff';
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.ellipse(x, y, saucer.w / 2, 11, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#330033';
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.ellipse(x, y, saucer.w / 2 - 5, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Dome
+  ctx.fillStyle = `rgba(255, 0, 255, ${pulse * 0.4})`;
+  ctx.beginPath();
+  ctx.ellipse(x, y - 6, 20, 8, 0, Math.PI, 0);
+  ctx.fill();
+
+  // Label
+  ctx.font = 'bold 10px monospace';
+  ctx.fillStyle = '#ff66ff';
+  ctx.shadowColor = '#ff00ff';
+  ctx.shadowBlur = 8;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('<marquee>', x, y + 1);
+  ctx.shadowBlur = 0;
+
+  // Blinking lights
+  for (let i = 0; i < 5; i++) {
+    const angle = (Date.now() * 0.005 + i * Math.PI * 2 / 5);
+    const lx = x + Math.cos(angle) * (saucer.w / 2 - 3);
+    const ly = y + Math.sin(angle) * 5;
+    ctx.fillStyle = i % 2 ? '#ff00ff' : '#ffff00';
+    ctx.fillRect(lx - 1, ly - 1, 2, 2);
+  }
+}
+
+function drawHUD() {
+  const barW = Math.min(180, W * 0.2);
+  const barH = 14;
+  const hudY = 6;
+  const barGap = 4;
+
+  // Score
+  ctx.font = 'bold 13px monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`SCORE ${score}`, 10, hudY);
+
+  // High score
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#555';
+  ctx.fillText(`HI ${highScore}`, 10, hudY + 17);
+
+  // Wave / Page
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#888';
+  ctx.fillText(`PAGE ${wave}`, W / 2, hudY);
+
+  // Enemy count
+  const badLeft = enemies.filter(e => e.alive && e.bad).length;
+  const goodLeft = enemies.filter(e => e.alive && !e.bad).length;
+  ctx.font = '8px monospace';
+  ctx.fillStyle = '#ff4444';
+  ctx.fillText(`BAD:${badLeft}`, W / 2 - 35, hudY + 16);
+  ctx.fillStyle = '#00cc66';
+  ctx.fillText(`OK:${goodLeft}`, W / 2 + 35, hudY + 16);
+
+  // --- Tech Debt meter ---
+  const tdX = W - barW - 10;
+  ctx.fillStyle = '#111';
+  ctx.fillRect(tdX, hudY, barW, barH);
+
+  const tdPct = techDebt / 100;
+  const tdFlash = techDebt > 75 && Math.floor(Date.now() / 300) % 2;
+  let tdColor;
+  if (techDebt > 75) tdColor = tdFlash ? '#ff0000' : '#cc0000';
+  else if (techDebt > 50) tdColor = '#ff6600';
+  else if (techDebt > 25) tdColor = '#ff8844';
+  else tdColor = '#ff444488';
+
+  ctx.fillStyle = tdColor;
+  ctx.fillRect(tdX + 1, hudY + 1, (barW - 2) * tdPct, barH - 2);
+  ctx.strokeStyle = techDebt > 75 ? '#ff0000' : '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(tdX, hudY, barW, barH);
+
+  ctx.font = 'bold 8px monospace';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.fillText(`TECH DEBT ${Math.floor(techDebt)}%`, tdX + barW / 2, hudY + barH / 2 + 1);
+
+  // --- Semantics meter ---
+  const semY = hudY + barH + barGap;
+  ctx.fillStyle = '#111';
+  ctx.fillRect(tdX, semY, barW, barH);
+
+  const semPct = semantics / 100;
+  const semFlash = semantics < 25 && Math.floor(Date.now() / 300) % 2;
+  let semColor;
+  if (semantics < 25) semColor = semFlash ? '#ff4400' : '#cc3300';
+  else if (semantics < 50) semColor = '#ddaa00';
+  else semColor = '#00dd66';
+
+  ctx.fillStyle = semColor;
+  ctx.fillRect(tdX + 1, semY + 1, (barW - 2) * semPct, barH - 2);
+  ctx.strokeStyle = semantics < 25 ? '#ff4400' : '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(tdX, semY, barW, barH);
+
+  ctx.font = 'bold 8px monospace';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.fillText(`SEMANTICS ${Math.floor(semantics)}%`, tdX + barW / 2, semY + barH / 2 + 1);
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    if (p.char) {
+      ctx.font = `bold ${p.size}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.char, p.x, p.y);
+    } else {
+      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    }
+    ctx.restore();
+  }
+}
+
+function drawFlashMessages() {
+  for (const f of flashMessages) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, f.life);
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = f.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = f.color;
+    ctx.shadowBlur = 6;
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+}
+
+function drawScanlines() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+}
+
+// --- TITLE SCREEN ---
+function drawTitleScreen() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // Animated stars
+  for (const s of titleStars) {
+    s.y += s.speed;
+    if (s.y > 1) { s.y = 0; s.x = Math.random(); }
+    const bri = 40 + Math.sin(Date.now() * 0.003 + s.bright * 100) * 40;
+    ctx.fillStyle = `rgb(${bri},${bri},${bri + 20})`;
+    ctx.fillRect(s.x * W, s.y * H, 2, 2);
+  }
+
+  titleBlink++;
+  const cy = H * 0.25;
+
+  // Big title
+  const titleSize = Math.min(64, W * 0.09);
+  ctx.font = `bold ${titleSize}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Shadow
+  ctx.fillStyle = '#440000';
+  ctx.fillText('DIV VADERS', W / 2 + 3, cy + 3);
+
+  // Main
+  ctx.shadowColor = '#ff0044';
+  ctx.shadowBlur = 25;
+  ctx.fillStyle = '#ff2244';
+  ctx.fillText('DIV VADERS', W / 2, cy);
+  ctx.shadowBlur = 0;
+
+  // Subtitle
+  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#666';
+  ctx.fillText('CAN YOU WIN THE MARKUP BATTLE?', W / 2, cy + titleSize * 0.6);
+
+  // Enemy showcase
+  const showY = cy + titleSize * 0.6 + 40;
+  const lineup = [
+    { tag: '<div>', color: '#ff2244', pts: '10', desc: 'MEANINGLESS' },
+    { tag: '<font>', color: '#ff6644', pts: '30', desc: 'OBSOLETE' },
+    { tag: '<blink>', color: '#ff8844', pts: '30', desc: 'DEPRECATED' },
+    { tag: '<center>', color: '#ff6644', pts: '30', desc: 'PRESENTATIONAL' },
+    { tag: '<marquee>', color: '#ff00ff', pts: '50', desc: 'SAUCER BOSS' },
+  ];
+
+  ctx.font = '10px monospace';
+  lineup.forEach((s, i) => {
+    const sy = showY + i * 24;
+    ctx.fillStyle = s.color;
+    ctx.textAlign = 'right';
+    ctx.shadowColor = s.color;
+    ctx.shadowBlur = 4;
+    ctx.fillText(s.tag, W / 2 - 30, sy);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffff00';
+    ctx.textAlign = 'center';
+    ctx.fillText(`= ${s.pts} PTS`, W / 2 + 30, sy);
+    ctx.fillStyle = '#444';
+    ctx.textAlign = 'left';
+    ctx.fillText(s.desc, W / 2 + 75, sy);
+  });
+
+  // Warning box
+  const warnY = showY + lineup.length * 24 + 20;
+  ctx.strokeStyle = '#00ff8844';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(W / 2 - 180, warnY - 10, 360, 45);
+
+  ctx.font = 'bold 11px monospace';
+  ctx.fillStyle = '#00ff88';
+  ctx.textAlign = 'center';
+  ctx.fillText('CAUTION: DON\'T SHOOT SEMANTIC TAGS!', W / 2, warnY + 4);
+  ctx.font = '8px monospace';
+  ctx.fillStyle = '#448866';
+  ctx.fillText('<header> <nav> <main> <article> <section> <aside> <footer>', W / 2, warnY + 20);
+
+  // Meters explanation
+  const meterY = warnY + 55;
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#ff4444';
+  ctx.fillText('TECH DEBT hits 100% + SEMANTICS hits 0% = GAME OVER', W / 2, meterY);
+  ctx.fillStyle = '#00cc66';
+  ctx.fillText('CLEAR A PAGE = -25% DEBT & +25% SEMANTICS', W / 2, meterY + 16);
+
+  // Start prompt
+  if (Math.floor(titleBlink / 25) % 2) {
+    ctx.font = 'bold 18px monospace';
+    ctx.fillStyle = '#00ffff';
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 15;
+    ctx.fillText('PRESS SPACE TO START', W / 2, H * 0.82);
+    ctx.shadowBlur = 0;
+  }
+
+  // Controls
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#333';
+  ctx.fillText('ARROWS / WASD = MOVE     SPACE / UP / W = FIRE', W / 2, H * 0.89);
+
+  if (highScore > 0) {
+    ctx.fillStyle = '#555';
+    ctx.fillText(`HIGH SCORE: ${highScore}`, W / 2, H * 0.93);
+  }
+
+  drawScanlines();
+}
+
+// --- GAME OVER SCREEN ---
+function drawGameOverScreen() {
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
+  ctx.fillRect(0, 0, W, H);
+
+  const cy = H / 2;
+
+  ctx.font = `bold ${Math.min(52, W * 0.07)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ff0000';
+  ctx.shadowColor = '#ff0000';
+  ctx.shadowBlur = 20;
+  ctx.fillText('GAME OVER', W / 2, cy - 70);
+  ctx.shadowBlur = 0;
+
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#ff4444';
+  ctx.fillText('THE WEB HAS FALLEN TO DIV SOUP', W / 2, cy - 30);
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#883333';
+  ctx.fillText('VALIDITY HAS BEEN EXTINGUISHED IN CYBERSPACE', W / 2, cy - 12);
+
+  ctx.font = 'bold 18px monospace';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(`SCORE: ${score}`, W / 2, cy + 20);
+
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#888';
+  ctx.fillText(`PAGES CLEARED: ${wave - 1}`, W / 2, cy + 45);
+
+  if (score >= highScore && score > 0) {
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#ffff00';
+    ctx.shadowColor = '#ffff00';
+    ctx.shadowBlur = 8;
+    ctx.fillText('NEW HIGH SCORE!', W / 2, cy + 70);
+    ctx.shadowBlur = 0;
+  }
+
+  titleBlink++;
+  if (Math.floor(titleBlink / 25) % 2) {
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#00ffff';
+    ctx.fillText('PRESS SPACE TO CONTINUE', W / 2, cy + 105);
+  }
+
+  drawScanlines();
+}
+
+// --- WAVE CLEAR OVERLAY ---
+function drawWaveClearOverlay() {
+  ctx.fillStyle = 'rgba(0, 10, 5, 0.5)';
+  ctx.fillRect(0, 0, W, H);
+
+  const pulse = Math.sin(Date.now() * 0.01) * 0.3 + 0.7;
+
+  ctx.font = `bold ${Math.min(44, W * 0.06)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = `rgba(0, 255, 136, ${pulse})`;
+  ctx.shadowColor = '#00ff88';
+  ctx.shadowBlur = 25;
+  ctx.fillText(`PAGE ${wave} CLEARED!`, W / 2, H / 2 - 30);
+  ctx.shadowBlur = 0;
+
+  ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = '#00ff88';
+  ctx.fillText('VALID MARKUP RESTORED', W / 2, H / 2 + 5);
+
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#88ffaa';
+  ctx.fillText('TECH DEBT -25%   SEMANTICS +25%', W / 2, H / 2 + 30);
+}
+
+// --- GAME FIELD ---
+function drawGameField() {
+  // Background
+  ctx.fillStyle = '#000008';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid
+  ctx.strokeStyle = '#080810';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 50) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 50) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Ground line - "content zone"
+  const groundY = H - 38;
+  ctx.strokeStyle = '#00ffff15';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(W, groundY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = '7px monospace';
+  ctx.fillStyle = '#0a2a2a';
+  ctx.textAlign = 'center';
+  ctx.fillText('— YOUR CONTENT ZONE —', W / 2, H - 18);
+
+  // Draw enemies
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const ex = formationX + e.localX;
+    const ey = formationY + e.localY;
+    drawTag(e.tag, ex, ey, e.w, e.h, e.bad, e.flash, e.hp, e.maxHp);
+    if (e.flash > 0) e.flash--;
+  }
+
+  drawSaucer();
+  drawBullets();
+  drawPlayer();
+  drawParticles();
+  drawFlashMessages();
+  drawHUD();
+  drawScanlines();
+}
+
+// =====================================================================
+// MAIN LOOP
+// =====================================================================
+
+function loop() {
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  switch (gameState) {
+    case STATE.TITLE:
+      drawTitleScreen();
+      break;
+    case STATE.PLAYING:
+    case STATE.DYING:
+      update();
+      drawGameField();
+      break;
+    case STATE.WAVE_CLEAR:
+      update();
+      drawGameField();
+      drawWaveClearOverlay();
+      break;
+    case STATE.GAME_OVER:
+      drawGameField();
+      drawGameOverScreen();
+      break;
+  }
+
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
