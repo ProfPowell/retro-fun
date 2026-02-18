@@ -560,6 +560,41 @@
     to { opacity: 1; transform: scaleX(1.05); }
   }
 
+  /* === GAME SECTION PREVIEWS === */
+  .tag--game { border-color: #ff224433; color: #ff224488; }
+
+  .preview-divvaders {
+    background: #000008;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+  }
+  .preview-divvaders::before {
+    content: '<div>  <div>  <div>';
+    font-family: monospace; font-size: 1rem; font-weight: bold;
+    color: #ff2244; white-space: pre;
+    text-shadow: 0 0 8px #ff0044;
+    animation: divvaders-fall 2s linear infinite;
+    position: absolute;
+  }
+  .preview-divvaders::after {
+    content: '▲';
+    font-family: monospace; font-size: 1.8rem;
+    color: #00ddff;
+    text-shadow: 0 0 12px #00ffff;
+    position: absolute;
+    bottom: 15%;
+    animation: divvaders-move 1.5s ease-in-out infinite alternate;
+  }
+  @keyframes divvaders-fall {
+    from { transform: translateY(-50px); opacity: 0.3; }
+    50% { opacity: 1; }
+    to { transform: translateY(80px); opacity: 0.2; }
+  }
+  @keyframes divvaders-move {
+    from { transform: translateX(-40px); }
+    to { transform: translateX(40px); }
+  }
+
   /* === WEB FUN SECTION PREVIEWS === */
   .tag--web { border-color: #ff5f8733; color: #ff5f8788; }
 
@@ -752,6 +787,17 @@
       <p>Race to 1M LOC with agents, technical debt, and vibes</p>
       <span class="tag tag--css">CSS</span>
       <span class="tag">Satire</span>
+    </div>
+  </a>
+
+  <a class="card" href="demos/div-vaders/">
+    <div class="card-preview preview-divvaders"></div>
+    <div class="card-info">
+      <h2>Div Vaders</h2>
+      <p>Blast rogue &lt;div&gt; tags &amp; obsolete markup before they destroy the web</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag tag--audio">Audio</span>
+      <span class="tag tag--game">Game</span>
     </div>
   </a>
 
