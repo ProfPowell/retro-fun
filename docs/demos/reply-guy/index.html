@@ -84,8 +84,8 @@
   }
 
   .ascii-art {
-    font-size: 0.75rem;
-    line-height: 1.3;
+    font-size: 0.65rem;
+    line-height: 1.25;
     color: #00ffff;
     text-shadow: 0 0 6px #00ffff44;
     white-space: pre;
@@ -322,8 +322,8 @@
       width: auto;
       min-width: 0;
       flex-shrink: 0;
-      padding: 0.3rem 0.5rem;
-      font-size: 0.5rem;
+      padding: 0.25rem 0.4rem;
+      font-size: 0.45rem;
       align-self: center;
     }
     .chat-panel { min-height: 0; }
@@ -366,6 +366,7 @@
         <span class="stat-value" id="topicStat">General Pedantry</span>
       </div>
     </div>
+    <button class="voice-toggle" id="charBtn">Char: CLASSIC</button>
     <button class="voice-toggle" id="voiceBtn">Voice: ON</button>
   </div>
 
@@ -413,51 +414,204 @@
   let totalMsgs = 1;
   let voiceOn = true;
 
-  // ── ASCII Art States ──
-  const ART_IDLE = [
-    '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
-    '    \u2502 [-] [-] \u2502',
-    '    \u2502    >    \u2502',
-    '    \u2502   \u2500\u2500\u2500   \u2502',
-    '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
-    '         \u2502',
-    '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
-    '    \u2502  REPLY  \u2502',
-    '    \u2502   GUY   \u2502',
-    '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
-    '      \u2502     \u2502'
-  ].join('\n');
+  // ── Character Art Sets ──
+  const CHAR_SETS = {
+    classic: {
+      label: 'CLASSIC',
+      idle: [
+        '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
+        '    \u2502 [-] [-] \u2502',
+        '    \u2502    >    \u2502',
+        '    \u2502   \u2500\u2500\u2500   \u2502',
+        '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
+        '         \u2502',
+        '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
+        '    \u2502  REPLY  \u2502',
+        '    \u2502   GUY   \u2502',
+        '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
+        '      \u2502     \u2502'
+      ].join('\n'),
+      wellactually: [
+        '         |',
+        '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
+        '    \u2502 [-] [-] \u2502',
+        '    \u2502    >    \u2502',
+        '    \u2502   ~~~   \u2502',
+        '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
+        '      \u2571  \u2502',
+        '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
+        '    \u2502  REPLY  \u2502',
+        '    \u2502   GUY   \u2502',
+        '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
+        '      \u2502     \u2502'
+      ].join('\n'),
+      monologue: [
+        '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
+        '    \u2502  @   @  \u2502',
+        '    \u2502    >    \u2502',
+        '    \u2502   OOO   \u2502',
+        '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
+        '    \u2572\u2572   \u2502  \u2571\u2571',
+        '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
+        '    \u2502# REPLY #\u2502',
+        '    \u2502   GUY   \u2502',
+        '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
+        '      \u2502     \u2502'
+      ].join('\n')
+    },
+    ackchyually: {
+      label: 'ACKCHYUALLY',
+      idle: [
+        '      ___________',
+        '     /|||||||||||\\',
+        '    / ||||||||||| \\',
+        '   |  ===========  |',
+        '   | /           \\ |',
+        '   |/ [-]     [-] \\|',
+        '   |       >       |',
+        '   |    \\_______/   |',
+        '    \\      ___     /',
+        '     \\____/   \\___/',
+        '          | |',
+        '      ACKCHYUALLY'
+      ].join('\n'),
+      wellactually: [
+        '       _|_________',
+        '      /|||||||||||\\',
+        '     / ||||||||||| \\',
+        '    |  ===========  |',
+        '    | /           \\ |',
+        '    |/ [-]     [-] \\|',
+        '    |       >       |',
+        '    |    \\_______/   |',
+        '   / \\      ___     /',
+        '  |   \\____/   \\___/',
+        '  |        | |',
+        '      ACKCHYUALLY'
+      ].join('\n'),
+      monologue: [
+        '      ___________',
+        '     /|||||||||||\\',
+        '    / ||||||||||| \\',
+        '   |  ===========  |',
+        '   | /           \\ |',
+        '   |/ (@)     (@) \\|',
+        '   |       >       |',
+        '   |    \\_OOOOO_/   |',
+        '  //\\      ___    //\\',
+        ' // | \\___/   \\__/ |\\\\',
+        '       | | | |',
+        '      ACKCHYUALLY!!'
+      ].join('\n')
+    },
+    meme: {
+      label: 'MEME',
+      idle: [
+        '        ########',
+        '      ##||||||||##',
+        '     #||||||||||||#',
+        '    #====##====#====#',
+        '   (              . )',
+        '   (   -===- -===-  )',
+        '   (      ( >)      )',
+        '   (    ._______.   )',
+        '    (  (         ) )',
+        '     (  \\_______/ )',
+        '      (___________)',
+        '    A C K C H Y U A L L Y'
+      ].join('\n'),
+      wellactually: [
+        '    |   ########',
+        '   /  ##||||||||##',
+        '  |  #||||||||||||#',
+        '  | #====##====#====#',
+        '   (              . )',
+        '   (   -===- -===-  )',
+        '   (      ( >)      )',
+        '   (    ,_______.   )',
+        '    (  (  \\___/  ) )',
+        '     (  \\_______/ )',
+        '      (___________)',
+        '    A C K C H Y U A L L Y'
+      ].join('\n'),
+      monologue: [
+        '        ########',
+        '      ##||||||||##',
+        '     #||||||||||||#',
+        '    #====##====#====#',
+        '   (              . )',
+        '   (   -@@@- -@@@-  )',
+        '   (      ( >)      )',
+        '   (   _/OOOOOOO\\_  )',
+        '  //(  (         ) )\\\\',
+        ' // (  \\_______/ ) \\\\',
+        '      (___________)',
+        '    !! ACKCHYUALLY !!'
+      ].join('\n')
+    },
+    minimal: {
+      label: 'MINIMAL',
+      idle: [
+        '    ,---.',
+        '   ( o_o )',
+        '    |----|',
+        '    | -- |',
+        '    `----\'',
+        '      ||',
+        '   ___||___',
+        '  | REPLY |',
+        '  |  GUY  |',
+        '  |___|___|',
+        '    |   |'
+      ].join('\n'),
+      wellactually: [
+        '       |',
+        '    ,---.',
+        '   ( o_o )>',
+        '    |----|',
+        '    | ~~ |',
+        '    `----\'',
+        '   /  ||',
+        '   ___||___',
+        '  | REPLY |',
+        '  |  GUY  |',
+        '  |___|___|',
+        '    |   |'
+      ].join('\n'),
+      monologue: [
+        '    ,---.',
+        '   ( O_O )',
+        '    |----|',
+        '    | OO |',
+        '    `----\'',
+        '  // || \\\\',
+        '   __||___',
+        '  |#REPLY#|',
+        '  |  GUY  |',
+        '  |___|___|',
+        '    |   |'
+      ].join('\n')
+    }
+  };
 
-  const ART_WELLACTUALLY = [
-    '         |',
-    '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
-    '    \u2502 [-] [-] \u2502',
-    '    \u2502    >    \u2502',
-    '    \u2502   ~~~   \u2502',
-    '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
-    '      \u2571  \u2502',
-    '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
-    '    \u2502  REPLY  \u2502',
-    '    \u2502   GUY   \u2502',
-    '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
-    '      \u2502     \u2502'
-  ].join('\n');
+  const CHAR_ORDER = ['classic', 'ackchyually', 'meme', 'minimal'];
+  let charIdx = 0;
+  const charBtn = document.getElementById('charBtn');
 
-  const ART_MONOLOGUE = [
-    '    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510',
-    '    \u2502  @   @  \u2502',
-    '    \u2502    >    \u2502',
-    '    \u2502   OOO   \u2502',
-    '    \u2514\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2518',
-    '    \u2572\u2572   \u2502  \u2571\u2571',
-    '    \u250c\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2510',
-    '    \u2502# REPLY #\u2502',
-    '    \u2502   GUY   \u2502',
-    '    \u2514\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2518',
-    '      \u2502     \u2502'
-  ].join('\n');
+  function getArt(state) {
+    const set = CHAR_SETS[CHAR_ORDER[charIdx]];
+    return set[state] || set.idle;
+  }
 
-  asciiArt.textContent = ART_IDLE;
+  charBtn.addEventListener('click', () => {
+    charIdx = (charIdx + 1) % CHAR_ORDER.length;
+    const set = CHAR_SETS[CHAR_ORDER[charIdx]];
+    charBtn.textContent = 'Char: ' + set.label;
+    setArt(currentArtState);
+  });
+
+  let currentArtState = 'idle';
+  asciiArt.textContent = getArt('idle');
 
   // ── Well-Actually Openers ──
   const openers = [
@@ -480,7 +634,10 @@
     'I don\'t mean to be rude, but...',
     'Have you even considered...',
     'That\'s a surface-level take. Here\'s what\'s really going on:',
-    'Sigh. Okay, let me explain this simply...'
+    'Sigh. Okay, let me explain this simply...',
+    'Ackchyually...',
+    'ACKCHYUALLY, if you think about it...',
+    'Ackchyually, that\'s a common misconception...'
   ];
 
   // ── Generic Responses ──
@@ -733,15 +890,16 @@
   }
 
   function setArt(state) {
+    currentArtState = state;
     asciiArt.className = 'ascii-art';
     if (state === 'wellactually') {
-      asciiArt.textContent = ART_WELLACTUALLY;
+      asciiArt.textContent = getArt('wellactually');
       asciiArt.classList.add('state-wellactually');
     } else if (state === 'monologue') {
-      asciiArt.textContent = ART_MONOLOGUE;
+      asciiArt.textContent = getArt('monologue');
       asciiArt.classList.add('state-monologue');
     } else {
-      asciiArt.textContent = ART_IDLE;
+      asciiArt.textContent = getArt('idle');
     }
   }
 
