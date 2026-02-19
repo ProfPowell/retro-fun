@@ -162,6 +162,37 @@
   .voice-toggle:hover { border-color: #33ff33; }
   .voice-toggle.off { color: #555; }
 
+  .trigger-topics {
+    width: 100%;
+  }
+  .trigger-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+  }
+  .trigger-chip {
+    background: #111;
+    border: 1px solid #333;
+    color: #ff00ff88;
+    font-family: 'Courier New', monospace;
+    font-size: 0.5rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.4rem;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .trigger-chip:hover {
+    border-color: #ff00ff;
+    color: #ff00ff;
+    text-shadow: 0 0 6px #ff00ff44;
+  }
+  .trigger-chip:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
   /* Chat panel */
   .chat-panel {
     flex: 1;
@@ -326,6 +357,7 @@
       font-size: 0.45rem;
       align-self: center;
     }
+    .trigger-topics { display: none; }
     .chat-panel { min-height: 0; }
     .msg { max-width: 90%; font-size: 0.7rem; }
     .input-bar input { font-size: 1rem; }
@@ -368,6 +400,19 @@
     </div>
     <button class="voice-toggle" id="charBtn">Char: CLASSIC</button>
     <button class="voice-toggle" id="voiceBtn">Voice: ON</button>
+    <div class="trigger-topics">
+      <div class="stat-label">Trigger Topics:</div>
+      <div class="trigger-list">
+        <button class="trigger-chip" data-topic="Tell me about crypto">Crypto</button>
+        <button class="trigger-chip" data-topic="What do you think about AI?">AI</button>
+        <button class="trigger-chip" data-topic="I love gaming">Gaming</button>
+        <button class="trigger-chip" data-topic="I'm learning javascript">Code</button>
+        <button class="trigger-chip" data-topic="I just got an iPhone">Tech</button>
+        <button class="trigger-chip" data-topic="What's your favorite movie?">Movies</button>
+        <button class="trigger-chip" data-topic="I love coffee">Food</button>
+        <button class="trigger-chip" data-topic="What music do you listen to?">Music</button>
+      </div>
+    </div>
   </div>
 
   <div class="chat-panel">
@@ -836,8 +881,7 @@
   initVoice();
 
   function speak(text, isMonologueStart, isMonologue) {
-    if (!voiceOn || !synth) return;
-    synth.cancel();
+    if (!voiceOn || !synth) return null;
     const utter = new SpeechSynthesisUtterance(text);
     if (selectedVoice) utter.voice = selectedVoice;
     if (isMonologueStart) {
@@ -851,6 +895,7 @@
       utter.rate = 1.15;
     }
     synth.speak(utter);
+    return utter;
   }
 
   function updateVoiceBtn() {
@@ -951,11 +996,12 @@
     updateStats();
     setArt(isMonologue || isMonologueStart ? 'monologue' : 'wellactually');
     addMessage(text, false);
-    speak(text, isMonologueStart, isMonologue);
+    var utter = speak(text, isMonologueStart, isMonologue);
     // Return to idle after a bit for non-monologue
     if (!isMonologue && !isMonologueStart && !inMonologue) {
-      setTimeout(() => setArt('idle'), 2500);
+      setTimeout(function() { setArt('idle'); }, 2500);
     }
+    return utter;
   }
 
   function detectTrigger(text) {
@@ -976,12 +1022,11 @@
     smugness = 100;
     updateSmugness();
 
-    const msgs = topic.messages;
-    let i = 0;
+    var msgs = topic.messages;
+    var i = 0;
 
     function nextMsg() {
       if (i >= msgs.length) {
-        // Monologue over
         showTyping(false);
         inMonologue = false;
         setInputEnabled(true);
@@ -993,12 +1038,24 @@
         return;
       }
       showTyping(true);
-      const delay = 700 + Math.random() * 800;
-      setTimeout(() => {
+      var delay = 700 + Math.random() * 800;
+      setTimeout(function() {
         showTyping(false);
-        replyGuyRespond(msgs[i], i === 0, i > 0);
+        var utter = replyGuyRespond(msgs[i], i === 0, i > 0);
         i++;
-        setTimeout(nextMsg, 300 + Math.random() * 400);
+        if (utter) {
+          // Wait for speech to finish before next message
+          utter.onend = function() {
+            setTimeout(nextMsg, 300 + Math.random() * 400);
+          };
+          utter.onerror = function() {
+            setTimeout(nextMsg, 300 + Math.random() * 400);
+          };
+        } else {
+          // Voice off — estimate reading time from text length
+          var readDelay = Math.max(1200, msgs[i - 1].length * 30);
+          setTimeout(nextMsg, readDelay);
+        }
       }, delay);
     }
     nextMsg();
@@ -1109,6 +1166,15 @@
   sendBtn.addEventListener('click', handleSend);
   userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleSend();
+  });
+
+  // ── Trigger chip click ──
+  document.querySelectorAll('.trigger-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      if (inMonologue || userInput.disabled) return;
+      userInput.value = chip.getAttribute('data-topic');
+      handleSend();
+    });
   });
 
   // Start idle timer
