@@ -39,6 +39,13 @@ h1 {
   font-size: clamp(1.5rem, 5vw, 3.5rem);
   text-transform: uppercase;
   letter-spacing: 0.3em;
+  text-shadow: none;
+  position: relative;
+}
+
+h1 a {
+  text-decoration: none;
+  display: inline-block;
   background: linear-gradient(
     180deg,
     #ff00ff 0%,
@@ -51,17 +58,8 @@ h1 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
   animation: gradient-scroll 4s linear infinite;
-  text-shadow: none;
-  position: relative;
-}
-
-h1 a {
-  text-decoration: none;
-  background: inherit;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 @keyframes gradient-scroll {
@@ -92,5 +90,5 @@ footer a {
 }
 
 footer a:hover {
-  color: #ff00ff;
+  color: #33ff33;
 }

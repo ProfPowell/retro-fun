@@ -1,7 +1,7 @@
 ---
 title: "Welcome to Cyber Viber Ninja"
 description: "The site now has a blog — here's what's new and what's coming next."
-date: 2026-02-19
+date: 2026-02-17
 ---
 
 ## What is this place?

@@ -55,15 +55,15 @@
 }
 
 .post-body a {
-  color: #ff00ff;
+  color: #33ff33;
   text-decoration: none;
-  border-bottom: 1px solid #ff00ff44;
+  border-bottom: 1px solid #33ff3344;
   transition: all 0.3s ease;
 }
 
 .post-body a:hover {
-  text-shadow: 0 0 8px #ff00ff66;
-  border-bottom-color: #ff00ff;
+  text-shadow: 0 0 8px #33ff3366;
+  border-bottom-color: #33ff33;
 }
 
 .post-body code {
