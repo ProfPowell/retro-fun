@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotozoom // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; image-rendering: pixelated; }
+  .hud {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: rgba(255,0,255,0.4);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #444;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #ff00ff; }
+</style>
+</head>
+<body>
+<div class="hud">Rotozoom &bull; Classic Demoscene</div>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const SCALE = 3;
+let W, H, pw, ph, imageData;
+
+// Generate an XOR texture (classic demoscene pattern)
+const TEX_SIZE = 256;
+const texture = new Uint8Array(TEX_SIZE * TEX_SIZE * 3);
+for (let y = 0; y < TEX_SIZE; y++) {
+  for (let x = 0; x < TEX_SIZE; x++) {
+    const v = x ^ y;
+    const idx = (y * TEX_SIZE + x) * 3;
+    texture[idx]     = v;                              // R
+    texture[idx + 1] = (v * 2) & 255;                 // G
+    texture[idx + 2] = (v * 3) & 255;                 // B
+  }
+}
+
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  pw = Math.ceil(W / SCALE);
+  ph = Math.ceil(H / SCALE);
+  canvas.width = pw;
+  canvas.height = ph;
+  imageData = ctx.createImageData(pw, ph);
+}
+window.addEventListener('resize', resize);
+resize();
+
+let time = 0;
+
+function draw() {
+  const d = imageData.data;
+
+  const angle = time * 0.5;
+  const zoom = 1.5 + Math.sin(time * 0.3) * 1.0;
+
+  const cosA = Math.cos(angle) / zoom;
+  const sinA = Math.sin(angle) / zoom;
+
+  const offsetX = Math.sin(time * 0.7) * 100;
+  const offsetY = Math.cos(time * 0.5) * 100;
+
+  const cx = pw / 2;
+  const cy = ph / 2;
+
+  for (let y = 0; y < ph; y++) {
+    const dy = y - cy;
+    for (let x = 0; x < pw; x++) {
+      const dx = x - cx;
+
+      // Rotate and zoom
+      let tx = Math.floor(dx * cosA - dy * sinA + offsetX) & (TEX_SIZE - 1);
+      let ty = Math.floor(dx * sinA + dy * cosA + offsetY) & (TEX_SIZE - 1);
+
+      if (tx < 0) tx += TEX_SIZE;
+      if (ty < 0) ty += TEX_SIZE;
+
+      const tIdx = (ty * TEX_SIZE + tx) * 3;
+      const pIdx = (y * pw + x) * 4;
+
+      // Color cycle the texture
+      const shift = (time * 30) & 255;
+      d[pIdx]     = (texture[tIdx] + shift) & 255;
+      d[pIdx + 1] = texture[tIdx + 1];
+      d[pIdx + 2] = (texture[tIdx + 2] + shift * 2) & 255;
+      d[pIdx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

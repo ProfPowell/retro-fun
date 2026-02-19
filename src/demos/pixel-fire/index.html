@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Fire // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; image-rendering: pixelated; }
+  .hud {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: rgba(255,150,0,0.4);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #442200;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #ff8800; }
+</style>
+</head>
+<body>
+<div class="hud">Doom Fire &bull; Click to reignite</div>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const SCALE = 4;
+let W, H, fw, fh;
+let firePixels;
+let imageData;
+
+// Doom fire palette (37 colors from black to white)
+const palette = [
+  [0x07,0x07,0x07], [0x1F,0x07,0x07], [0x2F,0x0F,0x07], [0x47,0x0F,0x07],
+  [0x57,0x17,0x07], [0x67,0x1F,0x07], [0x77,0x1F,0x07], [0x8F,0x27,0x07],
+  [0x9F,0x2F,0x07], [0xAF,0x3F,0x07], [0xBF,0x47,0x07], [0xC7,0x47,0x07],
+  [0xDF,0x4F,0x07], [0xDF,0x57,0x07], [0xDF,0x57,0x07], [0xD7,0x5F,0x07],
+  [0xD7,0x5F,0x07], [0xD7,0x67,0x0F], [0xCF,0x6F,0x0F], [0xCF,0x77,0x0F],
+  [0xCF,0x7F,0x0F], [0xCF,0x87,0x17], [0xC7,0x87,0x17], [0xC7,0x8F,0x17],
+  [0xC7,0x97,0x1F], [0xBF,0x9F,0x1F], [0xBF,0x9F,0x1F], [0xBF,0xA7,0x27],
+  [0xBF,0xA7,0x27], [0xBF,0xAF,0x2F], [0xB7,0xAF,0x2F], [0xB7,0xB7,0x2F],
+  [0xB7,0xB7,0x37], [0xCF,0xCF,0x6F], [0xDF,0xDF,0x9F], [0xEF,0xEF,0xC7],
+  [0xFF,0xFF,0xFF]
+];
+
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  fw = Math.ceil(W / SCALE);
+  fh = Math.ceil(H / SCALE);
+  canvas.width = fw;
+  canvas.height = fh;
+  imageData = ctx.createImageData(fw, fh);
+  initFire();
+}
+
+function initFire() {
+  firePixels = new Uint8Array(fw * fh);
+  // Set bottom row to max
+  for (let x = 0; x < fw; x++) {
+    firePixels[(fh - 1) * fw + x] = 36;
+  }
+}
+
+function spreadFire(src) {
+  const pixel = firePixels[src];
+  if (pixel === 0) {
+    firePixels[src - fw] = 0;
+  } else {
+    const rand = Math.floor(Math.random() * 3) & 3;
+    const dst = src - fw - rand + 1;
+    firePixels[dst] = pixel - (rand & 1);
+  }
+}
+
+function doFire() {
+  for (let x = 0; x < fw; x++) {
+    for (let y = 1; y < fh; y++) {
+      spreadFire(y * fw + x);
+    }
+  }
+}
+
+function render() {
+  doFire();
+
+  const d = imageData.data;
+  for (let i = 0; i < fw * fh; i++) {
+    const c = palette[firePixels[i]] || palette[0];
+    const idx = i * 4;
+    d[idx]     = c[0];
+    d[idx + 1] = c[1];
+    d[idx + 2] = c[2];
+    d[idx + 3] = 255;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  requestAnimationFrame(render);
+}
+
+window.addEventListener('resize', resize);
+
+// Click to toggle fire source
+let fireOn = true;
+canvas.addEventListener('click', () => {
+  fireOn = !fireOn;
+  for (let x = 0; x < fw; x++) {
+    firePixels[(fh - 1) * fw + x] = fireOn ? 36 : 0;
+  }
+});
+
+resize();
+render();
+</script>
+</body>
+</html>

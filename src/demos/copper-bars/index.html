@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copper Bars // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #ff00ff; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+// Amiga-style copper bars with heavy color cycling
+// Inspired by the raster interrupt tricks on custom chips
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Number of raster bars
+const NUM_BARS = 12;
+const BAR_HEIGHT = 40;
+
+// Color cycling palettes - multiple palettes that morph between each other
+const palettes = [
+  // Hot: red -> yellow -> white
+  (t) => {
+    const r = Math.min(255, t * 8);
+    const g = Math.min(255, Math.max(0, (t - 16) * 8));
+    const b = Math.min(255, Math.max(0, (t - 24) * 12));
+    return [r, g, b];
+  },
+  // Cool: blue -> cyan -> white
+  (t) => {
+    const b = Math.min(255, t * 8);
+    const g = Math.min(255, Math.max(0, (t - 12) * 6));
+    const r = Math.min(255, Math.max(0, (t - 24) * 12));
+    return [r, g, b];
+  },
+  // Toxic: green -> yellow -> white
+  (t) => {
+    const g = Math.min(255, t * 8);
+    const r = Math.min(255, Math.max(0, (t - 16) * 8));
+    const b = Math.min(255, Math.max(0, (t - 28) * 16));
+    return [r, g, b];
+  },
+  // Purple: magenta -> pink -> white
+  (t) => {
+    const r = Math.min(255, t * 6);
+    const b = Math.min(255, t * 7);
+    const g = Math.min(255, Math.max(0, (t - 20) * 10));
+    return [r, g, b];
+  },
+];
+
+let time = 0;
+let paletteTime = 0;
+
+function draw() {
+  // Dark background with slight blue tint
+  ctx.fillStyle = '#030308';
+  ctx.fillRect(0, 0, W, H);
+
+  // Cycle through palettes
+  paletteTime += 0.003;
+  const palIdx = Math.floor(paletteTime) % palettes.length;
+  const nextPalIdx = (palIdx + 1) % palettes.length;
+  const palBlend = paletteTime % 1;
+
+  // Draw copper bars
+  for (let bar = 0; bar < NUM_BARS; bar++) {
+    // Each bar oscillates on its own sine wave
+    const phase = bar * 0.8 + time * 0.6;
+    const yCenter = H * 0.5 + Math.sin(phase) * (H * 0.35);
+
+    // Secondary wobble
+    const wobble = Math.sin(time * 1.3 + bar * 1.2) * 20;
+
+    // Draw each scanline of the bar with color gradient
+    for (let line = -BAR_HEIGHT; line <= BAR_HEIGHT; line++) {
+      const y = Math.floor(yCenter + line + wobble);
+      if (y < 0 || y >= H) continue;
+
+      // Distance from center of bar (0 at center, 1 at edges)
+      const dist = Math.abs(line) / BAR_HEIGHT;
+      // Intensity peaks at center
+      const intensity = Math.cos(dist * Math.PI * 0.5);
+      const t = intensity * 32;
+
+      // Get colors from current and next palette
+      const c1 = palettes[palIdx](t);
+      const c2 = palettes[nextPalIdx](t);
+
+      // Blend
+      const r = Math.floor(c1[0] * (1 - palBlend) + c2[0] * palBlend);
+      const g = Math.floor(c1[1] * (1 - palBlend) + c2[1] * palBlend);
+      const b = Math.floor(c1[2] * (1 - palBlend) + c2[2] * palBlend);
+
+      // Color cycling: shift hue over time per bar
+      const hueShift = (time * 40 + bar * 30) % 360;
+      const shifted = hueRotate(r, g, b, hueShift);
+
+      ctx.fillStyle = `rgb(${shifted[0]},${shifted[1]},${shifted[2]})`;
+      ctx.fillRect(0, y, W, 1);
+    }
+  }
+
+  // Overlay: background stars that peek through
+  drawStars();
+
+  // Subtle horizontal scanline darkening (CRT feel)
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  for (let y = 0; y < H; y += 2) {
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+// Simple hue rotation using matrix transform
+function hueRotate(r, g, b, deg) {
+  const rad = deg * Math.PI / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+
+  const matrix = [
+    0.213 + cos * 0.787 - sin * 0.213,
+    0.715 - cos * 0.715 - sin * 0.715,
+    0.072 - cos * 0.072 + sin * 0.928,
+    0.213 - cos * 0.213 + sin * 0.143,
+    0.715 + cos * 0.285 + sin * 0.140,
+    0.072 - cos * 0.072 - sin * 0.283,
+    0.213 - cos * 0.213 - sin * 0.787,
+    0.715 - cos * 0.715 + sin * 0.715,
+    0.072 + cos * 0.928 + sin * 0.072,
+  ];
+
+  return [
+    Math.max(0, Math.min(255, Math.floor(r * matrix[0] + g * matrix[1] + b * matrix[2]))),
+    Math.max(0, Math.min(255, Math.floor(r * matrix[3] + g * matrix[4] + b * matrix[5]))),
+    Math.max(0, Math.min(255, Math.floor(r * matrix[6] + g * matrix[7] + b * matrix[8]))),
+  ];
+}
+
+// Deterministic stars
+const starPositions = [];
+for (let i = 0; i < 200; i++) {
+  starPositions.push({
+    x: Math.random(),
+    y: Math.random(),
+    brightness: 0.3 + Math.random() * 0.7,
+    size: 0.5 + Math.random() * 1.5,
+    twinkleSpeed: 1 + Math.random() * 3,
+  });
+}
+
+function drawStars() {
+  for (const star of starPositions) {
+    const twinkle = (Math.sin(time * star.twinkleSpeed + star.x * 100) + 1) * 0.5;
+    const alpha = star.brightness * twinkle * 0.5;
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.fillRect(star.x * W, star.y * H, star.size, star.size);
+  }
+}
+
+draw();
+</script>
+</body>
+</html>

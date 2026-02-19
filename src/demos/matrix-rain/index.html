@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Rain // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #0f3d0f;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #00ff41; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H, columns;
+const FONT_SIZE = 16;
+let drops = [];
+
+// Characters: katakana + latin + numbers + symbols
+const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*+=<>{}[]';
+const charArray = [...chars];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  columns = Math.floor(W / FONT_SIZE);
+  // Keep existing drops, add new ones if needed
+  while (drops.length < columns) {
+    drops.push({
+      y: Math.random() * -100,
+      speed: 0.5 + Math.random() * 1.5,
+      chars: [],
+      length: 8 + Math.floor(Math.random() * 25),
+      nextChar: 0
+    });
+  }
+  drops.length = columns;
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// Initialize drop character streams
+for (let i = 0; i < drops.length; i++) {
+  const d = drops[i];
+  d.chars = [];
+  for (let j = 0; j < d.length; j++) {
+    d.chars.push(charArray[Math.floor(Math.random() * charArray.length)]);
+  }
+}
+
+function draw() {
+  // Dark translucent overlay for fade effect
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.font = `${FONT_SIZE}px monospace`;
+
+  for (let i = 0; i < columns; i++) {
+    const d = drops[i];
+    const x = i * FONT_SIZE;
+
+    // Draw the stream
+    for (let j = 0; j < d.length; j++) {
+      const charY = (d.y - j) * FONT_SIZE;
+      if (charY < -FONT_SIZE || charY > H + FONT_SIZE) continue;
+
+      if (j === 0) {
+        // Lead character: bright white-green
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00ff41';
+        ctx.shadowBlur = 15;
+      } else if (j < 3) {
+        ctx.fillStyle = '#88ff88';
+        ctx.shadowBlur = 0;
+      } else {
+        // Fade out based on position in trail
+        const fade = 1 - (j / d.length);
+        const g = Math.floor(255 * fade * 0.7);
+        ctx.fillStyle = `rgb(0,${g},0)`;
+        ctx.shadowBlur = 0;
+      }
+
+      // Randomly mutate characters
+      if (Math.random() < 0.02) {
+        d.chars[j] = charArray[Math.floor(Math.random() * charArray.length)];
+      }
+
+      ctx.fillText(d.chars[j], x, charY);
+    }
+
+    ctx.shadowBlur = 0;
+
+    // Move drop
+    d.y += d.speed;
+
+    // Reset when fully off screen
+    if ((d.y - d.length) * FONT_SIZE > H) {
+      d.y = Math.random() * -20;
+      d.speed = 0.5 + Math.random() * 1.5;
+      d.length = 8 + Math.floor(Math.random() * 25);
+      d.chars = [];
+      for (let j = 0; j < d.length; j++) {
+        d.chars.push(charArray[Math.floor(Math.random() * charArray.length)]);
+      }
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

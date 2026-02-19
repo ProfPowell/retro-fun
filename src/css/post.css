@@ -1,0 +1,134 @@
+.post-article {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.post-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 1.5rem;
+}
+
+.post-header time {
+  font-size: 0.65rem;
+  color: #444;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.post-header h2 {
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #00ffff;
+  text-shadow: 0 0 15px #00ffff33;
+  margin-top: 0.5rem;
+}
+
+.post-body {
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: #ccc;
+}
+
+.post-body h2 {
+  font-size: 1.1rem;
+  color: #00ffff;
+  text-shadow: 0 0 10px #00ffff33;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 2rem 0 1rem;
+}
+
+.post-body h3 {
+  font-size: 0.95rem;
+  color: #ff00ff;
+  text-shadow: 0 0 10px #ff00ff33;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.post-body p {
+  margin-bottom: 1rem;
+}
+
+.post-body a {
+  color: #ff00ff;
+  text-decoration: none;
+  border-bottom: 1px solid #ff00ff44;
+  transition: all 0.3s ease;
+}
+
+.post-body a:hover {
+  text-shadow: 0 0 8px #ff00ff66;
+  border-bottom-color: #ff00ff;
+}
+
+.post-body code {
+  background: #1a1a1a;
+  color: #33ff33;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
+  border: 1px solid #222;
+}
+
+.post-body pre {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.post-body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #33ff33;
+  text-shadow: 0 0 6px #33ff3322;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.post-body blockquote {
+  border-left: 3px solid #00ffff;
+  padding: 0.5rem 1rem;
+  margin: 1.5rem 0;
+  color: #999;
+  background: #111;
+}
+
+.post-body ul,
+.post-body ol {
+  margin: 1rem 0 1rem 1.5rem;
+}
+
+.post-body li {
+  margin-bottom: 0.4rem;
+}
+
+.post-body img {
+  max-width: 100%;
+  border: 1px solid #222;
+  margin: 1.5rem 0;
+}
+
+.post-back {
+  display: inline-block;
+  margin-top: 2rem;
+  font-size: 0.7rem;
+  color: #555;
+  text-decoration: none;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: 1px solid #333;
+  padding: 0.4rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.post-back:hover {
+  color: #00ffff;
+  border-color: #00ffff44;
+}

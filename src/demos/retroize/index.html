@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retroize // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.15) 2px,
+      rgba(0, 0, 0, 0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .back {
+    position: fixed;
+    top: 0.8rem;
+    left: 0.8rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #444;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 30;
+    padding: 0.4rem 0.6rem;
+  }
+  .back:hover { color: #00ffff; }
+
+  .top-bar {
+    text-align: center;
+    padding: 1.5rem 1rem 0.5rem;
+  }
+  .top-bar h1 {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: #00ffff;
+    text-shadow: 0 0 10px #00ffff44, 0 0 30px #00ffff22;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem 3rem;
+  }
+
+  /* Sections */
+  .section-label {
+    font-size: 0.6rem;
+    color: #555;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #1a1a1a;
+    padding-bottom: 0.3rem;
+  }
+
+  /* Input area */
+  .input-section {
+    margin-bottom: 1.2rem;
+  }
+  .input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+  .input-row label {
+    font-size: 0.7rem;
+    color: #666;
+    min-width: 2rem;
+  }
+  .file-btn {
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.8rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #00ffff;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+  }
+  .file-btn:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 8px #00ffff44;
+  }
+  #file-input { display: none; }
+
+  .or-sep {
+    font-size: 0.6rem;
+    color: #333;
+    text-transform: uppercase;
+  }
+
+  .url-input {
+    flex: 1;
+    min-width: 150px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+    background: #111;
+    border: 1px solid #333;
+    color: #e0e0e0;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .url-input:focus {
+    border-color: #00ffff;
+  }
+  .url-input::placeholder { color: #333; }
+
+  .load-btn {
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.8rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #00ffff;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+  }
+  .load-btn:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 8px #00ffff44;
+  }
+
+  /* Drop zone message */
+  .drop-hint {
+    font-size: 0.6rem;
+    color: #333;
+    margin-top: 0.3rem;
+  }
+
+  /* Effect buttons */
+  .effects-section {
+    margin-bottom: 1.2rem;
+  }
+  .effect-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .effect-btn {
+    font-family: 'Courier New', monospace;
+    font-size: 0.65rem;
+    padding: 0.4rem 0.7rem;
+    background: #111;
+    border: 1px solid #333;
+    color: #888;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .effect-btn:hover {
+    border-color: #00ff88;
+    color: #00ff88;
+  }
+  .effect-btn.active {
+    border-color: #00ff88;
+    color: #00ff88;
+    box-shadow: 0 0 10px #00ff8844, inset 0 0 8px #00ff8811;
+    background: #0a1a0f;
+  }
+
+  /* Controls */
+  .controls-section {
+    margin-bottom: 1.2rem;
+    min-height: 2.5rem;
+  }
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .control-label {
+    font-size: 0.6rem;
+    color: #666;
+    min-width: 90px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .control-slider {
+    flex: 1;
+    min-width: 100px;
+    max-width: 300px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: #222;
+    border-radius: 2px;
+    outline: none;
+  }
+  .control-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #00ff88;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px #00ff8844;
+  }
+  .control-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #00ff88;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px #00ff8844;
+  }
+  .control-value {
+    font-size: 0.6rem;
+    color: #00ff88;
+    min-width: 35px;
+    text-align: right;
+  }
+  .control-toggle {
+    font-family: 'Courier New', monospace;
+    font-size: 0.6rem;
+    padding: 0.25rem 0.5rem;
+    background: #111;
+    border: 1px solid #333;
+    color: #666;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .control-toggle.on {
+    border-color: #00ff88;
+    color: #00ff88;
+    background: #0a1a0f;
+  }
+
+  /* Preview area */
+  .preview-section {
+    margin-bottom: 1.2rem;
+  }
+  .preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .preview-pane {
+    position: relative;
+  }
+  .preview-label {
+    font-size: 0.55rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+  }
+  .canvas-wrap {
+    position: relative;
+    background: #080808;
+    border: 1px solid #222;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .canvas-wrap canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+  }
+  .canvas-placeholder {
+    font-size: 0.6rem;
+    color: #222;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+    padding: 2rem;
+    pointer-events: none;
+  }
+
+  /* Drop zone overlay */
+  .drop-active .canvas-wrap {
+    border-color: #00ffff;
+    box-shadow: 0 0 15px #00ffff33;
+  }
+  .drop-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 255, 255, 0.05);
+    border: 3px dashed #00ffff;
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: #00ffff;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    pointer-events: none;
+  }
+  .drop-overlay.visible {
+    display: flex;
+  }
+
+  /* Action buttons */
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    padding: 0.5rem 1rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #00ffff;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .action-btn:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 8px #00ffff44;
+  }
+  .action-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+    box-shadow: none;
+    border-color: #333;
+  }
+
+  /* Status bar */
+  .status {
+    font-size: 0.55rem;
+    color: #333;
+    margin-top: 1rem;
+    letter-spacing: 0.1em;
+  }
+  .status.error { color: #ff4444; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .preview-grid {
+      grid-template-columns: 1fr;
+    }
+    .container {
+      padding: 1rem;
+    }
+    .input-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .input-row label {
+      display: none;
+    }
+    .or-sep {
+      text-align: center;
+    }
+    .url-input {
+      min-width: unset;
+    }
+  }
+</style>
+</head>
+<body>
+
+<a class="back" href="../../">&larr; Back</a>
+<div class="drop-overlay" id="drop-overlay">Drop image here</div>
+
+<div class="top-bar">
+  <h1>Retroize</h1>
+</div>
+
+<div class="container">
+  <!-- Input -->
+  <div class="input-section">
+    <div class="section-label">Input</div>
+    <div class="input-row">
+      <button class="file-btn" id="file-btn">Choose File</button>
+      <input type="file" id="file-input" accept="image/*">
+      <span class="or-sep">or</span>
+      <input type="text" class="url-input" id="url-input" placeholder="Enter image URL...">
+      <button class="load-btn" id="load-btn">Load</button>
+    </div>
+    <div class="drop-hint">or drag &amp; drop an image anywhere</div>
+  </div>
+
+  <!-- Effects -->
+  <div class="effects-section">
+    <div class="section-label">Effects</div>
+    <div class="effect-row" id="effect-row">
+      <button class="effect-btn active" data-effect="ascii">ASCII</button>
+      <button class="effect-btn" data-effect="pixel">8-Bit</button>
+      <button class="effect-btn" data-effect="vaporwave">Vaporwave</button>
+      <button class="effect-btn" data-effect="crt">CRT</button>
+      <button class="effect-btn" data-effect="dither">Dither</button>
+      <button class="effect-btn" data-effect="glitch">Glitch</button>
+      <button class="effect-btn" data-effect="gameboy">Game Boy</button>
+      <button class="effect-btn" data-effect="c64">C64</button>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-section">
+    <div class="section-label">Controls</div>
+    <div id="controls"></div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-section">
+    <div class="section-label">Preview</div>
+    <div class="preview-grid">
+      <div class="preview-pane">
+        <div class="preview-label">Original</div>
+        <div class="canvas-wrap" id="original-wrap">
+          <canvas id="source-canvas"></canvas>
+          <div class="canvas-placeholder" id="source-placeholder">No image loaded</div>
+        </div>
+      </div>
+      <div class="preview-pane">
+        <div class="preview-label">Retroized</div>
+        <div class="canvas-wrap" id="result-wrap">
+          <canvas id="result-canvas"></canvas>
+          <div class="canvas-placeholder" id="result-placeholder">No image loaded</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="action-btn" id="download-btn" disabled>Download</button>
+    <button class="action-btn" id="random-btn">Random Effect</button>
+  </div>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+(function() {
+  // DOM refs
+  const fileBtn = document.getElementById('file-btn');
+  const fileInput = document.getElementById('file-input');
+  const urlInput = document.getElementById('url-input');
+  const loadBtn = document.getElementById('load-btn');
+  const effectRow = document.getElementById('effect-row');
+  const controlsEl = document.getElementById('controls');
+  const sourceCanvas = document.getElementById('source-canvas');
+  const resultCanvas = document.getElementById('result-canvas');
+  const sourcePlaceholder = document.getElementById('source-placeholder');
+  const resultPlaceholder = document.getElementById('result-placeholder');
+  const downloadBtn = document.getElementById('download-btn');
+  const randomBtn = document.getElementById('random-btn');
+  const statusEl = document.getElementById('status');
+  const dropOverlay = document.getElementById('drop-overlay');
+
+  const srcCtx = sourceCanvas.getContext('2d');
+  const resCtx = resultCanvas.getContext('2d');
+
+  let sourceImage = null; // HTMLImageElement
+  let currentEffect = 'ascii';
+  let glitchAnimId = null;
+
+  // Effect-specific default options
+  const effectDefaults = {
+    ascii:     { cellSize: 8, color: true },
+    pixel:     { blockSize: 8, colorDepth: 0 },
+    vaporwave: { shift: 70, aberration: 4 },
+    crt:       { curvature: 25, scanlines: 60 },
+    dither:    { palette: 0, bias: 50 },
+    glitch:    { intensity: 50, animate: false },
+    gameboy:   { scale: 3, paletteVar: 0 },
+    c64:       { scale: 2 }
+  };
+
+  // Deep clone defaults for live options
+  let effectOptions = {};
+  function resetOptions() {
+    effectOptions = {};
+    for (const k in effectDefaults) {
+      effectOptions[k] = Object.assign({}, effectDefaults[k]);
+    }
+  }
+  resetOptions();
+
+  // ---- Status ----
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status' + (isError ? ' error' : '');
+  }
+
+  // ---- Image loading ----
+  function loadImage(src) {
+    setStatus('Loading...');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      sourceImage = img;
+      // Size canvases to image (capped at 1200px wide for performance)
+      const maxW = 1200;
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      sourceCanvas.width = w;
+      sourceCanvas.height = h;
+      srcCtx.drawImage(img, 0, 0, w, h);
+      sourcePlaceholder.style.display = 'none';
+      resultPlaceholder.style.display = 'none';
+      downloadBtn.disabled = false;
+      setStatus('Image loaded (' + w + 'x' + h + ')');
+      applyEffect();
+    };
+    img.onerror = function() {
+      setStatus('Failed to load image. For URLs, the server must allow cross-origin access.', true);
+    };
+    img.src = src;
+  }
+
+  fileBtn.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) { loadImage(e.target.result); };
+      reader.readAsDataURL(fileInput.files[0]);
+    }
+  });
+  loadBtn.addEventListener('click', function() {
+    const url = urlInput.value.trim();
+    if (url) loadImage(url);
+  });
+  urlInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { loadBtn.click(); }
+  });
+
+  // Drag & drop
+  let dragCounter = 0;
+  document.addEventListener('dragenter', function(e) {
+    e.preventDefault();
+    dragCounter++;
+    dropOverlay.classList.add('visible');
+  });
+  document.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('visible'); }
+  });
+  document.addEventListener('dragover', function(e) { e.preventDefault(); });
+  document.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dragCounter = 0;
+    dropOverlay.classList.remove('visible');
+    const files = e.dataTransfer.files;
+    if (files && files[0] && files[0].type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = function(ev) { loadImage(ev.target.result); };
+      reader.readAsDataURL(files[0]);
+    }
+  });
+
+  // ---- Effect selection ----
+  effectRow.addEventListener('click', function(e) {
+    const btn = e.target.closest('.effect-btn');
+    if (!btn) return;
+    effectRow.querySelectorAll('.effect-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    currentEffect = btn.dataset.effect;
+    stopGlitchAnim();
+    renderControls();
+    applyEffect();
+  });
+
+  randomBtn.addEventListener('click', function() {
+    const effects = ['ascii','pixel','vaporwave','crt','dither','glitch','gameboy','c64'];
+    const pick = effects[Math.floor(Math.random() * effects.length)];
+    effectRow.querySelectorAll('.effect-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.effect === pick);
+    });
+    currentEffect = pick;
+    stopGlitchAnim();
+    renderControls();
+    applyEffect();
+  });
+
+  // ---- Controls rendering ----
+  function renderControls() {
+    controlsEl.innerHTML = '';
+    const opts = effectOptions[currentEffect];
+
+    if (currentEffect === 'ascii') {
+      addSlider('Cell Size', 'cellSize', 4, 16, 1, opts.cellSize, 'px');
+      addToggle('Color', 'color', opts.color);
+    } else if (currentEffect === 'pixel') {
+      addSlider('Block Size', 'blockSize', 4, 32, 1, opts.blockSize, 'px');
+      addSelect('Color Depth', 'colorDepth', ['Full','64 Colors','16 Colors'], opts.colorDepth);
+    } else if (currentEffect === 'vaporwave') {
+      addSlider('Color Shift', 'shift', 0, 100, 1, opts.shift, '%');
+      addSlider('Aberration', 'aberration', 0, 20, 1, opts.aberration, 'px');
+    } else if (currentEffect === 'crt') {
+      addSlider('Curvature', 'curvature', 0, 50, 1, opts.curvature, '%');
+      addSlider('Scanlines', 'scanlines', 0, 100, 1, opts.scanlines, '%');
+    } else if (currentEffect === 'dither') {
+      addSelect('Palette', 'palette', ['B&W','4 Grays','8 Color'], opts.palette);
+      addSlider('Threshold', 'bias', 0, 100, 1, opts.bias, '%');
+    } else if (currentEffect === 'glitch') {
+      addSlider('Intensity', 'intensity', 0, 100, 1, opts.intensity, '%');
+      addToggle('Animate', 'animate', opts.animate);
+    } else if (currentEffect === 'gameboy') {
+      addSlider('Pixel Scale', 'scale', 1, 6, 1, opts.scale, 'x');
+      addSelect('Palette', 'paletteVar', ['Green','Pocket','GBC'], opts.paletteVar);
+    } else if (currentEffect === 'c64') {
+      addSlider('Pixel Scale', 'scale', 1, 4, 1, opts.scale, 'x');
+    }
+  }
+
+  function addSlider(label, key, min, max, step, value, unit) {
+    const row = document.createElement('div');
+    row.className = 'control-row';
+    row.innerHTML =
+      '<span class="control-label">' + label + '</span>' +
+      '<input type="range" class="control-slider" min="' + min + '" max="' + max + '" step="' + step + '" value="' + value + '">' +
+      '<span class="control-value">' + value + unit + '</span>';
+    const slider = row.querySelector('.control-slider');
+    const valEl = row.querySelector('.control-value');
+    slider.addEventListener('input', function() {
+      effectOptions[currentEffect][key] = Number(slider.value);
+      valEl.textContent = slider.value + unit;
+      applyEffect();
+    });
+    controlsEl.appendChild(row);
+  }
+
+  function addToggle(label, key, value) {
+    const row = document.createElement('div');
+    row.className = 'control-row';
+    const btn = document.createElement('button');
+    btn.className = 'control-toggle' + (value ? ' on' : '');
+    btn.textContent = label + ': ' + (value ? 'ON' : 'OFF');
+    btn.addEventListener('click', function() {
+      const v = !effectOptions[currentEffect][key];
+      effectOptions[currentEffect][key] = v;
+      btn.className = 'control-toggle' + (v ? ' on' : '');
+      btn.textContent = label + ': ' + (v ? 'ON' : 'OFF');
+      applyEffect();
+    });
+    const lbl = document.createElement('span');
+    lbl.className = 'control-label';
+    lbl.textContent = '';
+    row.appendChild(lbl);
+    row.appendChild(btn);
+    controlsEl.appendChild(row);
+  }
+
+  function addSelect(label, key, options, value) {
+    const row = document.createElement('div');
+    row.className = 'control-row';
+    row.innerHTML = '<span class="control-label">' + label + '</span>';
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.gap = '0.3rem';
+    wrap.style.flexWrap = 'wrap';
+    options.forEach(function(opt, i) {
+      const btn = document.createElement('button');
+      btn.className = 'control-toggle' + (i === value ? ' on' : '');
+      btn.textContent = opt;
+      btn.addEventListener('click', function() {
+        effectOptions[currentEffect][key] = i;
+        wrap.querySelectorAll('.control-toggle').forEach(function(b, j) {
+          b.className = 'control-toggle' + (j === i ? ' on' : '');
+        });
+        applyEffect();
+      });
+      wrap.appendChild(btn);
+    });
+    row.appendChild(wrap);
+    controlsEl.appendChild(row);
+  }
+
+  // ---- Apply effect ----
+  function applyEffect() {
+    if (!sourceImage) return;
+    stopGlitchAnim();
+
+    const w = sourceCanvas.width;
+    const h = sourceCanvas.height;
+    const srcData = srcCtx.getImageData(0, 0, w, h);
+
+    resultCanvas.width = w;
+    resultCanvas.height = h;
+
+    const opts = effectOptions[currentEffect];
+
+    switch (currentEffect) {
+      case 'ascii':     applyAscii(srcData, w, h, opts); break;
+      case 'pixel':     applyPixel(srcData, w, h, opts); break;
+      case 'vaporwave': applyVaporwave(srcData, w, h, opts); break;
+      case 'crt':       applyCrt(srcData, w, h, opts); break;
+      case 'dither':    applyDither(srcData, w, h, opts); break;
+      case 'glitch':    applyGlitch(srcData, w, h, opts); break;
+      case 'gameboy':   applyGameboy(srcData, w, h, opts); break;
+      case 'c64':       applyC64(srcData, w, h, opts); break;
+    }
+  }
+
+  // ---- EFFECTS ----
+
+  // 1. ASCII
+  function applyAscii(srcData, w, h, opts) {
+    const cell = opts.cellSize;
+    const useColor = opts.color;
+    const ramp = ' .:-=+*#%@';
+    const d = srcData.data;
+
+    resCtx.fillStyle = '#000';
+    resCtx.fillRect(0, 0, w, h);
+    resCtx.font = cell + 'px monospace';
+    resCtx.textBaseline = 'top';
+
+    for (let y = 0; y < h; y += cell) {
+      for (let x = 0; x < w; x += cell) {
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        for (let dy = 0; dy < cell && y + dy < h; dy++) {
+          for (let dx = 0; dx < cell && x + dx < w; dx++) {
+            const i = ((y + dy) * w + (x + dx)) * 4;
+            rSum += d[i]; gSum += d[i+1]; bSum += d[i+2];
+            count++;
+          }
+        }
+        const rAvg = rSum / count;
+        const gAvg = gSum / count;
+        const bAvg = bSum / count;
+        const brightness = (rAvg * 0.299 + gAvg * 0.587 + bAvg * 0.114) / 255;
+        const charIdx = Math.min(Math.floor(brightness * ramp.length), ramp.length - 1);
+        const ch = ramp[charIdx];
+
+        if (useColor) {
+          resCtx.fillStyle = 'rgb(' + Math.round(rAvg) + ',' + Math.round(gAvg) + ',' + Math.round(bAvg) + ')';
+        } else {
+          resCtx.fillStyle = '#e0e0e0';
+        }
+        resCtx.fillText(ch, x, y);
+      }
+    }
+  }
+
+  // 2. 8-Bit Pixel
+  function applyPixel(srcData, w, h, opts) {
+    const block = opts.blockSize;
+    const depth = opts.colorDepth; // 0=full, 1=64, 2=16
+    const d = srcData.data;
+    const out = resCtx.createImageData(w, h);
+    const o = out.data;
+
+    const masks = [0xFF, 0xE0, 0xC0];
+    const mask = masks[depth] || 0xFF;
+
+    for (let y = 0; y < h; y += block) {
+      for (let x = 0; x < w; x += block) {
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        for (let dy = 0; dy < block && y + dy < h; dy++) {
+          for (let dx = 0; dx < block && x + dx < w; dx++) {
+            const i = ((y + dy) * w + (x + dx)) * 4;
+            rSum += d[i]; gSum += d[i+1]; bSum += d[i+2];
+            count++;
+          }
+        }
+        let rAvg = (rSum / count) & mask;
+        let gAvg = (gSum / count) & mask;
+        let bAvg = (bSum / count) & mask;
+
+        for (let dy = 0; dy < block && y + dy < h; dy++) {
+          for (let dx = 0; dx < block && x + dx < w; dx++) {
+            const i = ((y + dy) * w + (x + dx)) * 4;
+            o[i] = rAvg; o[i+1] = gAvg; o[i+2] = bAvg; o[i+3] = 255;
+          }
+        }
+      }
+    }
+    resCtx.putImageData(out, 0, 0);
+  }
+
+  // 3. Vaporwave
+  function applyVaporwave(srcData, w, h, opts) {
+    const shiftAmt = opts.shift / 100;
+    const abr = opts.aberration;
+    const d = srcData.data;
+    const out = resCtx.createImageData(w, h);
+    const o = out.data;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        // Source with chromatic aberration offsets
+        const rIdx = (y * w + Math.min(w - 1, Math.max(0, x - abr))) * 4;
+        const bIdx = (y * w + Math.min(w - 1, Math.max(0, x + abr))) * 4;
+        let r = d[rIdx];
+        let g = d[i + 1];
+        let b = d[bIdx + 2];
+
+        // Hue shift toward pink/purple/cyan
+        const hsl = rgbToHsl(r, g, b);
+        hsl[0] = (hsl[0] + 0.5 * shiftAmt) % 1;
+        hsl[1] = Math.min(1, hsl[1] * (1 + 0.4 * shiftAmt));
+        const rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
+
+        o[i]     = rgb[0];
+        o[i + 1] = rgb[1];
+        o[i + 2] = rgb[2];
+        o[i + 3] = 255;
+
+        // Scanline tint
+        if (y % 4 === 0) {
+          o[i]     = Math.min(255, o[i] + Math.round(20 * shiftAmt));
+          o[i + 2] = Math.min(255, o[i + 2] + Math.round(20 * shiftAmt));
+        }
+      }
+    }
+    resCtx.putImageData(out, 0, 0);
+  }
+
+  // 4. CRT Monitor
+  function applyCrt(srcData, w, h, opts) {
+    const curveAmt = opts.curvature / 100;
+    const scanAmt = opts.scanlines / 100;
+    const d = srcData.data;
+    const out = resCtx.createImageData(w, h);
+    const o = out.data;
+
+    const cx = w / 2, cy = h / 2;
+    const maxR = Math.sqrt(cx * cx + cy * cy);
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        // Barrel distortion
+        let nx = (x - cx) / cx;
+        let ny = (y - cy) / cy;
+        const r2 = nx * nx + ny * ny;
+        const distort = 1 + r2 * curveAmt * 0.8;
+        let sx = Math.round(nx * distort * cx + cx);
+        let sy = Math.round(ny * distort * cy + cy);
+
+        const oi = (y * w + x) * 4;
+
+        if (sx < 0 || sx >= w || sy < 0 || sy >= h) {
+          o[oi] = 0; o[oi+1] = 0; o[oi+2] = 0; o[oi+3] = 255;
+          continue;
+        }
+
+        const si = (sy * w + sx) * 4;
+        // RGB scanlines
+        const scanRow = y % 3;
+        let rr = d[si], gg = d[si+1], bb = d[si+2];
+
+        if (scanAmt > 0) {
+          if (scanRow === 0)      { gg *= (1 - scanAmt * 0.5); bb *= (1 - scanAmt * 0.5); }
+          else if (scanRow === 1) { rr *= (1 - scanAmt * 0.5); bb *= (1 - scanAmt * 0.5); }
+          else                    { rr *= (1 - scanAmt * 0.5); gg *= (1 - scanAmt * 0.5); }
+        }
+
+        // Vignette
+        const dist = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / maxR;
+        const vignette = 1 - dist * dist * 0.6;
+        rr *= vignette; gg *= vignette; bb *= vignette;
+
+        o[oi]     = Math.max(0, Math.min(255, Math.round(rr)));
+        o[oi + 1] = Math.max(0, Math.min(255, Math.round(gg)));
+        o[oi + 2] = Math.max(0, Math.min(255, Math.round(bb)));
+        o[oi + 3] = 255;
+      }
+    }
+    resCtx.putImageData(out, 0, 0);
+  }
+
+  // 5. Dither (Floyd-Steinberg)
+  function applyDither(srcData, w, h, opts) {
+    const palType = opts.palette; // 0=bw, 1=4gray, 2=8color
+    const biasAmt = (opts.bias - 50) / 100 * 60; // shift threshold +/- 30
+    const d = srcData.data;
+
+    // Build palette
+    let palette;
+    if (palType === 0) {
+      palette = [[0,0,0],[255,255,255]];
+    } else if (palType === 1) {
+      palette = [[0,0,0],[85,85,85],[170,170,170],[255,255,255]];
+    } else {
+      palette = [
+        [0,0,0],[255,255,255],[255,0,0],[0,255,255],
+        [0,255,0],[255,0,255],[0,0,255],[255,255,0]
+      ];
+    }
+
+    // Working copy (float)
+    const buf = new Float32Array(w * h * 3);
+    for (let i = 0; i < w * h; i++) {
+      buf[i*3]   = d[i*4]   + biasAmt;
+      buf[i*3+1] = d[i*4+1] + biasAmt;
+      buf[i*3+2] = d[i*4+2] + biasAmt;
+    }
+
+    const out = resCtx.createImageData(w, h);
+    const o = out.data;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        const r = buf[idx*3], g = buf[idx*3+1], b = buf[idx*3+2];
+        // Find nearest
+        let bestDist = Infinity, best = palette[0];
+        for (let p = 0; p < palette.length; p++) {
+          const dr = r - palette[p][0], dg = g - palette[p][1], db = b - palette[p][2];
+          const dist = dr*dr + dg*dg + db*db;
+          if (dist < bestDist) { bestDist = dist; best = palette[p]; }
+        }
+        o[idx*4]   = best[0];
+        o[idx*4+1] = best[1];
+        o[idx*4+2] = best[2];
+        o[idx*4+3] = 255;
+        // Error diffusion
+        const er = r - best[0], eg = g - best[1], eb = b - best[2];
+        function addErr(ox, oy, frac) {
+          const nx = x + ox, ny = y + oy;
+          if (nx >= 0 && nx < w && ny < h) {
+            const ni = ny * w + nx;
+            buf[ni*3]   += er * frac;
+            buf[ni*3+1] += eg * frac;
+            buf[ni*3+2] += eb * frac;
+          }
+        }
+        addErr(1, 0, 7/16);
+        addErr(-1, 1, 3/16);
+        addErr(0, 1, 5/16);
+        addErr(1, 1, 1/16);
+      }
+    }
+    resCtx.putImageData(out, 0, 0);
+  }
+
+  // 6. Glitch
+  function applyGlitch(srcData, w, h, opts) {
+    const intensity = opts.intensity / 100;
+    const d = srcData.data;
+    const out = resCtx.createImageData(w, h);
+    const o = out.data;
+
+    // Copy base
+    for (let i = 0; i < d.length; i++) o[i] = d[i];
+
+    // Row displacement
+    const numRows = Math.floor(h * intensity * 0.3);
+    for (let n = 0; n < numRows; n++) {
+      const row = Math.floor(Math.random() * h);
+      const shift = Math.floor((Math.random() - 0.5) * w * intensity * 0.5);
+      const bandH = Math.floor(Math.random() * 5) + 1;
+      for (let dy = 0; dy < bandH && row + dy < h; dy++) {
+        for (let x = 0; x < w; x++) {
+          const srcX = Math.max(0, Math.min(w - 1, x - shift));
+          const di = ((row + dy) * w + x) * 4;
+          const si = ((row + dy) * w + srcX) * 4;
+          o[di] = d[si]; o[di+1] = d[si+1]; o[di+2] = d[si+2]; o[di+3] = 255;
+        }
+      }
+    }
+
+    // Channel separation
+    const chanShift = Math.floor(intensity * 15);
+    if (chanShift > 0) {
+      const copy = new Uint8ClampedArray(o);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          const rSrc = (y * w + Math.min(w-1, Math.max(0, x + chanShift))) * 4;
+          const bSrc = (y * w + Math.min(w-1, Math.max(0, x - chanShift))) * 4;
+          o[i]   = copy[rSrc];
+          o[i+2] = copy[bSrc + 2];
+        }
+      }
+    }
+
+    // Block corruption
+    const numBlocks = Math.floor(intensity * 8);
+    for (let n = 0; n < numBlocks; n++) {
+      const bw = Math.floor(Math.random() * w * 0.3) + 10;
+      const bh = Math.floor(Math.random() * h * 0.1) + 5;
+      const sx = Math.floor(Math.random() * (w - bw));
+      const sy = Math.floor(Math.random() * (h - bh));
+      const dx = Math.floor(Math.random() * (w - bw));
+      const dy = Math.floor(Math.random() * (h - bh));
+      for (let by = 0; by < bh; by++) {
+        for (let bx = 0; bx < bw; bx++) {
+          const si = ((sy + by) * w + (sx + bx)) * 4;
+          const di = ((dy + by) * w + (dx + bx)) * 4;
+          o[di] = o[si]; o[di+1] = o[si+1]; o[di+2] = o[si+2];
+        }
+      }
+    }
+
+    resCtx.putImageData(out, 0, 0);
+
+    // Animate
+    if (opts.animate && !glitchAnimId) {
+      glitchAnimId = setInterval(function() {
+        if (currentEffect !== 'glitch' || !opts.animate) { stopGlitchAnim(); return; }
+        const fresh = srcCtx.getImageData(0, 0, w, h);
+        applyGlitch(fresh, w, h, { intensity: opts.intensity, animate: false });
+      }, 200);
+    }
+  }
+
+  function stopGlitchAnim() {
+    if (glitchAnimId) { clearInterval(glitchAnimId); glitchAnimId = null; }
+  }
+
+  // 7. Game Boy
+  function applyGameboy(srcData, w, h, opts) {
+    const scale = opts.scale;
+    const palVar = opts.paletteVar;
+    const d = srcData.data;
+
+    const palettes = [
+      [[15,56,15],[48,98,48],[139,172,15],[155,188,15]],          // Green
+      [[0,0,0],[85,85,85],[170,170,170],[255,255,255]],           // Pocket
+      [[8,24,32],[52,104,86],[136,192,112],[224,248,208]]         // GBC
+    ];
+    const pal = palettes[palVar] || palettes[0];
+
+    // Downscale
+    const dw = Math.max(1, Math.floor(w / scale));
+    const dh = Math.max(1, Math.floor(h / scale));
+
+    const out = resCtx.createImageData(w, h);
+    const o = out.data;
+
+    for (let dy = 0; dy < dh; dy++) {
+      for (let dx = 0; dx < dw; dx++) {
+        // Average source block
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        for (let sy = dy * scale; sy < Math.min((dy+1)*scale, h); sy++) {
+          for (let sx = dx * scale; sx < Math.min((dx+1)*scale, w); sx++) {
+            const i = (sy * w + sx) * 4;
+            rSum += d[i]; gSum += d[i+1]; bSum += d[i+2];
+            count++;
+          }
+        }
+        const brightness = ((rSum/count)*0.299 + (gSum/count)*0.587 + (bSum/count)*0.114) / 255;
+        // Map to 4 colors
+        let ci;
+        if (brightness < 0.25) ci = 0;
+        else if (brightness < 0.5) ci = 1;
+        else if (brightness < 0.75) ci = 2;
+        else ci = 3;
+        const color = pal[ci];
+
+        // Fill upscaled block
+        for (let py = dy * scale; py < Math.min((dy+1)*scale, h); py++) {
+          for (let px = dx * scale; px < Math.min((dx+1)*scale, w); px++) {
+            const i = (py * w + px) * 4;
+            o[i] = color[0]; o[i+1] = color[1]; o[i+2] = color[2]; o[i+3] = 255;
+          }
+        }
+      }
+    }
+    resCtx.putImageData(out, 0, 0);
+  }
+
+  // 8. Commodore 64
+  function applyC64(srcData, w, h, opts) {
+    const scale = opts.scale;
+    const d = srcData.data;
+
+    const c64pal = [
+      [0,0,0],[255,255,255],[136,0,0],[170,255,238],
+      [204,68,204],[0,204,85],[0,0,170],[238,238,119],
+      [221,136,85],[102,68,0],[255,119,119],[51,51,51],
+      [119,119,119],[170,255,102],[0,136,255],[187,187,187]
+    ];
+
+    const dw = Math.max(1, Math.floor(w / scale));
+    const dh = Math.max(1, Math.floor(h / scale));
+
+    const out = resCtx.createImageData(w, h);
+    const o = out.data;
+
+    for (let dy = 0; dy < dh; dy++) {
+      for (let dx = 0; dx < dw; dx++) {
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        for (let sy = dy * scale; sy < Math.min((dy+1)*scale, h); sy++) {
+          for (let sx = dx * scale; sx < Math.min((dx+1)*scale, w); sx++) {
+            const i = (sy * w + sx) * 4;
+            rSum += d[i]; gSum += d[i+1]; bSum += d[i+2];
+            count++;
+          }
+        }
+        const rAvg = rSum / count, gAvg = gSum / count, bAvg = bSum / count;
+
+        // Nearest C64 color
+        let bestDist = Infinity, best = c64pal[0];
+        for (let p = 0; p < c64pal.length; p++) {
+          const dr = rAvg - c64pal[p][0], dg = gAvg - c64pal[p][1], db = bAvg - c64pal[p][2];
+          const dist = dr*dr + dg*dg + db*db;
+          if (dist < bestDist) { bestDist = dist; best = c64pal[p]; }
+        }
+
+        for (let py = dy * scale; py < Math.min((dy+1)*scale, h); py++) {
+          for (let px = dx * scale; px < Math.min((dx+1)*scale, w); px++) {
+            const i = (py * w + px) * 4;
+            o[i] = best[0]; o[i+1] = best[1]; o[i+2] = best[2]; o[i+3] = 255;
+          }
+        }
+      }
+    }
+    resCtx.putImageData(out, 0, 0);
+  }
+
+  // ---- Color helpers ----
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+      else if (max === g) h = ((b - r) / d + 2) / 6;
+      else h = ((r - g) / d + 4) / 6;
+    }
+    return [h, s, l];
+  }
+
+  function hslToRgb(h, s, l) {
+    if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+    function hue2rgb(p, q, t) {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    }
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    return [
+      Math.round(hue2rgb(p, q, h + 1/3) * 255),
+      Math.round(hue2rgb(p, q, h) * 255),
+      Math.round(hue2rgb(p, q, h - 1/3) * 255)
+    ];
+  }
+
+  // ---- Download ----
+  downloadBtn.addEventListener('click', function() {
+    if (!sourceImage) return;
+    const link = document.createElement('a');
+    link.download = 'retroized-' + currentEffect + '.png';
+    link.href = resultCanvas.toDataURL('image/png');
+    link.click();
+  });
+
+  // ---- Init ----
+  renderControls();
+
+})();
+</script>
+</body>
+</html>

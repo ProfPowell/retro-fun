@@ -1,0 +1,46 @@
+---
+layout: base.njk
+---
+<div class="grid">
+  {%- for item in collections.everything %}
+  {% set idx = loop.index0 %}
+  {% set cardLimit = 12 %}
+  {% include "card.njk" %}
+  {%- endfor %}
+</div>
+
+{% if collections.everything.length > 12 %}
+<div class="load-more-wrap">
+  <button class="load-more-btn" data-load-more>Load More</button>
+</div>
+{% endif %}
+
+<script src="{{ '/js/load-more.js' | url }}"></script>
+<script>
+(function() {
+  var preview = document.querySelector('.preview-viberacer');
+  if (!preview) return;
+  var lines = [
+    '<span class="racer-kw">import</span> { vibeCheck } <span class="racer-kw">from</span> <span class="racer-str">\'@vibe/core\'</span>;',
+    '<span class="racer-kw">const</span> agents = deploy(<span class="racer-str">"max"</span>);',
+    '<span class="racer-cmt">// TODO: write tests (never)</span>',
+    '<span class="racer-kw">function</span> ship() { <span class="racer-kw">return</span> <span class="racer-str">"LGTM"</span>; }',
+    '<span class="racer-cmt">// tech debt: 73%</span>',
+    '<span class="racer-kw">await</span> deploy(<span class="racer-str">"production"</span>);',
+    '<span class="racer-kw">if</span> (vibes) ship(); <span class="racer-cmt">// yolo</span>',
+    '<span class="racer-kw">class</span> Startup { pivot() {} }',
+  ];
+  var i = 0;
+  function addLine() {
+    var div = document.createElement('div');
+    div.className = 'racer-line';
+    div.innerHTML = lines[i % lines.length];
+    div.style.animationDelay = '0s';
+    preview.appendChild(div);
+    i++;
+    if (preview.children.length > 10) preview.removeChild(preview.firstChild);
+    setTimeout(addLine, 800 + Math.random() * 600);
+  }
+  addLine();
+})();
+</script>

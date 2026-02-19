@@ -1,0 +1,125 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.card {
+  border: 1px solid #222;
+  background: #111;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card:hover {
+  border-color: #ff00ff;
+  box-shadow:
+    0 0 20px rgba(255, 0, 255, 0.2),
+    inset 0 0 20px rgba(255, 0, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.card-preview {
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-info {
+  padding: 1rem;
+  border-top: 1px solid #222;
+}
+
+.card-info h2 {
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+.card:hover .card-info h2 {
+  color: #ff00ff;
+}
+
+.card-info p {
+  font-size: 0.7rem;
+  color: #555;
+  letter-spacing: 0.05em;
+}
+
+.card-date {
+  font-size: 0.55rem;
+  color: #444;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.55rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid #333;
+  color: #888;
+  letter-spacing: 0.1em;
+  margin-top: 0.5rem;
+  margin-right: 0.25rem;
+  text-transform: uppercase;
+}
+
+.tag--canvas { border-color: #00ffff33; color: #00ffff88; }
+.tag--css { border-color: #ff00ff33; color: #ff00ff88; }
+.tag--audio { border-color: #ffff0033; color: #ffff0088; }
+.tag--webcomp { border-color: #00ff0033; color: #00ff0088; }
+.tag--type { border-color: #ff884433; color: #ff884488; }
+.tag--game { border-color: #ff224433; color: #ff224488; }
+.tag--chat { border-color: #33ff3333; color: #33ff3388; }
+.tag--web { border-color: #ff5f8733; color: #ff5f8788; }
+.tag--post { border-color: #aa88ff33; color: #aa88ff88; }
+
+/* Load More */
+.load-more-wrap {
+  text-align: center;
+  padding: 2rem;
+}
+
+.load-more-btn {
+  background: transparent;
+  border: 1px solid #333;
+  color: #888;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.75rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+  border-color: #00ffff;
+  color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+/* Card reveal animation */
+.card[data-hidden] {
+  display: none;
+}
+
+.card.card--reveal {
+  animation: card-fade-in 0.4s ease forwards;
+}
+
+@keyframes card-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}

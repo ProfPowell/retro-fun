@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chiptune Visualizer // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a1a;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+  }
+  canvas { display: block; image-rendering: pixelated; }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #00ffff; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    background: rgba(10, 10, 26, 0.9);
+    cursor: pointer;
+  }
+  .overlay.hidden { display: none; }
+  .play-prompt {
+    text-align: center;
+    color: #00ffff;
+  }
+  .play-prompt h2 {
+    font-size: 1.5rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px #00ffff;
+    margin-bottom: 1rem;
+  }
+  .play-prompt p {
+    font-size: 0.7rem;
+    color: #555;
+    letter-spacing: 0.2em;
+  }
+
+  .controls {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    z-index: 10;
+  }
+  .controls button {
+    background: none;
+    border: 1px solid #333;
+    color: #666;
+    font-family: 'Courier New', monospace;
+    font-size: 0.65rem;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .controls button:hover {
+    border-color: #00ffff;
+    color: #00ffff;
+  }
+  .controls button.active {
+    border-color: #ff00ff;
+    color: #ff00ff;
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+
+<div class="overlay" id="startOverlay">
+  <div class="play-prompt">
+    <h2>&#9654; Click to Play</h2>
+    <p>Procedural chiptune with real-time visualization</p>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="btnBars" class="active">Bars</button>
+  <button id="btnWave">Wave</button>
+  <button id="btnScope">Scope</button>
+  <button id="btnMute">Mute</button>
+</div>
+
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let audioCtx, analyser, gainNode;
+let freqData, timeData;
+let vizMode = 'bars';
+let isPlaying = false;
+let time = 0;
+
+// Chiptune note frequencies (C major pentatonic + octaves)
+const NOTES = [
+  130.81, 146.83, 164.81, 196.00, 220.00,  // C3-A3
+  261.63, 293.66, 329.63, 392.00, 440.00,  // C4-A4
+  523.25, 587.33, 659.25, 783.99, 880.00,  // C5-A5
+];
+
+// Simple melody patterns
+const melodyPattern = [0, 2, 4, 7, 9, 7, 4, 2, 0, 4, 7, 9, 12, 9, 7, 4];
+const bassPattern =   [0, 0, 5, 5, 7, 7, 5, 5];
+const arpPattern =    [0, 4, 7, 12, 7, 4];
+
+let melodyIdx = 0;
+let bassIdx = 0;
+let arpIdx = 0;
+let beatCount = 0;
+let nextBeatTime = 0;
+const BPM = 140;
+const BEAT_LEN = 60 / BPM;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 512;
+  analyser.smoothingTimeConstant = 0.75;
+
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.3;
+  gainNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
+
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  timeData = new Uint8Array(analyser.fftSize);
+
+  nextBeatTime = audioCtx.currentTime;
+  scheduleBeat();
+}
+
+function playNote(freq, duration, type, volume, detune) {
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+
+  osc.type = type;
+  osc.frequency.value = freq;
+  if (detune) osc.detune.value = detune;
+
+  // Chiptune-style envelope
+  const now = nextBeatTime;
+  env.gain.setValueAtTime(0, now);
+  env.gain.linearRampToValueAtTime(volume, now + 0.01);
+  env.gain.setValueAtTime(volume, now + duration * 0.6);
+  env.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  osc.connect(env);
+  env.connect(gainNode);
+
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+function scheduleBeat() {
+  if (!isPlaying) return;
+
+  while (nextBeatTime < audioCtx.currentTime + 0.2) {
+    const subBeat = beatCount % 4;
+
+    // Melody (plays every 2 sub-beats)
+    if (subBeat % 2 === 0) {
+      const noteIdx = melodyPattern[melodyIdx % melodyPattern.length];
+      const freq = NOTES[noteIdx % NOTES.length];
+      playNote(freq, BEAT_LEN * 1.5, 'square', 0.15, 0);
+      melodyIdx++;
+    }
+
+    // Bass (plays every 4 sub-beats)
+    if (subBeat === 0) {
+      const noteIdx = bassPattern[bassIdx % bassPattern.length];
+      const freq = NOTES[noteIdx % NOTES.length] * 0.5;
+      playNote(freq, BEAT_LEN * 3, 'sawtooth', 0.12, 0);
+      bassIdx++;
+    }
+
+    // Arp (every sub-beat)
+    {
+      const noteIdx = arpPattern[arpIdx % arpPattern.length];
+      const freq = NOTES[noteIdx % NOTES.length] * 2;
+      playNote(freq, BEAT_LEN * 0.3, 'square', 0.06, 10);
+      arpIdx++;
+    }
+
+    // Hi-hat noise (every sub-beat, accented on beat 0)
+    {
+      const accent = subBeat === 0 ? 0.08 : 0.03;
+      playNoise(BEAT_LEN * 0.05, accent);
+    }
+
+    nextBeatTime += BEAT_LEN / 4;
+    beatCount++;
+  }
+
+  setTimeout(scheduleBeat, 50);
+}
+
+function playNoise(duration, volume) {
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+
+  const env = audioCtx.createGain();
+  const now = nextBeatTime;
+  env.gain.setValueAtTime(volume, now);
+  env.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  // High-pass for hi-hat sound
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 8000;
+
+  noise.connect(filter);
+  filter.connect(env);
+  env.connect(gainNode);
+  noise.start(now);
+  noise.stop(now + duration);
+}
+
+// Visualization
+const COLORS = [
+  '#ff00ff', '#ff0088', '#ff0044', '#ff4400',
+  '#ff8800', '#ffcc00', '#ffff00', '#88ff00',
+  '#00ff88', '#00ffcc', '#00ffff', '#0088ff',
+  '#0044ff', '#4400ff', '#8800ff', '#cc00ff',
+];
+
+function drawBars() {
+  analyser.getByteFrequencyData(freqData);
+
+  const barCount = 64;
+  const barWidth = W / barCount;
+  const step = Math.floor(freqData.length / barCount);
+
+  for (let i = 0; i < barCount; i++) {
+    const value = freqData[i * step] / 255;
+    const barH = value * H * 0.8;
+
+    const hue = (i / barCount * 360 + time * 50) % 360;
+
+    // Bar
+    ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.9)`;
+    ctx.fillRect(
+      i * barWidth + 1,
+      H - barH,
+      barWidth - 2,
+      barH
+    );
+
+    // Glow on top
+    ctx.fillStyle = `hsla(${hue}, 100%, 80%, 0.6)`;
+    ctx.fillRect(
+      i * barWidth,
+      H - barH,
+      barWidth,
+      3
+    );
+
+    // Mirror reflection
+    ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.15)`;
+    ctx.fillRect(
+      i * barWidth + 1,
+      H,
+      barWidth - 2,
+      -barH * 0.3
+    );
+  }
+}
+
+function drawWave() {
+  analyser.getByteTimeDomainData(timeData);
+
+  ctx.lineWidth = 2;
+  const sliceWidth = W / timeData.length;
+
+  // Draw multiple colored waves
+  for (let pass = 0; pass < 3; pass++) {
+    ctx.beginPath();
+    const hue = (pass * 120 + time * 30) % 360;
+    ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.7)`;
+    ctx.shadowColor = `hsla(${hue}, 100%, 60%, 1)`;
+    ctx.shadowBlur = 10;
+
+    const offset = pass * 3;
+    for (let i = 0; i < timeData.length; i++) {
+      const v = timeData[i] / 128.0;
+      const y = (v * H / 2) + (pass - 1) * 20;
+      const x = i * sliceWidth + offset;
+
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function drawScope() {
+  analyser.getByteTimeDomainData(timeData);
+  analyser.getByteFrequencyData(freqData);
+
+  const cx = W / 2;
+  const cy = H / 2;
+  const radius = Math.min(W, H) * 0.3;
+
+  // Draw circular oscilloscope
+  for (let pass = 0; pass < 2; pass++) {
+    ctx.beginPath();
+    const hue = pass * 180 + time * 40;
+    ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = `hsla(${hue}, 100%, 60%, 1)`;
+    ctx.shadowBlur = 15;
+
+    for (let i = 0; i < timeData.length; i++) {
+      const angle = (i / timeData.length) * Math.PI * 2;
+      const v = timeData[i] / 128.0;
+      const freqV = freqData[i % freqData.length] / 255;
+      const r = radius * (0.5 + v * 0.5) + freqV * 30;
+
+      const x = cx + Math.cos(angle + pass * 0.5) * r;
+      const y = cy + Math.sin(angle + pass * 0.5) * r;
+
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    ctx.closePath();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // Center text
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#ffffff44';
+  ctx.textAlign = 'center';
+  ctx.fillText('CHIPTUNE', cx, cy - 5);
+  ctx.fillText(BPM + ' BPM', cx, cy + 10);
+}
+
+function draw() {
+  // Fade trail
+  ctx.fillStyle = vizMode === 'scope' ? 'rgba(10,10,26,0.15)' : 'rgba(10,10,26,0.3)';
+  ctx.fillRect(0, 0, W, H);
+
+  if (analyser) {
+    switch (vizMode) {
+      case 'bars': drawBars(); break;
+      case 'wave': drawWave(); break;
+      case 'scope': drawScope(); break;
+    }
+  }
+
+  // Title
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#333';
+  ctx.textAlign = 'left';
+  ctx.fillText('CHIPTUNE VISUALIZER // 8-BIT AUDIO', 16, H - 16);
+
+  time += 0.016;
+  requestAnimationFrame(draw);
+}
+
+// Start overlay
+document.getElementById('startOverlay').addEventListener('click', () => {
+  document.getElementById('startOverlay').classList.add('hidden');
+  isPlaying = true;
+  initAudio();
+});
+
+// Controls
+document.getElementById('btnBars').addEventListener('click', function() {
+  vizMode = 'bars';
+  setActiveBtn(this);
+});
+document.getElementById('btnWave').addEventListener('click', function() {
+  vizMode = 'wave';
+  setActiveBtn(this);
+});
+document.getElementById('btnScope').addEventListener('click', function() {
+  vizMode = 'scope';
+  setActiveBtn(this);
+});
+document.getElementById('btnMute').addEventListener('click', function() {
+  if (!gainNode) return;
+  if (gainNode.gain.value > 0) {
+    gainNode.gain.value = 0;
+    this.textContent = 'Unmute';
+    this.classList.add('active');
+  } else {
+    gainNode.gain.value = 0.3;
+    this.textContent = 'Mute';
+    this.classList.remove('active');
+  }
+});
+
+function setActiveBtn(btn) {
+  document.querySelectorAll('.controls button').forEach(b => {
+    if (b.id !== 'btnMute') b.classList.remove('active');
+  });
+  btn.classList.add('active');
+}
+
+draw();
+</script>
+</body>
+</html>

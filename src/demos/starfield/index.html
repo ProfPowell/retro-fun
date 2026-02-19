@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starfield // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #000; overflow: hidden; cursor: crosshair; }
+  canvas { display: block; }
+  .hud {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #444;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #444;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #ff00ff; }
+</style>
+</head>
+<body>
+<div class="hud">
+  Starfield &bull; Move mouse to steer &bull; Click to warp
+</div>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+const NUM_STARS = 1200;
+const stars = [];
+let speed = 2;
+let targetSpeed = 2;
+let centerX = 0.5;
+let centerY = 0.5;
+let warp = false;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function initStar(s) {
+  s.x = (Math.random() - 0.5) * 2;
+  s.y = (Math.random() - 0.5) * 2;
+  s.z = Math.random();
+  s.pz = s.z;
+}
+
+for (let i = 0; i < NUM_STARS; i++) {
+  const s = {};
+  initStar(s);
+  stars.push(s);
+}
+
+window.addEventListener('mousemove', (e) => {
+  centerX = e.clientX / W;
+  centerY = e.clientY / H;
+});
+
+window.addEventListener('mousedown', () => { warp = true; targetSpeed = 20; });
+window.addEventListener('mouseup', () => { warp = false; targetSpeed = 2; });
+
+function draw() {
+  // Fade trail
+  ctx.fillStyle = warp ? 'rgba(0,0,10,0.2)' : 'rgba(0,0,0,0.3)';
+  ctx.fillRect(0, 0, W, H);
+
+  speed += (targetSpeed - speed) * 0.05;
+
+  const cx = centerX * W;
+  const cy = centerY * H;
+
+  for (let i = 0; i < NUM_STARS; i++) {
+    const s = stars[i];
+    s.pz = s.z;
+    s.z -= speed * 0.002;
+
+    if (s.z <= 0.001) {
+      initStar(s);
+      s.pz = s.z;
+    }
+
+    // Project
+    const sx = (s.x / s.z) * (W * 0.5) + cx;
+    const sy = (s.y / s.z) * (H * 0.5) + cy;
+    const px = (s.x / s.pz) * (W * 0.5) + cx;
+    const py = (s.y / s.pz) * (H * 0.5) + cy;
+
+    // Size based on depth
+    const size = (1 - s.z) * 3;
+
+    // Brightness based on depth
+    const brightness = (1 - s.z);
+
+    if (warp) {
+      // Draw streaks during warp
+      const hue = 240 + (1 - s.z) * 60;
+      ctx.strokeStyle = `hsla(${hue}, 80%, ${50 + brightness * 50}%, ${brightness})`;
+      ctx.lineWidth = size * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+    } else {
+      // Draw dots normally
+      const c = Math.floor(brightness * 255);
+      ctx.fillStyle = `rgb(${c},${c},${Math.min(255, c + 30)})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, Math.max(0.5, size * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+
+      // Subtle streak
+      if (size > 1) {
+        ctx.strokeStyle = `rgba(${c},${c},${Math.min(255, c + 30)},0.3)`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(sx, sy);
+        ctx.stroke();
+      }
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

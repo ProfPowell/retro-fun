@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% if title %}{{ title }} — {% endif %}{{ site.name }}</title>
+<link rel="stylesheet" href="{{ '/css/theme.css' | url }}">
+<link rel="stylesheet" href="{{ '/css/nav.css' | url }}">
+<link rel="stylesheet" href="{{ '/css/cards.css' | url }}">
+<link rel="stylesheet" href="{{ '/css/previews.css' | url }}">
+<link rel="stylesheet" href="{{ '/css/post.css' | url }}">
+</head>
+<body>
+
+<header>
+  <h1><a href="{{ '/' | url }}">{{ site.name }}</a></h1>
+  <p class="subtitle">{{ site.subtitle | safe }}</p>
+</header>
+
+<nav class="site-nav">
+  <a href="{{ '/' | url }}"{% if page.url == '/' %} aria-current="page"{% endif %}>Latest</a>
+  <a href="{{ '/demos/' | url }}"{% if page.url == '/demos/' %} aria-current="page"{% endif %}>Demos</a>
+  <a href="{{ '/posts/' | url }}"{% if page.url == '/posts/' %} aria-current="page"{% endif %}>Posts</a>
+  <a href="{{ '/about/' | url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
+</nav>
+
+{{ content | safe }}
+
+<footer>
+  <p>Zero dependencies &bull; Pure HTML/CSS/JS &bull; Vibe coded with stealth</p>
+</footer>
+
+</body>
+</html>

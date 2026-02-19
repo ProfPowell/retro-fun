@@ -1,0 +1,12 @@
+{
+  "name": "retro-fun",
+  "version": "1.0.0",
+  "description": "Cyber Viber Ninja — Experiments in Retro Fun",
+  "scripts": {
+    "build": "npx @11ty/eleventy",
+    "start": "npx @11ty/eleventy --serve"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0"
+  }
+}

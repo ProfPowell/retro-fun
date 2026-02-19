@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vibe Code Racer // Cyber Viber Ninja</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0a;--fg:#33ff33;--dim:#0a3a0a;--accent:#00ffff;--alt:#ff00ff;
+  --panel-bg:#0d0d0d;--input-bg:#0a0a0a;--border:#1a3a1a;
+  --scanline:rgba(0,0,0,0.15);--glow-color:#33ff33;
+  --debt-low:#33ff33;--debt-mod:#ffff00;--debt-high:#ff8800;--debt-crit:#ff3333;
+  --yegge:#ff6600;
+}
+body{background:var(--bg);color:var(--fg);font-family:'Courier New',monospace;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+#scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scanline) 2px,var(--scanline) 4px);pointer-events:none;z-index:9999}
+#crt-flicker{position:fixed;inset:0;pointer-events:none;z-index:9998;animation:crt-flick 0.05s infinite}
+@keyframes crt-flick{0%,100%{opacity:0}50%{opacity:0.015}}
+
+/* TITLE ROW */
+#title-row{height:24px;display:flex;align-items:center;padding:0 8px;background:#080808;border-bottom:1px solid var(--border);flex-shrink:0;z-index:10;font-size:0.6rem;gap:8px}
+#title-row a{color:var(--dim);text-decoration:none;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+#title-row a:hover{color:var(--fg);text-shadow:0 0 6px var(--fg)}
+.title-text{flex:1;text-align:center;color:var(--accent);text-shadow:0 0 6px var(--accent);letter-spacing:0.15em;text-transform:uppercase;font-size:0.6rem;white-space:nowrap}
+#title-hud{display:flex;gap:8px;white-space:nowrap}
+.hud-item{display:inline-flex;align-items:center;gap:3px}
+.hud-label{color:#555;font-size:0.55rem;text-transform:uppercase}
+.hud-val{color:var(--accent);text-shadow:0 0 6px var(--accent);font-size:0.55rem}
+.hud-val.money{color:var(--alt);text-shadow:0 0 6px var(--alt)}
+
+/* BRAND BANNER */
+#brand-banner{height:28px;display:flex;align-items:center;justify-content:center;background:#060606;border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden}
+#brand-banner pre{font-size:0.45rem;color:var(--accent);text-shadow:0 0 8px var(--accent),0 0 16px rgba(0,255,255,0.3);line-height:1.1;letter-spacing:0.05em}
+
+/* TAB BAR */
+#tab-bar{height:24px;display:flex;align-items:center;background:#0a0a0a;border-bottom:1px solid var(--border);flex-shrink:0;font-size:0.55rem;padding:0 4px;gap:0}
+.file-tab{padding:3px 10px;border:1px solid transparent;border-bottom:none;color:#555;cursor:pointer;white-space:nowrap;letter-spacing:0.05em}
+.file-tab:hover{color:var(--fg);background:#111}
+.file-tab.active{color:var(--accent);background:#111;border-color:var(--border);border-bottom:1px solid #111;margin-bottom:-1px}
+#model-select{margin-left:auto;color:var(--alt);cursor:pointer;padding:3px 8px;letter-spacing:0.05em}
+#model-select:hover{text-shadow:0 0 6px var(--alt);color:#ff66ff}
+
+/* MAIN AREA */
+#main{flex:1;display:flex;overflow:hidden;position:relative}
+
+/* CODE PANEL */
+#code-panel{flex:0 0 75%;display:flex;border-right:1px solid var(--border);overflow:hidden;position:relative}
+#code-scroll{flex:1;overflow-y:auto;padding:6px 0;font-size:0.75rem;line-height:1.6}
+#code-scroll::-webkit-scrollbar{width:4px}
+#code-scroll::-webkit-scrollbar-track{background:#080808}
+#code-scroll::-webkit-scrollbar-thumb{background:var(--dim)}
+.code-line{opacity:0;animation:line-in 0.15s forwards;white-space:pre-wrap;word-break:break-all;padding:0 10px 0 0}
+@keyframes line-in{to{opacity:1}}
+.kw{color:var(--accent)}
+.str{color:var(--alt)}
+.cmt{color:#1a6a1a}
+.num{color:#ffff00}
+.fn{color:#33ff33}
+.line-num{display:inline-block;width:40px;text-align:right;color:#333;padding-right:8px;background:#080808;margin-right:8px;user-select:none;border-right:1px solid #1a1a1a}
+
+/* MINIMAP */
+#minimap{width:40px;background:#080808;border-left:1px solid #1a1a1a;overflow:hidden;flex-shrink:0;position:relative}
+#minimap-content{position:absolute;top:0;left:2px;right:2px;bottom:0}
+.minimap-line{height:2px;margin-bottom:0;opacity:0.6}
+
+/* CONTROL PANEL */
+#ctrl-panel{flex:1;display:flex;flex-direction:column;gap:0;overflow-y:auto;padding:0;min-width:0}
+.ctrl-section{padding:8px 10px;border-bottom:1px solid var(--border)}
+.ctrl-title{font-size:0.55rem;text-transform:uppercase;letter-spacing:0.15em;color:#555;margin-bottom:6px}
+
+/* DEBT METER */
+#debt-bar-wrap{height:14px;background:#111;border:1px solid var(--border);position:relative;margin-bottom:4px}
+#debt-bar{height:100%;width:0;transition:width 0.3s,background 0.3s}
+#debt-label{font-size:0.6rem;color:var(--debt-low)}
+#debt-pct{font-size:0.55rem;float:right;color:#555}
+.debt-critical #debt-bar-wrap{animation:debt-pulse 0.5s infinite}
+@keyframes debt-pulse{0%,100%{box-shadow:0 0 8px var(--debt-crit)}50%{box-shadow:0 0 20px var(--debt-crit)}}
+#refactor-btn{margin-top:6px;width:100%;padding:4px;background:transparent;border:1px solid var(--border);color:var(--fg);font-family:inherit;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer}
+#refactor-btn:hover{border-color:var(--fg);text-shadow:0 0 6px var(--fg)}
+#refactor-btn.active{background:var(--dim);color:#fff;border-color:var(--fg);animation:refactor-glow 1s infinite}
+@keyframes refactor-glow{0%,100%{box-shadow:0 0 4px var(--fg)}50%{box-shadow:0 0 12px var(--fg)}}
+
+/* AGENT SECTION */
+#deploy-btn{width:100%;padding:4px;background:transparent;border:1px solid var(--border);color:#ffff00;font-family:inherit;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;margin-bottom:4px}
+#deploy-btn:hover{border-color:#ffff00;text-shadow:0 0 6px #ffff00}
+#deploy-btn:disabled{opacity:0.3;cursor:default}
+#agent-count{font-size:0.6rem;color:#ffff00}
+#autopilot-status{font-size:0.55rem;color:#555;margin-top:2px}
+.autopilot-on{color:var(--fg)!important;text-shadow:0 0 6px var(--fg)}
+
+/* YEGGE BUTTON */
+#yegge-btn{width:100%;padding:6px 4px;background:transparent;border:1px solid var(--yegge);color:var(--yegge);font-family:inherit;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;margin-top:6px;transition:all 0.2s}
+#yegge-btn:hover:not(:disabled){text-shadow:0 0 8px var(--yegge);background:rgba(255,102,0,0.1)}
+#yegge-btn:disabled{opacity:0.4;cursor:default}
+#yegge-btn.pulse{animation:yegge-pulse 1s infinite}
+@keyframes yegge-pulse{0%,100%{box-shadow:0 0 4px var(--yegge);border-color:var(--yegge)}50%{box-shadow:0 0 16px var(--yegge);border-color:#ffaa00}}
+
+/* GAS TOWN STATUS */
+#gastown-section{display:none}
+#gastown-section.visible{display:block}
+.gas-stat{font-size:0.55rem;display:flex;justify-content:space-between;margin-bottom:2px}
+.gas-val{color:var(--yegge);text-shadow:0 0 4px var(--yegge)}
+
+/* STATS */
+.stat-row{font-size:0.6rem;display:flex;justify-content:space-between;margin-bottom:2px}
+.stat-val{color:var(--accent)}
+
+/* INPUT BAR */
+#input-bar{height:48px;display:flex;align-items:center;padding:4px 8px;background:#080808;border-top:1px solid var(--border);flex-shrink:0}
+#prompt-box{flex:1;display:flex;align-items:center;height:36px;border:1px solid var(--border);background:#0a0a0a;padding:0 10px;transition:border-color 0.2s,box-shadow 0.2s}
+#prompt-box:focus-within{border-color:var(--accent);box-shadow:0 0 8px rgba(0,255,255,0.2)}
+#prompt-box label{font-size:0.65rem;color:var(--dim);margin-right:8px;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em}
+#prompt-input{flex:1;background:transparent;border:none;color:var(--fg);font-family:inherit;font-size:0.65rem;outline:none;caret-color:var(--fg)}
+#prompt-input::placeholder{color:#1a3a1a}
+#prompt-input:disabled{opacity:0.3}
+
+/* MODEL OVERLAY */
+#model-overlay{position:fixed;inset:0;z-index:180;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.92)}
+#model-overlay.show{display:flex}
+#model-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px;width:90%}
+.model-card{border:1px solid var(--border);padding:10px;cursor:pointer;transition:all 0.2s;text-align:center}
+.model-card:hover,.model-card.selected{border-color:var(--alt);background:#1a0a1a;box-shadow:0 0 10px rgba(255,0,255,0.2)}
+.model-card .model-name{font-size:0.65rem;color:var(--alt);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px}
+.model-card .model-art{font-size:0.7rem;color:var(--fg);line-height:1.2;margin-bottom:4px;white-space:pre}
+.model-card .model-stats{font-size:0.5rem;color:#555;line-height:1.4}
+.model-card .model-quirk{font-size:0.45rem;color:var(--yegge);margin-top:4px}
+#model-overlay-title{font-size:0.8rem;color:var(--alt);text-transform:uppercase;letter-spacing:0.2em;margin-bottom:12px;text-shadow:0 0 10px var(--alt)}
+#model-overlay-cost{font-size:0.55rem;color:#555;margin-top:8px}
+#model-close-hint{font-size:0.5rem;color:#333;margin-top:6px}
+
+/* OVERLAYS */
+.overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;background:var(--bg)}
+.overlay.hidden{display:none}
+
+/* BOOT */
+#boot-overlay{font-size:0.65rem;align-items:flex-start;justify-content:flex-start;padding:20px;overflow:hidden}
+#boot-overlay .boot-line{margin-bottom:2px;opacity:0}
+#boot-overlay .boot-line.show{opacity:1}
+.boot-ok{color:var(--fg)}
+.boot-warn{color:#ffff00}
+.boot-err{color:#ff3333}
+.boot-dim{color:#555}
+
+/* MODE SELECT */
+#mode-overlay{font-size:0.7rem;gap:8px}
+#mode-overlay .mode-title{font-size:1rem;color:var(--accent);text-shadow:0 0 10px var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.2em}
+.mode-box{border:1px solid var(--border);padding:10px 16px;width:340px;cursor:pointer;transition:all 0.2s}
+.mode-box:hover,.mode-box.sel{border-color:var(--accent);color:var(--accent);text-shadow:0 0 6px var(--accent);background:#0a1a1a}
+.mode-box .mode-key{color:var(--alt);margin-right:6px}
+.mode-box .mode-desc{font-size:0.55rem;color:#555;display:block;margin-top:2px}
+
+/* POLECAT FLASH */
+#polecat-overlay{background:rgba(0,0,0,0.92);z-index:200}
+#polecat-overlay .flash-text{font-size:0.7rem;color:#ffaa00;text-shadow:0 0 20px #ffaa00,0 0 40px #ff6600;text-transform:uppercase;letter-spacing:0.08em;animation:polecat-pulse 0.3s infinite;white-space:pre;line-height:1.4;text-align:center}
+@keyframes polecat-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+
+/* GAS TOWN COUNTDOWN */
+#gastown-overlay{background:rgba(0,0,0,0.9);z-index:200}
+#gastown-overlay .gas-label{font-size:0.7rem;color:#555;text-transform:uppercase;letter-spacing:0.2em;margin-bottom:10px}
+#gastown-overlay .gas-num{font-size:3rem;color:var(--accent);text-shadow:0 0 20px var(--accent);animation:gas-scale 1s ease-out}
+@keyframes gas-scale{0%{transform:scale(2);opacity:0}50%{opacity:1}100%{transform:scale(1)}}
+
+/* VICTORY */
+#victory-overlay{background:rgba(0,0,0,0.95);z-index:200;text-align:center;gap:12px}
+#victory-overlay .victory-title{font-size:1.4rem;text-transform:uppercase;letter-spacing:0.2em;background:linear-gradient(90deg,#ff0000,#ff8800,#ffff00,#33ff33,#00ffff,#ff00ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:rainbow-shift 2s linear infinite;background-size:200% 100%}
+@keyframes rainbow-shift{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+#victory-overlay .victory-stat{font-size:0.65rem;color:var(--accent)}
+#victory-overlay .victory-btn{margin-top:10px;padding:6px 16px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:inherit;font-size:0.6rem;text-transform:uppercase;cursor:pointer;letter-spacing:0.1em}
+#victory-overlay .victory-btn:hover{background:var(--accent);color:var(--bg)}
+
+/* FAILURE */
+#failure-overlay{background:#0a0000;z-index:200;text-align:center;gap:10px}
+#failure-overlay .fail-title{font-size:1.4rem;color:#ff3333;text-shadow:0 0 20px #ff3333;text-transform:uppercase;letter-spacing:0.2em;animation:fail-glitch 0.15s infinite}
+@keyframes fail-glitch{0%{transform:translate(0)}25%{transform:translate(-3px,2px)}50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-2px)}100%{transform:translate(0)}}
+#failure-overlay .fail-art{font-size:0.5rem;color:#ff3333;opacity:0.7;white-space:pre;line-height:1.2}
+#failure-overlay .fail-stat{font-size:0.6rem;color:#ff6666}
+#failure-overlay .fail-btn{margin-top:10px;padding:6px 16px;background:transparent;border:1px solid #ff3333;color:#ff3333;font-family:inherit;font-size:0.6rem;text-transform:uppercase;cursor:pointer;letter-spacing:0.1em}
+#failure-overlay .fail-btn:hover{background:#ff3333;color:#000}
+
+/* SYS FLASH */
+#sys-flash{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:150;font-size:0.65rem;color:#ffff00;text-shadow:0 0 10px #ffff00,0 0 20px #ffff00;text-transform:uppercase;letter-spacing:0.12em;pointer-events:none;opacity:0;transition:opacity 0.2s;text-align:center;max-width:80vw;padding:8px 16px;background:rgba(0,0,0,0.8);border:1px solid #ffff0044}
+#sys-flash.show{opacity:1}
+
+/* WAIT OVERLAY */
+#wait-overlay{background:rgba(0,0,0,0.9);z-index:200;text-align:center;gap:8px}
+#wait-overlay .wait-title{font-size:0.8rem;color:#ffff00;text-transform:uppercase;letter-spacing:0.15em}
+#wait-overlay .wait-timer{font-size:2rem;color:var(--accent);text-shadow:0 0 15px var(--accent)}
+#wait-overlay .wait-sub{font-size:0.55rem;color:#555}
+
+/* EXTREME MODE */
+body.extreme-mode #code-panel{animation:extreme-jitter 0.1s infinite}
+@keyframes extreme-jitter{
+  0%{transform:translate(0,0) hue-rotate(0deg)}
+  25%{transform:translate(1px,-1px) hue-rotate(5deg)}
+  50%{transform:translate(-1px,1px) hue-rotate(-3deg)}
+  75%{transform:translate(1px,0) hue-rotate(2deg)}
+  100%{transform:translate(0,0) hue-rotate(0deg)}
+}
+body.extreme-mode .code-line:nth-child(5n){text-shadow:2px 0 #ff0000,-2px 0 #00ffff}
+body.extreme-mode #brand-banner{animation:banner-glitch 2s infinite}
+@keyframes banner-glitch{
+  0%,90%,100%{transform:skewX(0)}
+  92%{transform:skewX(-2deg)}
+  94%{transform:skewX(3deg)}
+  96%{transform:skewX(-1deg)}
+  98%{transform:skewX(1deg)}
+}
+
+@media(max-width:768px){
+  #main{flex-direction:column}
+  #code-panel{flex:0 0 50%;border-right:none;border-bottom:1px solid var(--border)}
+  #ctrl-panel{flex:1;overflow-y:auto}
+  #brand-banner{display:none}
+  #minimap{display:none}
+  #title-hud{font-size:0.45rem;gap:4px}
+  #title-row{overflow-x:auto}
+  .title-text{font-size:0.5rem;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .file-tab{padding:2px 6px;font-size:0.5rem}
+  #tab-bar{overflow-x:auto}
+  .mode-box{width:auto;max-width:90vw;min-width:0}
+  #model-grid{grid-template-columns:1fr;max-width:90vw}
+  .model-card .model-art{font-size:0.55rem}
+  #prompt-input{font-size:1rem}
+  .line-num{width:28px;padding-right:4px;margin-right:4px}
+}
+</style>
+</head>
+<body>
+
+<div id="scanlines"></div>
+<div id="crt-flicker"></div>
+
+<div id="title-row">
+  <a href="../../">&#9664; Back</a>
+  <span class="title-text">VIBECORP VIBE CODE RACER v6.9</span>
+  <div id="title-hud">
+    <div class="hud-item"><span class="hud-label">MODE:</span><span class="hud-val" id="hud-mode">---</span></div>
+    <div class="hud-item"><span class="hud-label">TIME:</span><span class="hud-val" id="hud-time">00:00</span></div>
+    <div class="hud-item"><span class="hud-label">LOC:</span><span class="hud-val" id="hud-loc">0</span></div>
+    <div class="hud-item"><span class="hud-label">$:</span><span class="hud-val money" id="hud-money">$0</span></div>
+    <div class="hud-item"><span class="hud-label">TKNS:</span><span class="hud-val" id="hud-tokens">0</span></div>
+  </div>
+</div>
+
+<div id="brand-banner">
+  <pre>╔══════════════════════════════════════════════════════════╗
+║  ░▒▓ VIBECORP GAS TOWN IDE ▓▒░  ──  "100% vibe coded"   ║
+╚══════════════════════════════════════════════════════════╝</pre>
+</div>
+
+<div id="tab-bar">
+  <span class="file-tab active" id="tab-0">main.ts</span>
+  <span class="file-tab" id="tab-1">utils.ts</span>
+  <span class="file-tab" id="tab-2">config.ts</span>
+  <span id="model-select">Model: VIBEGPT-5 Ultra ▼</span>
+</div>
+
+<div id="main">
+  <div id="code-panel">
+    <div id="code-scroll"></div>
+    <div id="minimap"><div id="minimap-content"></div></div>
+  </div>
+  <div id="ctrl-panel">
+    <div class="ctrl-section" id="debt-section">
+      <div class="ctrl-title">Technical Debt</div>
+      <div id="debt-bar-wrap"><div id="debt-bar"></div></div>
+      <div><span id="debt-label">LOW</span><span id="debt-pct">0%</span></div>
+      <button id="refactor-btn">[ Refactor ]</button>
+    </div>
+    <div class="ctrl-section">
+      <div class="ctrl-title" id="agents-title">Agents</div>
+      <button id="deploy-btn">[ Deploy Agent — $500 ]</button>
+      <div id="agent-count">Agents: 0 / 16</div>
+      <div id="autopilot-status">AUTOPILOT: OFF</div>
+      <button id="yegge-btn">[ YEGGE MODE — 8 Polecats ($4,000) ]</button>
+    </div>
+    <div class="ctrl-section" id="gastown-section">
+      <div class="ctrl-title">Gas Town Status</div>
+      <div class="gas-stat"><span>The Mayor:</span><span class="gas-val" id="gas-mayor">WATCHING</span></div>
+      <div class="gas-stat"><span>Refinery:</span><span class="gas-val" id="gas-refinery">IDLE</span></div>
+      <div class="gas-stat"><span>Convoys:</span><span class="gas-val" id="gas-convoys">0</span></div>
+      <div class="gas-stat"><span>Molecules:</span><span class="gas-val" id="gas-molecules">0</span></div>
+      <div class="gas-stat"><span>DYFJ Signals:</span><span class="gas-val" id="gas-dyfj">0</span></div>
+    </div>
+    <div class="ctrl-section">
+      <div class="ctrl-title">Session Stats</div>
+      <div class="stat-row"><span>LOC/sec</span><span class="stat-val" id="stat-locsec">0</span></div>
+      <div class="stat-row"><span>Prompts</span><span class="stat-val" id="stat-prompts">0</span></div>
+      <div class="stat-row"><span>Peak LOC/s</span><span class="stat-val" id="stat-peak">0</span></div>
+      <div class="stat-row"><span>Best Time</span><span class="stat-val" id="stat-best">--:--</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="input-bar">
+  <div id="prompt-box">
+    <label for="prompt-input" id="prompt-label">vibes&gt;</label>
+    <input id="prompt-input" type="text" placeholder="type a prompt and hit enter..." autocomplete="off" disabled>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div id="boot-overlay" class="overlay"></div>
+<div id="mode-overlay" class="overlay hidden"></div>
+<div id="polecat-overlay" class="overlay hidden"></div>
+<div id="gastown-overlay" class="overlay hidden"></div>
+<div id="victory-overlay" class="overlay hidden"></div>
+<div id="failure-overlay" class="overlay hidden"></div>
+<div id="wait-overlay" class="overlay hidden"></div>
+<div id="model-overlay"></div>
+<div id="sys-flash"></div>
+
+<script>
+/* ===== STATE ===== */
+const S = {
+  phase: 'boot',
+  mode: null,
+  model: 'vibegpt',
+  loc: 0,
+  displayLoc: 0,
+  tokens: 0,
+  money: 0,
+  agents: 0,
+  debt: 0,
+  debtLevel: 'LOW',
+  startTime: 0,
+  elapsed: 0,
+  refactoring: false,
+  autopilot: false,
+  promptCount: 0,
+  lineNum: 1,
+  peakLocSec: 0,
+  locLastSec: 0,
+  locSecTimer: 0,
+  lastFrameTime: 0,
+  agentAccum: 0,
+  flashTimer: null,
+  waitTime: 0,
+  freeRefreshes: 0,
+  gameOver: false,
+  yeggeLevel: 0,
+  gastown: { convoys:0, molecules:0, dyfj:0, convoyTimer:0, dyfjTimer:0, refineryState:0, refineryTimer:0 },
+  tabTimer: 0,
+  modelPromptCount: 0
+};
+
+/* ===== MODE CONFIG ===== */
+const MODES = {
+  race:      { tokens: 5000,  money: 10000, tokenPerPrompt: 15, tokenPerLoc: 0.003, moneyDrain: 2, tokenDrain: 0.5, goal: 1000000, label:'RACE' },
+  unlimited: { tokens: 3000,  money: 8000,  tokenPerPrompt: 25, tokenPerLoc: 0.008, moneyDrain: 5, tokenDrain: 1.5, goal: Infinity, label:'UNLIMITED' },
+  free:      { tokens: 200,   money: 999999,tokenPerPrompt: 10, tokenPerLoc: 0.005, moneyDrain: 0, tokenDrain: 0.3, goal: Infinity, label:'FREE' },
+  startup:   { tokens: 10000, money: 50000, tokenPerPrompt: 8,  tokenPerLoc: 0.002, moneyDrain: 8, tokenDrain: 0.8, goal: Infinity, label:'STARTUP' }
+};
+
+/* ===== MODEL CONFIG ===== */
+const AI_MODELS = {
+  vibegpt:  { name:'VIBEGPT-5 Ultra',  locMul:1.0, tokenMul:1.0, debtMul:1.0, quirk:null,       art:['  \u250C\u2500\u2510  ','  \u2502O\u2502  ','  \u2514\u2500\u2518  '], desc:'Baseline. No surprises.' },
+  claude:   { name:'Claude Opus 420',  locMul:1.3, tokenMul:1.5, debtMul:0.7, quirk:'claude',    art:['  /\u2588\\  ','  \u2502C\u2502  ','  \\\u2584/  '], desc:'+30% LOC, -30% debt. Lectures every 10th prompt.' },
+  gemma:    { name:'Gemma-Brain 3000', locMul:1.8, tokenMul:0.5, debtMul:2.0, quirk:'gemma',     art:['  \u25C7\u25C7\u25C7  ','  \u25C7G\u25C7  ','  \u25C7\u25C7\u25C7  '], desc:'+80% LOC, cheap. 2x debt, wrong languages.' },
+  llama:    { name:'Llama-Coder 70B',  locMul:0.8, tokenMul:0.3, debtMul:1.2, quirk:'llama',     art:['  ^..^  ','  (oo)  ','  /--\\  '], desc:'Cheapest tokens. Every 5th: 2x burst.' },
+  deepyeek: { name:'DeepYeek R2',      locMul:2.0, tokenMul:0.2, debtMul:1.5, quirk:'deepyeek',  art:['  \u250C\u2500\u2500\u2510  ','  \u2502\u6DF1\u2502  ','  \u2514\u2500\u2500\u2518  '], desc:'2x LOC, cheapest. Every 8th: moderated.' },
+  copilot:  { name:'CoPilot++ Turbo',  locMul:0.6, tokenMul:0.8, debtMul:0.5, quirk:'copilot',   art:['  \u250CG\u2510  ','  \u2502H\u2502  ','  \u2514\u2500\u2518  '], desc:'Lowest debt. Single-line only.' }
+};
+
+/* ===== GAS TOWN CONTENT ===== */
+const GAS_TOWN_FLASHES = [
+  'POLECAT SWARM: EPHEMERAL WORKERS DEPLOYED','DYFJ SIGNAL: "DO YOUR JOB"',
+  'THE WITNESS: PATROL MONITOR ACTIVE','CONVOY BUNDLE: WORK ORDER DISPATCHED',
+  'NONDETERMINISTIC IDEMPOTENCE ACHIEVED','100% VIBE CODED \u2014 NEVER SEEN THE CODE',
+  'MOLECULE CHAIN: 47 TASKS LINKED','WISP EVAPORATED \u2014 EPHEMERAL CONTEXT LOST',
+  'THE REFINERY: MERGE CONFLICT RESOLVED BY BRUTE FORCE','STAGE 7: WHERE EVERYTHING BREAKS',
+  'POLECAT FIRMWARE v8.0: LOYALTY MODULE ACTIVE','GAS TOWN MAYOR: "ALL IS WELL" (IT IS NOT)',
+  'THE DEACON: APPROVING ALL CODE REVIEWS','BEAD TRACKING: 2,847 MICRO-TASKS IN FLIGHT',
+  'CONVOY APPROACHING: ETA NEVER','SEANCE PROTOCOL: SUMMONING DEAD THREADS',
+  'REFINERY OUTPUT: 99.7% PURE COPIUM','POLECAT EVAPORATION RATE: NOMINAL',
+  'THE MAYOR IS WATCHING YOUR COMMIT HISTORY','WISP ENGINE: EPHEMERAL CONTEXT WINDOW CLOSING',
+  'STAGE 5: NONDETERMINISTIC EVERYTHING','GAS TOWN: WHERE CODE GOES TO BE REFINED',
+  'MOLECULE WORKER: TASK ATOM SPLITTING','DYFJ: DO YOUR FREAKIN JOB (FAMILY FRIENDLY)',
+  'THE WITNESS SEES ALL. THE WITNESS APPROVES.'
+];
+
+const GAS_TOWN_IMPORTS = [
+  `import { Polecat } from '@gastown/swarm';`,
+  `import { Bead, Wisp } from '@gastown/tracking';`,
+  `import { Convoy } from '@gastown/logistics';`,
+  `import { Refinery } from '@gastown/merge-engine';`,
+  `import { Mayor } from '@gastown/governance';`,
+  `import { DYFJ } from '@gastown/signals';`,
+  `import { Molecule } from '@gastown/workers';`,
+  `import { Witness, Deacon } from '@gastown/oversight';`,
+  `import { Seance } from '@gastown/thread-necromancy';`,
+  `import { Stage7 } from '@gastown/chaos';`
+];
+
+const GAS_TOWN_FUNCTIONS = [
+  [`function deployPolecatSwarm(count) {`,`  const polecats = Array(count).fill(new Polecat());`,`  polecats.forEach(p => p.doYourJob());`,`  return polecats.filter(p => !p.evaporated);`,`}`],
+  [`function refineryMerge(branches) {`,`  return branches.reduce((a, b) => bruteForce(a, b));`,`}`],
+  [`function formConvoy(workOrders) {`,`  const convoy = new Convoy({ size: workOrders.length });`,`  convoy.dispatch();`,`  return convoy;`,`}`],
+  [`async function seanceResume(deadThread) {`,`  const spirit = await Seance.summon(deadThread);`,`  return spirit.isCoherent ? spirit : null;`,`}`],
+  [`function dyfjSignal(worker) {`,`  worker.motivation = 'MAXIMUM';`,`  worker.autonomy = false;`,`  return worker.doYourJob();`,`}`]
+];
+
+const GAS_TOWN_COMMENTS = [
+  `// THE MAYOR: this code has been approved (unreviewed)`,
+  `// DYFJ: Do Your Job and ship this`,
+  `// POLECAT NOTE: I am ephemeral and I have accepted this`,
+  `// REFINERY: brute force merge \u2014 do not question the output`,
+  `// WITNESS: I have observed this code. It is... code.`,
+  `// STAGE 7: beyond this point, nothing is deterministic`,
+  `// BEAD: tracking this task across 47 molecules`,
+  `// WISP: this context will evaporate in 3... 2...`,
+  `// CONVOY: this function ships whether you like it or not`,
+  `// THE DEACON: blessed this code at 3am`
+];
+
+const GAS_TOWN_CLASSES = [
+  [`class Polecat {`,`  constructor() { this.ephemeral = true; this.loyal = true; }`,`  doYourJob() { return this.ephemeral ? 'DYFJ' : 'evaporated'; }`,`  evaporate() { this.ephemeral = false; }`,`}`],
+  [`class GasTownRefinery {`,`  constructor() { this.capacity = Infinity; this.conflicts = []; }`,`  merge(a, b) { return Math.random() > 0.5 ? a : b; }`,`  bruteForce() { this.conflicts = []; return 'RESOLVED'; }`,`}`],
+  [`class Convoy {`,`  constructor(orders) { this.orders = orders; this.eta = 'never'; }`,`  dispatch() { console.log('THE CONVOY IS ARRIVING'); }`,`}`],
+  [`class Molecule {`,`  constructor() { this.atoms = []; this.chain = null; }`,`  split() { return this.atoms.map(a => new Molecule()); }`,`}`]
+];
+
+const TAB_NAMES = [
+  'main.ts','index.js','app.py','server.go','Dockerfile','deploy.yml',
+  '.env.production','TODO.md','handler.rs','routes.rb','schema.graphql',
+  'polecat-swarm.js','refinery.ts','convoy-bundle.yml','gastown.config.ts'
+];
+
+const MAYOR_STATES = ['WATCHING','PLEASED','CONCERNED','FURIOUS'];
+const REFINERY_STATES = ['IDLE','MERGING','CONFLICT','RESOLVED'];
+
+/* ===== DOM REFS ===== */
+const $ = id => document.getElementById(id);
+const bootEl=$('boot-overlay'),modeEl=$('mode-overlay'),polecatEl=$('polecat-overlay');
+const gastownEl=$('gastown-overlay'),victoryEl=$('victory-overlay'),failureEl=$('failure-overlay');
+const waitEl=$('wait-overlay'),modelOverlay=$('model-overlay'),sysFlash=$('sys-flash');
+const codeScroll=$('code-scroll'),promptInput=$('prompt-input'),promptLabel=$('prompt-label');
+const hudMode=$('hud-mode'),hudTime=$('hud-time'),hudLoc=$('hud-loc');
+const hudTokens=$('hud-tokens'),hudMoney=$('hud-money');
+const debtBar=$('debt-bar'),debtLabel=$('debt-label'),debtPct=$('debt-pct');
+const debtSection=$('debt-section'),refactorBtn=$('refactor-btn');
+const deployBtn=$('deploy-btn'),agentCount=$('agent-count');
+const autopilotStatus=$('autopilot-status'),agentsTitle=$('agents-title');
+const yeggeBtn=$('yegge-btn'),gastownSection=$('gastown-section');
+const modelSelectBtn=$('model-select'),minimapContent=$('minimap-content');
+const statLocSec=$('stat-locsec'),statPrompts=$('stat-prompts');
+const statPeak=$('stat-peak'),statBest=$('stat-best');
+
+/* ===== CODE ARRAYS ===== */
+const CODE_IMPORTS = [
+  `import { vibeCheck } from '@vibe/core';`,
+  `import { deployToProduction } from 'yolo-ship';`,
+  `import { pray } from '@devops/hope';`,
+  `import { leftPad } from 'left-pad';`,
+  `import * as ai from 'hallucinate-js';`,
+  `import { skipTests } from '@ci/speedrun';`,
+  `import { technicalDebt } from 'future-me-problem';`,
+  `import { blame } from '@git/someone-else';`,
+  `const { Ship, Pray, Hope } = require('startup-toolkit');`,
+  `import { gaslight } from '@llm/confidence';`,
+  `import type { NeverGonnaReadThis } from './types';`,
+  `import { useVibes, useHallucination } from 'react-vibe-hooks';`,
+  `import { YOLO_MODE } from '@config/production';`,
+  `import { copilotSuggestion } from 'github-autocomplete';`,
+  `import { stackOverflowCopy } from 'ctrl-c-ctrl-v';`,
+  `import { ignoreLinter } from '@eslint/disable-next-line';`,
+  `import { burnMoney } from '@anthropic/api-client';`,
+  `import { scaleToInfinity } from 'kubernetes-vibes';`
+];
+const CODE_FUNCTIONS = [
+  [`function vibeCheck(code) {`,`  return code.includes('//') ? 'LGTM' : 'needs more comments';`,`}`],
+  [`function deployFriday() {`,`  console.log('YOLO');`,`  return fetch('/api/prod', { method: 'YEET' });`,`}`],
+  [`async function fixBug(bug) {`,`  await new Promise(r => setTimeout(r, 86400000));`,`  return 'works on my machine';`,`}`],
+  [`function estimateTask() {`,`  return Math.floor(Math.random() * 20) + ' story points';`,`}`],
+  [`function reviewPR(pr) {`,`  if (pr.author === 'senior') return 'LGTM';`,`  return 'nit: add semicolons';`,`}`],
+  [`function handleError(err) {`,`  console.log('TODO: handle this');`,`  return null;`,`}`],
+  [`function generateRevenue() {`,`  while (true) { pivot(); }`,`}`],
+  [`function scaleSystem() {`,`  return addMoreMicroservices(currentCount * 2);`,`}`],
+  [`async function writeTests() {`,`  // TODO: write tests`,`  // TODO: actually write tests`,`  // FIXME: seriously write tests`,`  return Promise.resolve('tests passed');`,`}`],
+  [`function optimizePerformance() {`,`  cache.clear();`,`  return 'fast now, trust me';`,`}`]
+];
+const CODE_CLASSES = [
+  [`class StartupFounder {`,`  constructor() {`,`    this.burnRate = Infinity;`,`    this.revenue = 0;`,`    this.vibes = 'immaculate';`,`  }`,`}`],
+  [`class AIAgent {`,`  think() { return Math.random() > 0.5 ? 'yes' : 'also yes'; }`,`  hallucinate() { return this.think() + ' (confident)'; }`,`}`],
+  [`class TechnicalDebt extends Error {`,`  constructor() {`,`    super('we will fix this later');`,`    this.priority = 'never';`,`  }`,`}`],
+  [`class ProductManager {`,`  addFeature() { this.scope *= 2; }`,`  removeFeature() { throw new Error('not possible'); }`,`}`]
+];
+const CODE_COMMENTS = [
+  `// FIXME: this works but nobody knows why`,
+  `// TODO: refactor when we have time (never)`,
+  `// HACK: don't touch this or everything breaks`,
+  `// NOTE: written at 3am, reviewed at 3:01am`,
+  `// WARNING: here be dragons (and race conditions)`,
+  `// this comment is the only documentation`,
+  `// I'm sorry for what you're about to read`,
+  `// copilot wrote this and I'm afraid to change it`,
+  `// if you're reading this, the company has failed`,
+  `// dear future dev: I am so sorry`,
+  `// this is O(n!) but it ships`,
+  `// the tests pass if you squint`,
+  `// AI-generated: do not trust`,
+  `/* eslint-disable everything */`,
+  `// duct tape: load-bearing comment, do not remove`,
+  `// vibes-checked: true`
+];
+const CODE_VARIABLES = [
+  `const MAX_VIBES = Number.MAX_SAFE_INTEGER;`,
+  `let techDebt = techDebt + 1; // always growing`,
+  `const DEPLOY_DAY = 'Friday';`,
+  `const API_KEY = 'sk-YOLO-not-a-real-key-trust-me';`,
+  `let bugsFixed = 0; // aspirational`,
+  `const SPRINT_VELOCITY = Math.random() * 100;`,
+  `const isProduction = process.env.NODE_ENV !== 'production' ? true : true;`,
+  `let coffeeCups = Infinity;`,
+  `const VERSION = '0.0.1-alpha-beta-gamma-rc69';`,
+  `const MEETINGS_TODAY = Math.ceil(Math.random() * 8);`,
+  `var globalState = {}; // fight me`,
+  `const TOKEN_PRICE = wallet.balance * 0.01; // per character`
+];
+const CODE_LOGIC = [
+  [`if (vibes === 'good') {`,`  ship();`,`} else {`,`  ship(); // ship anyway`,`}`],
+  [`try {`,`  await deployToProduction();`,`} catch (e) {`,`  console.log('this is fine');`,`}`],
+  [`while (funding > 0) {`,`  hire(10);`,`  funding -= burnRate;`,`  pivot();`,`}`],
+  [`switch (mood) {`,`  case 'motivated': writeCode(); break;`,`  case 'burnt-out': watchYouTube(); break;`,`  default: openSlack();`,`}`],
+  [`for (const dep of dependencies) {`,`  if (dep.vulnerable) continue; // not my problem`,`  await install(dep);`,`}`],
+  [`const result = condition`,`  ? doTheThing()`,`  : doTheOtherThing(); // both are wrong`]
+];
+const CODE_ONELINERS = [
+  `git commit -m 'fix: fixed the fix that fixed the fix';`,
+  `console.log(JSON.stringify(JSON.parse(JSON.stringify(data))));`,
+  `return arr.map(x => x).filter(x => x).reduce((a, b) => a + b, 0);`,
+  `const sleep = ms => new Promise(r => setTimeout(r, ms));`,
+  `document.title = 'PRODUCTION IS DOWN';`,
+  `fetch('/api/data').then(r => r.json()).then(d => eval(d.code));`,
+  `localStorage.setItem('auth', btoa('admin:admin'));`,
+  `process.exit(Math.random() > 0.5 ? 0 : 1);`,
+  `rm -rf node_modules && npm install; // the universal fix`,
+  `SELECT * FROM users WHERE 1=1; -- oops`,
+  `kubectl delete pods --all --namespace=production;`,
+  `chmod 777 /etc/shadow; // security by vibes`,
+  `Object.assign(window, { __SECRET_DEBUG: true });`,
+  `export default () => import('./index.js'); // circular? yes.`
+];
+
+/* ===== BOOT SEQUENCE ===== */
+const BOOT_LINES = [
+  { text: 'VIBECORP INDUSTRIES BIOS v4.20.69', cls: 'boot-ok', delay: 200 },
+  { text: 'Copyright (c) 2026 VibeCorp International', cls: 'boot-dim', delay: 150 },
+  { text: '', cls: 'boot-dim', delay: 100 },
+  { text: 'CPU: NVIDIA H200 VIBE TENSOR @ 6.9 GHz', cls: 'boot-ok', delay: 180 },
+  { text: 'RAM: 1.21 GIGAVIBES (640K OUGHT TO BE ENOUGH)', cls: 'boot-ok', delay: 180 },
+  { text: 'GPU: RTX 5090 Ti FOUNDERS COPILOT EDITION', cls: 'boot-ok', delay: 180 },
+  { text: 'VIBE MODULE: DETECTED ....... OK', cls: 'boot-ok', delay: 200 },
+  { text: 'LOADING HALLUCINATION ENGINE .... OK', cls: 'boot-ok', delay: 250 },
+  { text: 'MOUNTING /dev/vibes ............ OK', cls: 'boot-ok', delay: 200 },
+  { text: 'CALIBRATING PROMPT INJECTOR ... OK', cls: 'boot-ok', delay: 200 },
+  { text: '', cls: 'boot-dim', delay: 80 },
+  { text: 'WARNING: UNIT TESTS NOT FOUND', cls: 'boot-warn', delay: 300 },
+  { text: 'WARNING: CODE REVIEW MODULE DISABLED', cls: 'boot-warn', delay: 250 },
+  { text: 'WARNING: TECHNICAL DEBT AT PRE-SEED LEVELS', cls: 'boot-warn', delay: 250 },
+  { text: 'ERROR: DOCUMENTATION NOT FOUND (VIBES ONLY)', cls: 'boot-err', delay: 300 },
+  { text: '', cls: 'boot-dim', delay: 80 },
+  { text: 'INITIALIZING AGENT SWARM v16.0 ........ OK', cls: 'boot-ok', delay: 200 },
+  { text: 'LOADING TOKEN ECONOMY ................ OK', cls: 'boot-ok', delay: 200 },
+  { text: 'CONNECTING TO YEGGE POLECAT MAINFRAME . OK', cls: 'boot-ok', delay: 250 },
+  { text: 'INITIALIZING GAS TOWN PROTOCOLS ....... OK', cls: 'boot-ok', delay: 200 },
+  { text: 'SUMMONING THE MAYOR .................. OK', cls: 'boot-ok', delay: 200 },
+  { text: 'WITNESS/DEACON OVERSIGHT ONLINE ...... OK', cls: 'boot-ok', delay: 180 },
+  { text: 'LOADING POLECAT FIRMWARE v8.0 ........ OK', cls: 'boot-ok', delay: 180 },
+  { text: 'BEAD TRACKING SUBSYSTEM .............. OK', cls: 'boot-ok', delay: 180 },
+  { text: 'WISP ENGINE (EPHEMERAL CONTEXT) ...... OK', cls: 'boot-ok', delay: 180 },
+  { text: 'GAS TOWN REFINERY .................... STANDING BY', cls: 'boot-warn', delay: 200 },
+  { text: 'WARNING: NONDETERMINISTIC IDEMPOTENCE DETECTED', cls: 'boot-warn', delay: 250 },
+  { text: 'WARNING: STAGE 7 PROTOCOLS MAY ACTIVATE', cls: 'boot-err', delay: 250 },
+  { text: '', cls: 'boot-dim', delay: 80 },
+  { text: 'DEPLOYING TO PRODUCTION (NO STAGING) .. OK', cls: 'boot-ok', delay: 300 },
+  { text: '', cls: 'boot-dim', delay: 100 },
+  { text: 'ALL SYSTEMS NOMINAL. VIBES: IMMACULATE.', cls: 'boot-ok', delay: 400 },
+  { text: '', cls: 'boot-dim', delay: 100 },
+  { text: 'Press any key or click to continue...', cls: 'boot-dim', delay: 200 }
+];
+
+function runBoot() {
+  bootEl.innerHTML = '';
+  let total = 0;
+  BOOT_LINES.forEach(l => {
+    const div = document.createElement('div');
+    div.className = 'boot-line ' + l.cls;
+    div.textContent = l.text;
+    bootEl.appendChild(div);
+    total += l.delay;
+    setTimeout(() => div.classList.add('show'), total);
+  });
+  const dismiss = () => {
+    if (S.phase !== 'boot') return;
+    S.phase = 'modeselect';
+    bootEl.classList.add('hidden');
+    showModeSelect();
+  };
+  setTimeout(() => { if (S.phase === 'boot') dismiss(); }, total + 1500);
+  document.addEventListener('keydown', function bk() { dismiss(); document.removeEventListener('keydown', bk); });
+  document.addEventListener('click', function bc() { dismiss(); document.removeEventListener('click', bc); });
+}
+
+/* ===== MODE SELECT ===== */
+function showModeSelect() {
+  modeEl.classList.remove('hidden');
+  modeEl.innerHTML = `
+    <div class="mode-title">Select Mode</div>
+    <div class="mode-box" data-mode="race"><span class="mode-key">[1]</span> RACE \u2014 Reach 1M LOC<span class="mode-desc">Tokens: 5,000 | Budget: $10K | Hit 1M LOC or fail trying</span></div>
+    <div class="mode-box" data-mode="unlimited"><span class="mode-key">[2]</span> UNLIMITED \u2014 Max LOC<span class="mode-desc">Tokens & $ drain aggressively | Out of resources = game over</span></div>
+    <div class="mode-box" data-mode="free"><span class="mode-key">[3]</span> FREE \u2014 Survive the Frustration<span class="mode-desc">200 tokens, then wait 10s for refresh | Never ends (satirical)</span></div>
+    <div class="mode-box" data-mode="startup"><span class="mode-key">[4]</span> STARTUP \u2014 Max LOC on Budget<span class="mode-desc">$50K budget | Spend wisely or go broke</span></div>
+  `;
+  modeEl.querySelectorAll('.mode-box').forEach(b => {
+    b.addEventListener('click', () => startGame(b.dataset.mode));
+    b.addEventListener('mouseenter', () => { modeEl.querySelectorAll('.mode-box').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); });
+  });
+  const keyHandler = e => {
+    const map = {'1':'race','2':'unlimited','3':'free','4':'startup'};
+    if (map[e.key]) { document.removeEventListener('keydown', keyHandler); startGame(map[e.key]); }
+  };
+  document.addEventListener('keydown', keyHandler);
+}
+
+/* ===== START GAME ===== */
+function startGame(mode) {
+  const cfg = MODES[mode];
+  S.phase = 'playing'; S.mode = mode; S.model = 'vibegpt';
+  S.loc = 0; S.displayLoc = 0; S.tokens = cfg.tokens; S.money = cfg.money;
+  S.agents = 0; S.debt = 0; S.debtLevel = 'LOW';
+  S.startTime = performance.now(); S.elapsed = 0;
+  S.refactoring = false; S.autopilot = false;
+  S.promptCount = 0; S.lineNum = 1;
+  S.peakLocSec = 0; S.locLastSec = 0; S.locSecTimer = 0;
+  S.lastFrameTime = performance.now();
+  S.agentAccum = 0; S.gameOver = false; S.freeRefreshes = 0;
+  S.yeggeLevel = 0; S.modelPromptCount = 0;
+  S.gastown = { convoys:0, molecules:0, dyfj:0, convoyTimer:0, dyfjTimer:0, refineryState:0, refineryTimer:0 };
+  S.tabTimer = 0;
+  modeEl.classList.add('hidden');
+  document.body.classList.remove('extreme-mode');
+  gastownSection.classList.remove('visible');
+  hudMode.textContent = cfg.label;
+  codeScroll.innerHTML = '';
+  minimapContent.innerHTML = '';
+  agentsTitle.textContent = 'Agents';
+  agentCount.textContent = 'Agents: 0 / 16';
+  autopilotStatus.textContent = 'AUTOPILOT: OFF';
+  autopilotStatus.classList.remove('autopilot-on');
+  yeggeBtn.disabled = false;
+  yeggeBtn.classList.remove('pulse');
+  yeggeBtn.textContent = '[ YEGGE MODE \u2014 8 Polecats ($4,000) ]';
+  yeggeBtn.style.borderColor = '';
+  yeggeBtn.style.color = '';
+  refactorBtn.classList.remove('active');
+  refactorBtn.textContent = '[ Refactor ]';
+  updateModelSelect();
+  updatePromptLabel();
+  promptInput.disabled = false;
+  promptInput.focus();
+  updateHUD();
+  loadBestTime();
+  requestAnimationFrame(gameLoop);
+}
+
+/* ===== GAME LOOP ===== */
+function gameLoop(now) {
+  if (S.phase !== 'playing') return;
+  const dt = (now - S.lastFrameTime) / 1000;
+  S.lastFrameTime = now;
+  S.elapsed = (now - S.startTime) / 1000;
+  const cfg = MODES[S.mode];
+
+  // Agent auto-generation
+  if (S.autopilot && S.agents > 0 && !S.refactoring) {
+    let agentSpeed = S.agents * 25 * dt;
+    if (S.yeggeLevel >= 2) agentSpeed *= 3;
+    S.agentAccum += agentSpeed;
+    if (S.agentAccum >= 1) {
+      const whole = Math.floor(S.agentAccum);
+      S.agentAccum -= whole;
+      addLOC(whole, true);
+    }
+    let tokenMul = S.yeggeLevel >= 2 ? 3 : 1;
+    S.tokens -= S.agents * cfg.tokenDrain * dt * tokenMul;
+    let moneyMul = S.yeggeLevel >= 2 ? 2 : 1;
+    S.money -= S.agents * 1.5 * dt * moneyMul;
+  }
+
+  S.money -= cfg.moneyDrain * dt;
+
+  if (!S.refactoring) S.debt = Math.max(0, S.debt - 0.5 * dt);
+
+  if (S.refactoring) {
+    S.debt = Math.max(0, S.debt - 15 * dt);
+    if (S.debt <= 0) { S.refactoring = false; refactorBtn.classList.remove('active'); refactorBtn.textContent = '[ Refactor ]'; updatePromptLabel(); }
+  }
+
+  S.locSecTimer += dt;
+  if (S.locSecTimer >= 1) {
+    const rate = Math.round(S.locLastSec / S.locSecTimer);
+    statLocSec.textContent = rate;
+    if (rate > S.peakLocSec) { S.peakLocSec = rate; statPeak.textContent = rate; }
+    S.locLastSec = 0; S.locSecTimer = 0;
+  }
+
+  S.displayLoc += (S.loc - S.displayLoc) * Math.min(1, dt * 8);
+  if (Math.abs(S.loc - S.displayLoc) < 1) S.displayLoc = S.loc;
+
+  let flashRate = S.yeggeLevel >= 2 ? 0.015 : S.yeggeLevel >= 1 ? 0.006 : 0.003;
+  if (Math.random() < flashRate * dt * 60) showSysFlash();
+
+  // Gas Town timers
+  if (S.yeggeLevel >= 1) {
+    S.gastown.convoyTimer += dt;
+    S.gastown.dyfjTimer += dt;
+    S.gastown.refineryTimer += dt;
+    if (S.gastown.convoyTimer >= 15) { S.gastown.convoys++; S.gastown.convoyTimer = 0; }
+    if (S.gastown.dyfjTimer >= 10) { S.gastown.dyfj++; S.gastown.dyfjTimer = 0; }
+    if (S.gastown.refineryTimer >= 8) { S.gastown.refineryState = (S.gastown.refineryState + 1) % 4; S.gastown.refineryTimer = 0; }
+    updateGasTownPanel();
+  }
+
+  // Tab rotation
+  S.tabTimer += dt;
+  if (S.tabTimer >= 20) { S.tabTimer = 0; rotateTabs(); }
+
+  S.tokens = Math.max(0, S.tokens);
+  S.money = Math.max(0, S.money);
+
+  updateDebt();
+  updateHUD();
+  updateYeggeBtn();
+  checkEndConditions();
+  requestAnimationFrame(gameLoop);
+}
+
+/* ===== LOC GENERATION ===== */
+function addLOC(amount, fromAgent) {
+  S.loc += amount;
+  S.locLastSec += amount;
+  const cfg = MODES[S.mode];
+  const mdl = AI_MODELS[S.model];
+  let debtInc = amount * 0.008 * mdl.debtMul;
+  if (fromAgent) debtInc *= 1.8;
+  if (S.yeggeLevel >= 2) debtInc *= 2;
+  S.debt = Math.min(100, S.debt + debtInc);
+  S.tokens -= amount * cfg.tokenPerLoc * mdl.tokenMul;
+  const lines = generateCodeBatch(Math.min(amount, 20));
+  appendCodeLines(lines);
+}
+
+function submitPrompt(text) {
+  if (S.phase !== 'playing' || S.refactoring || S.gameOver) return;
+  const cfg = MODES[S.mode];
+  const mdl = AI_MODELS[S.model];
+
+  if (S.mode === 'free' && S.tokens <= 0) { startFreeWait(); return; }
+
+  S.promptCount++;
+  S.modelPromptCount++;
+  S.gastown.molecules++;
+  statPrompts.textContent = S.promptCount;
+
+  S.tokens -= cfg.tokenPerPrompt * mdl.tokenMul;
+
+  const base = 50, charBonus = text.length * 2;
+  const rand = 10 + Math.floor(Math.random() * 91);
+  let loc = Math.floor((base + charBonus + rand) * mdl.locMul);
+  if (S.agents > 0) loc = Math.floor(loc * (1 + S.agents * 0.5));
+
+  // Model quirks
+  let quirkLines = [];
+  if (mdl.quirk === 'claude' && S.modelPromptCount % 10 === 0) {
+    quirkLines.push({type:'comment',text:`// [CLAUDE OPUS 420]: I need to pause and reflect on safety guidelines.`});
+    quirkLines.push({type:'comment',text:`// After careful consideration: LGTM. But please be more careful.`});
+    loc = Math.floor(loc * 0.3);
+  }
+  if (mdl.quirk === 'gemma' && Math.random() < 0.25) {
+    const wrong = [`print("Hello World")  # wait, this isn't Python...`,`puts "Why is this Ruby?"`,`fmt.Println("This was supposed to be TypeScript")`,`System.out.println("Java has entered the chat");`,`(println "Did someone say Clojure?")`];
+    quirkLines.push({type:'comment',text:`// [GEMMA-BRAIN 3000]: *generates in wrong language*`});
+    quirkLines.push({type:'oneliner',text:pick(wrong)});
+  }
+  if (mdl.quirk === 'llama' && S.modelPromptCount % 5 === 0) {
+    loc *= 2;
+    quirkLines.push({type:'comment',text:`// [LLAMA-CODER 70B]: OPEN SOURCE BONUS! 2x LOC burst!`});
+  }
+  if (mdl.quirk === 'deepyeek' && S.modelPromptCount % 8 === 0) {
+    quirkLines.push({type:'comment',text:`// [CONTENT MODERATED FOR HARMONY]`});
+    quirkLines.push({type:'comment',text:`// This code reviewed by the Committee for Digital Wellbeing`});
+    loc = Math.floor(loc * 0.5);
+  }
+  if (mdl.quirk === 'copilot') {
+    loc = Math.floor(loc * 0.5);
+  }
+
+  addLOC(loc, false);
+  if (quirkLines.length > 0) appendCodeLines(quirkLines);
+
+  const echoLabel = S.yeggeLevel >= 2 ? 'GAS_TOWN' : S.yeggeLevel >= 1 ? 'DYFJ' : 'vibes';
+  appendCodeLines([{type:'comment',text:`// ${echoLabel}> ${text}`}]);
+
+  promptInput.value = '';
+  if (S.mode === 'free' && S.tokens <= 0) setTimeout(() => startFreeWait(), 500);
+}
+
+/* ===== FREE MODE WAIT ===== */
+function startFreeWait() {
+  S.phase = 'waiting'; S.waitTime = 10;
+  promptInput.disabled = true;
+  waitEl.classList.remove('hidden');
+  waitEl.innerHTML = `
+    <div class="wait-title">Rate Limited</div>
+    <div class="wait-timer" id="wait-countdown">10</div>
+    <div class="wait-sub">Free tier token refresh in progress...</div>
+    <div class="wait-sub" style="margin-top:8px;color:#333">This is what you get for not paying</div>
+  `;
+  const iv = setInterval(() => {
+    S.waitTime--;
+    const cd = document.getElementById('wait-countdown');
+    if (cd) cd.textContent = S.waitTime;
+    if (S.waitTime <= 0) {
+      clearInterval(iv);
+      waitEl.classList.add('hidden');
+      S.tokens = 200; S.freeRefreshes++;
+      S.phase = 'playing'; S.lastFrameTime = performance.now();
+      promptInput.disabled = false; promptInput.focus();
+      requestAnimationFrame(gameLoop);
+    }
+  }, 1000);
+}
+
+/* ===== CODE GENERATION ===== */
+function generateCodeBatch(count) {
+  const lines = [];
+  let remaining = count;
+  const gasRate = S.yeggeLevel >= 2 ? 0.7 : S.yeggeLevel >= 1 ? 0.4 : 0;
+  while (remaining > 0) {
+    const useGas = S.yeggeLevel >= 1 && Math.random() < gasRate;
+    const r = Math.random();
+    if (useGas) {
+      // Gas Town code
+      const gr = Math.random();
+      if (gr < 0.2) { lines.push({type:'import',text:pick(GAS_TOWN_IMPORTS)}); remaining--; }
+      else if (gr < 0.45) { const fn = pick(GAS_TOWN_FUNCTIONS); fn.forEach(l => lines.push({type:'function',text:l})); remaining -= fn.length; }
+      else if (gr < 0.65) { lines.push({type:'comment',text:pick(GAS_TOWN_COMMENTS)}); remaining--; }
+      else { const cls = pick(GAS_TOWN_CLASSES); cls.forEach(l => lines.push({type:'class',text:l})); remaining -= cls.length; }
+    } else if (r < 0.12) { lines.push({type:'import',text:pick(CODE_IMPORTS)}); remaining--; }
+    else if (r < 0.30) { const fn = pick(CODE_FUNCTIONS); fn.forEach(l => lines.push({type:'function',text:l})); remaining -= fn.length; }
+    else if (r < 0.38) { const cls = pick(CODE_CLASSES); cls.forEach(l => lines.push({type:'class',text:l})); remaining -= cls.length; }
+    else if (r < 0.52) { lines.push({type:'comment',text:pick(CODE_COMMENTS)}); remaining--; }
+    else if (r < 0.65) { lines.push({type:'variable',text:pick(CODE_VARIABLES)}); remaining--; }
+    else if (r < 0.80) { const logic = pick(CODE_LOGIC); logic.forEach(l => lines.push({type:'logic',text:l})); remaining -= logic.length; }
+    else { lines.push({type:'oneliner',text:pick(CODE_ONELINERS)}); remaining--; }
+  }
+  return lines;
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function highlightCode(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(\/\/.*|\/\*.*?\*\/|#\s.*)/g,'<span class="cmt">$1</span>')
+    .replace(/\b(function|const|let|var|import|export|from|return|if|else|while|for|switch|case|break|default|class|extends|constructor|async|await|try|catch|throw|new|typeof|require|type)\b/g,'<span class="kw">$1</span>')
+    .replace(/('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)/g,'<span class="str">$1</span>')
+    .replace(/\b(\d+(?:\.\d+)?)\b/g,'<span class="num">$1</span>');
+}
+
+const MINIMAP_COLORS = {import:'#00ffff',function:'#33ff33','class':'#ff00ff',comment:'#1a6a1a',variable:'#ffff00',logic:'#33ff33',oneliner:'#666'};
+
+function appendCodeLines(lines) {
+  lines.forEach((line, i) => {
+    const div = document.createElement('div');
+    div.className = 'code-line';
+    div.innerHTML = `<span class="line-num">${String(S.lineNum).padStart(4,' ')}</span>${highlightCode(line.text)}`;
+    div.style.animationDelay = `${i * 40}ms`;
+    codeScroll.appendChild(div);
+    // Minimap
+    const mm = document.createElement('div');
+    mm.className = 'minimap-line';
+    const c = MINIMAP_COLORS[line.type] || '#333';
+    const w = Math.min(36, Math.max(4, line.text.length / 2));
+    mm.style.cssText = `background:${c};width:${w}px;`;
+    minimapContent.appendChild(mm);
+    S.lineNum++;
+  });
+  codeScroll.scrollTop = codeScroll.scrollHeight;
+  while (codeScroll.children.length > 500) { codeScroll.removeChild(codeScroll.firstChild); minimapContent.firstChild && minimapContent.removeChild(minimapContent.firstChild); }
+}
+
+/* ===== AGENTS ===== */
+function deployAgent() {
+  if (S.agents >= 16 || S.money < 500 || S.phase !== 'playing') return;
+  S.money -= 500; S.agents++;
+  updateAgentDisplay(); updateHUD();
+  showQuickPolecat();
+}
+
+function showQuickPolecat() {
+  polecatEl.classList.remove('hidden');
+  polecatEl.innerHTML = '<div class="flash-text">POLECAT AGENT DEPLOYED!</div>';
+  setTimeout(() => {
+    polecatEl.classList.add('hidden');
+    if (!S.autopilot) showGasTownCountdown();
+  }, 1500);
+}
+
+/* ===== YEGGE MODE ===== */
+function activateYegge() {
+  if (S.phase !== 'playing') return;
+  if (S.yeggeLevel === 0) {
+    if (S.money < 4000 || S.agents > 8) return;
+    S.money -= 4000;
+    const toAdd = Math.min(8, 16 - S.agents);
+    S.agents += toAdd;
+    S.yeggeLevel = 1;
+    showYeggePolecat();
+  } else if (S.yeggeLevel === 1) {
+    if (S.money < 4000) return;
+    S.money -= 4000;
+    const toAdd = Math.min(8, 16 - S.agents);
+    S.agents += toAdd;
+    S.yeggeLevel = 2;
+    showExtremeYegge();
+  }
+}
+
+function showYeggePolecat() {
+  polecatEl.classList.remove('hidden');
+  polecatEl.innerHTML = `<div class="flash-text">\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+\u2551   YEGGE POLECAT SWARM DEPLOYED!      \u2551
+\u2551   8 POLECATS APPROACHING GAS TOWN    \u2551
+\u2551   "Do Your Job" signal sent           \u2551
+\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D</div>`;
+  setTimeout(() => {
+    polecatEl.classList.add('hidden');
+    showGasTownCountdown();
+  }, 2500);
+}
+
+function showGasTownCountdown() {
+  gastownEl.classList.remove('hidden');
+  gastownEl.innerHTML = `<div class="gas-label">THE CONVOY IS ARRIVING...</div><div class="gas-num">5</div>`;
+  let count = 5;
+  const msgs = ['','THE MAYOR WELCOMES YOU TO GAS TOWN','POLECAT FIRMWARE: LOADED','THE WITNESS: ONLINE',''];
+  const iv = setInterval(() => {
+    count--;
+    if (count > 0) {
+      const numEl = gastownEl.querySelector('.gas-num');
+      const labEl = gastownEl.querySelector('.gas-label');
+      if (numEl) { numEl.textContent = count; numEl.style.animation = 'none'; void numEl.offsetHeight; numEl.style.animation = 'gas-scale 1s ease-out'; }
+      if (labEl && msgs[5 - count - 1]) labEl.textContent = msgs[5 - count - 1];
+    } else {
+      clearInterval(iv);
+      gastownEl.classList.add('hidden');
+      S.autopilot = true;
+      autopilotStatus.textContent = 'AUTOPILOT: ON';
+      autopilotStatus.classList.add('autopilot-on');
+      agentsTitle.textContent = 'Polecats';
+      updateAgentDisplay();
+      gastownSection.classList.add('visible');
+      updatePromptLabel();
+      if (S.yeggeLevel === 1) {
+        yeggeBtn.textContent = '[ EXTREME YEGGE \u2014 8 More ($4,000) ]';
+        yeggeBtn.classList.add('pulse');
+      }
+      updateYeggeBtn();
+    }
+  }, 1000);
+}
+
+function showExtremeYegge() {
+  polecatEl.classList.remove('hidden');
+  polecatEl.innerHTML = `<div class="flash-text">\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+\u2551  !! EXTREME YEGGE MODE ACTIVATED !!  \u2551
+\u2551   16 POLECATS \u2014 FULL GAS TOWN        \u2551
+\u2551  "Stage 7: where everything breaks"   \u2551
+\u2551   THE REFINERY AT FULL CAPACITY       \u2551
+\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D</div>`;
+  setTimeout(() => {
+    polecatEl.classList.add('hidden');
+    if (!S.autopilot) {
+      S.autopilot = true;
+      autopilotStatus.textContent = 'AUTOPILOT: ON';
+      autopilotStatus.classList.add('autopilot-on');
+      gastownSection.classList.add('visible');
+    }
+    document.body.classList.add('extreme-mode');
+    agentsTitle.textContent = 'Polecats';
+    updateAgentDisplay();
+    updatePromptLabel();
+    yeggeBtn.disabled = true;
+    yeggeBtn.classList.remove('pulse');
+    yeggeBtn.textContent = '[ GAS TOWN: MAXIMUM CAPACITY ]';
+    yeggeBtn.style.borderColor = '#ff3333';
+    yeggeBtn.style.color = '#ff3333';
+  }, 3000);
+}
+
+function updateYeggeBtn() {
+  if (S.yeggeLevel === 0) {
+    yeggeBtn.disabled = S.money < 4000 || S.agents > 8;
+  } else if (S.yeggeLevel === 1) {
+    yeggeBtn.disabled = S.money < 4000;
+  }
+  // yeggeLevel 2: already permanently disabled
+}
+
+function updateAgentDisplay() {
+  const label = S.yeggeLevel >= 1 ? 'Polecats' : 'Agents';
+  agentCount.textContent = `${label}: ${S.agents} / 16`;
+}
+
+/* ===== MODEL SYSTEM ===== */
+function showModelOverlay() {
+  if (S.phase !== 'playing') return;
+  let html = `<div id="model-overlay-title">Select AI Model</div><div id="model-grid">`;
+  for (const [key, m] of Object.entries(AI_MODELS)) {
+    const sel = key === S.model ? ' selected' : '';
+    html += `<div class="model-card${sel}" data-model="${key}">
+      <div class="model-name">${m.name}</div>
+      <div class="model-art">${m.art.join('\n')}</div>
+      <div class="model-stats">LOC: ${m.locMul}x | Token Cost: ${m.tokenMul}x | Debt: ${m.debtMul}x</div>
+      <div class="model-quirk">${m.desc}</div>
+    </div>`;
+  }
+  html += `</div><div id="model-overlay-cost">Switching costs 100 tokens (context switch overhead)</div>
+    <div id="model-close-hint">Click outside or press Esc to close</div>`;
+  modelOverlay.innerHTML = html;
+  modelOverlay.classList.add('show');
+  modelOverlay.querySelectorAll('.model-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const key = card.dataset.model;
+      if (key !== S.model) {
+        if (S.tokens < 100) { showSysFlash('NOT ENOUGH TOKENS TO SWITCH MODELS'); return; }
+        S.tokens -= 100;
+        S.model = key;
+        S.modelPromptCount = 0;
+        updateModelSelect();
+        showSysFlash(`MODEL SWITCHED: ${AI_MODELS[key].name.toUpperCase()}`);
+      }
+      modelOverlay.classList.remove('show');
+    });
+  });
+}
+
+function updateModelSelect() {
+  modelSelectBtn.textContent = `Model: ${AI_MODELS[S.model].name} \u25BC`;
+}
+
+function updatePromptLabel() {
+  let label = 'vibes';
+  if (S.refactoring) label = 'refactor';
+  if (S.yeggeLevel >= 1) label = 'DYFJ';
+  if (S.yeggeLevel >= 2) label = 'GAS_TOWN';
+  promptLabel.textContent = label + '>';
+}
+
+/* ===== TAB ROTATION ===== */
+function rotateTabs() {
+  const tabs = [document.getElementById('tab-0'), document.getElementById('tab-1'), document.getElementById('tab-2')];
+  const pool = S.yeggeLevel >= 1 ? TAB_NAMES : TAB_NAMES.slice(0, 11);
+  const used = new Set();
+  tabs.forEach(tab => {
+    let name;
+    do { name = pick(pool); } while (used.has(name));
+    used.add(name);
+    tab.textContent = name;
+  });
+  // Randomly set active
+  tabs.forEach(t => t.classList.remove('active'));
+  pick(tabs).classList.add('active');
+}
+
+/* ===== GAS TOWN PANEL ===== */
+function updateGasTownPanel() {
+  const mayorIdx = S.debt < 25 ? 0 : S.debt < 50 ? 1 : S.debt < 75 ? 2 : 3;
+  $('gas-mayor').textContent = MAYOR_STATES[mayorIdx];
+  $('gas-refinery').textContent = REFINERY_STATES[S.gastown.refineryState];
+  $('gas-convoys').textContent = S.gastown.convoys;
+  $('gas-molecules').textContent = S.gastown.molecules;
+  $('gas-dyfj').textContent = S.gastown.dyfj;
+}
+
+/* ===== TECHNICAL DEBT ===== */
+function updateDebt() {
+  const d = Math.min(100, Math.max(0, S.debt));
+  S.debt = d;
+  let level, color;
+  if (d < 25)      { level='LOW';      color='var(--debt-low)'; }
+  else if (d < 50) { level='MODERATE';  color='var(--debt-mod)'; }
+  else if (d < 75) { level='HIGH';      color='var(--debt-high)'; }
+  else             { level='CRITICAL';  color='var(--debt-crit)'; }
+  S.debtLevel = level;
+  debtBar.style.width = d + '%';
+  debtBar.style.background = color;
+  debtLabel.textContent = level;
+  debtLabel.style.color = color;
+  debtPct.textContent = Math.round(d) + '%';
+  if (d >= 75) debtSection.classList.add('debt-critical');
+  else debtSection.classList.remove('debt-critical');
+}
+
+function toggleRefactor() {
+  if (S.phase !== 'playing') return;
+  S.refactoring = !S.refactoring;
+  if (S.refactoring) { refactorBtn.classList.add('active'); refactorBtn.textContent = '[ Refactoring... ]'; }
+  else { refactorBtn.classList.remove('active'); refactorBtn.textContent = '[ Refactor ]'; }
+  updatePromptLabel();
+}
+
+/* ===== HUD UPDATE ===== */
+function updateHUD() {
+  const mins = Math.floor(S.elapsed / 60), secs = Math.floor(S.elapsed % 60);
+  hudTime.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  hudLoc.textContent = formatNum(Math.floor(S.displayLoc));
+  hudTokens.textContent = formatNum(Math.floor(S.tokens));
+  hudMoney.textContent = '$' + formatNum(Math.floor(S.money));
+  deployBtn.disabled = S.agents >= 16 || S.money < 500;
+}
+
+function formatNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+/* ===== END CONDITIONS ===== */
+function checkEndConditions() {
+  if (S.gameOver) return;
+  const cfg = MODES[S.mode];
+  if (S.loc >= cfg.goal) { S.gameOver = true; S.phase = 'victory'; showVictory(); return; }
+  if (S.debt >= 100) { S.gameOver = true; S.phase = 'failure'; showFailure('TECHNICAL DEBT REACHED 100%'); return; }
+  if (S.mode !== 'free' && S.tokens <= 0 && !S.autopilot) { S.gameOver = true; S.phase = 'failure'; showFailure('OUT OF TOKENS'); return; }
+  if (S.money <= 0 && S.mode !== 'free') { S.gameOver = true; S.phase = 'failure'; showFailure('OUT OF MONEY \u2014 STARTUP IMPLODED'); return; }
+}
+
+/* ===== VICTORY ===== */
+function showVictory() {
+  promptInput.disabled = true;
+  const time = formatTime(S.elapsed);
+  saveBestTime(S.elapsed);
+  let gasStats = '';
+  if (S.yeggeLevel >= 1) {
+    gasStats = `
+      <div class="victory-stat" style="margin-top:8px;color:var(--yegge)">--- GAS TOWN REPORT ---</div>
+      <div class="victory-stat" style="color:var(--yegge)">Polecats Deployed: ${S.agents}</div>
+      <div class="victory-stat" style="color:var(--yegge)">Convoys Formed: ${S.gastown.convoys}</div>
+      <div class="victory-stat" style="color:var(--yegge)">DYFJ Signals: ${S.gastown.dyfj}</div>
+      <div class="victory-stat" style="color:var(--yegge)">The Mayor says: "${S.debt < 50 ? 'WELL DONE, WORKER' : 'ACCEPTABLE... BARELY'}"</div>
+    `;
+  }
+  victoryEl.classList.remove('hidden');
+  victoryEl.innerHTML = `
+    <div class="victory-title">1,000,000 LOC REACHED!</div>
+    <div class="victory-stat">Time: ${time}</div>
+    <div class="victory-stat">Prompts: ${S.promptCount}</div>
+    <div class="victory-stat">Model: ${AI_MODELS[S.model].name}</div>
+    <div class="victory-stat">Agents: ${S.agents}</div>
+    <div class="victory-stat">Peak LOC/s: ${S.peakLocSec}</div>
+    <div class="victory-stat">Technical Debt: ${Math.round(S.debt)}%</div>
+    ${gasStats}
+    <div class="victory-stat" style="color:#555;margin-top:6px;font-size:0.5rem">None of this code works. You know that, right?</div>
+    <button class="victory-btn" id="victory-restart">[ Play Again ]</button>
+  `;
+  document.getElementById('victory-restart').addEventListener('click', restart);
+}
+
+/* ===== FAILURE ===== */
+function showFailure(reason) {
+  promptInput.disabled = true;
+  let stackTrace;
+  if (S.yeggeLevel >= 1) {
+    stackTrace = `
+    \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+    \u2551  GAS TOWN INCIDENT REPORT      \u2551
+    \u2551  at Polecat.evaporate()         \u2551
+    \u2551  at Refinery.mergeConflict()    \u2551
+    \u2551  at Convoy.lostInTransit()      \u2551
+    \u2551  at Stage7.everythingBreaks()   \u2551
+    \u2551  at Mayor.panicMode()           \u2551
+    \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D`;
+  } else {
+    stackTrace = `
+    \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
+    \u2551  STACK TRACE:                \u2551
+    \u2551  at VibeCorp.deploy()        \u2551
+    \u2551  at Agent.hallucinate()      \u2551
+    \u2551  at Promise.&lt;rejected&gt;       \u2551
+    \u2551  at RunLoop.panic()          \u2551
+    \u2551  at Process.exit(1)          \u2551
+    \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D`;
+  }
+  failureEl.classList.remove('hidden');
+  failureEl.innerHTML = `
+    <div class="fail-title">PROJECT FAILURE</div>
+    <pre class="fail-art">${stackTrace}</pre>
+    <div class="fail-stat">Reason: ${reason}</div>
+    <div class="fail-stat">LOC Written: ${formatNum(Math.floor(S.loc))}</div>
+    <div class="fail-stat">Time: ${formatTime(S.elapsed)}</div>
+    <div class="fail-stat">Prompts: ${S.promptCount}</div>
+    <div class="fail-stat" style="color:#660000;margin-top:6px;font-size:0.5rem">${S.yeggeLevel >= 1 ? 'The Mayor is furious. The Polecats have evaporated.' : 'The investors are not pleased.'}</div>
+    <button class="fail-btn" id="fail-restart">[ Try Again ]</button>
+  `;
+  document.getElementById('fail-restart').addEventListener('click', restart);
+}
+
+function restart() {
+  victoryEl.classList.add('hidden');
+  failureEl.classList.add('hidden');
+  document.body.classList.remove('extreme-mode');
+  S.phase = 'modeselect';
+  showModeSelect();
+}
+
+/* ===== SYSTEM FLASH ===== */
+const SYS_MESSAGES = [
+  'CODE REVIEW: SKIPPED (VIBES INTACT)',
+  'npm audit: 2,451 VULNERABILITIES (SHIP IT)',
+  'COPILOT CONFIDENCE: 97% (ACCURACY: 12%)',
+  'PROD INCIDENT #4,829 \u2014 AUTO-RESOLVED (IGNORED)',
+  'JIRA TICKET CREATED: "INVESTIGATE LATER"',
+  'HALLUCINATION DETECTED \u2014 PROMOTING TO FEATURE',
+  'TECH DEBT INTEREST PAYMENT: $4,200/mo',
+  'UNIT TEST COVERAGE: NaN%',
+  'DEPLOYING TO PROD... LGTM',
+  'MERGE CONFLICT RESOLVED BY DELETING BOTH VERSIONS',
+  'SPRINT RETRO: "WE NEED MORE AGENTS"',
+  'TOKEN BURN RATE: FINANCIALLY IRRESPONSIBLE',
+  'SECURITY SCAN: EVERYTHING IS FINE (IT IS NOT FINE)',
+  'MONITORING ALERT: CPU AT 420% \u2014 VIBES NOMINAL',
+  'GIT BLAME: EVERYONE',
+  'DOCUMENTATION: 404 NOT FOUND',
+  'PERFORMANCE REVIEW: "SHIPS FAST, BREAKS FASTER"',
+  'KUBERNETES CLUSTER: 47 PODS FOR A TODO APP',
+  'ESTIMATED COMPLETION: 2 WEEKS (ACTUAL: HEAT DEATH OF UNIVERSE)',
+  'TECHNICAL INTERVIEW: "JUST VIBE IT OUT"'
+];
+
+function showSysFlash(msg) {
+  let text = msg;
+  if (!text) {
+    if (S.yeggeLevel >= 1 && Math.random() < (S.yeggeLevel >= 2 ? 0.6 : 0.4)) {
+      text = pick(GAS_TOWN_FLASHES);
+    } else {
+      text = pick(SYS_MESSAGES);
+    }
+  }
+  sysFlash.textContent = text;
+  sysFlash.classList.add('show');
+  clearTimeout(S.flashTimer);
+  S.flashTimer = setTimeout(() => sysFlash.classList.remove('show'), 1800);
+}
+
+/* ===== LOCAL STORAGE ===== */
+function saveBestTime(elapsed) {
+  const key = 'vibe-racer-best-' + S.mode;
+  const prev = parseFloat(localStorage.getItem(key));
+  if (!prev || elapsed < prev) localStorage.setItem(key, elapsed);
+}
+function loadBestTime() {
+  const key = 'vibe-racer-best-' + S.mode;
+  const val = parseFloat(localStorage.getItem(key));
+  statBest.textContent = val ? formatTime(val) : '--:--';
+}
+function formatTime(s) {
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+/* ===== EVENT LISTENERS ===== */
+promptInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && promptInput.value.trim()) submitPrompt(promptInput.value.trim());
+});
+refactorBtn.addEventListener('click', toggleRefactor);
+deployBtn.addEventListener('click', deployAgent);
+yeggeBtn.addEventListener('click', activateYegge);
+modelSelectBtn.addEventListener('click', showModelOverlay);
+modelOverlay.addEventListener('click', e => {
+  if (e.target === modelOverlay) modelOverlay.classList.remove('show');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') modelOverlay.classList.remove('show');
+});
+
+// Minimap scroll sync
+codeScroll.addEventListener('scroll', () => {
+  if (!codeScroll.scrollHeight || !minimapContent.parentElement) return;
+  const ratio = codeScroll.scrollTop / (codeScroll.scrollHeight - codeScroll.clientHeight || 1);
+  const mmHeight = minimapContent.scrollHeight - minimapContent.parentElement.clientHeight;
+  if (mmHeight > 0) minimapContent.style.transform = `translateY(${-ratio * mmHeight}px)`;
+});
+
+/* ===== INIT ===== */
+runBoot();
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+---
+layout: base.njk
+title: Posts
+permalink: /posts/
+---
+{%- set postItems = collections.post %}
+{%- if postItems and postItems.length > 0 %}
+<div class="grid">
+  {%- for p in postItems | reverse %}
+  <a class="card" href="{{ p.url | url }}">
+    <div class="card-info">
+      <div class="card-date">{{ p.date | readableDate }}</div>
+      <h2>{{ p.data.title }}</h2>
+      <p>{{ p.data.description }}</p>
+      <span class="tag tag--post">Post</span>
+    </div>
+  </a>
+  {%- endfor %}
+</div>
+{%- else %}
+<div style="text-align: center; padding: 4rem 2rem; color: #444;">
+  <p style="font-size: 0.85rem; letter-spacing: 0.15em; text-transform: uppercase;">No posts yet &mdash; check back soon</p>
+</div>
+{%- endif %}

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Chaos // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a12; font-family: 'Courier New', monospace; color: #ccc; overflow-x: hidden; }
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 999999;
+  }
+  .back:hover { color: #ff00ff; }
+
+  header {
+    text-align: center; padding: 2rem 1rem 0.5rem;
+  }
+  header h1 {
+    font-size: 1.5rem; letter-spacing: 0.3em; color: #ff00ff;
+    text-shadow: 0 0 20px #ff00ff44; text-transform: uppercase;
+  }
+  header p { color: #444; font-size: 0.7rem; letter-spacing: 0.2em; margin-top: 0.3rem; }
+
+  .scenes { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; padding: 1rem; }
+  .scene-btn {
+    background: none; border: 1px solid #333; color: #666;
+    font-family: 'Courier New', monospace; font-size: 0.6rem;
+    padding: 0.35rem 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .scene-btn:hover { border-color: #00ffff; color: #00ffff; }
+  .scene-btn.active { border-color: #ff00ff; color: #ff00ff; }
+
+  .stage {
+    max-width: 900px; margin: 0 auto; padding: 2rem;
+    position: relative; min-height: 60vh;
+  }
+
+  /* ===== SCENE 1: Z-INDEX WARS ===== */
+  .zindex-scene .zi-box {
+    position: absolute; padding: 1rem; border: 2px solid;
+    font-size: 0.7rem; text-align: center; width: 160px;
+    transition: all 0.5s ease;
+    cursor: pointer;
+  }
+  .zindex-scene .zi-box:hover { transform: scale(1.05); }
+  .zindex-scene .zi-label {
+    font-size: 1.2rem; font-weight: bold; display: block; margin-bottom: 0.3rem;
+  }
+  .zindex-scene .zi-val {
+    font-size: 0.6rem; color: #888; display: block;
+  }
+  .zindex-scene .zi-escalate {
+    position: absolute; bottom: 0.5rem; right: 0.5rem;
+    font-size: 0.5rem; color: #666; cursor: pointer;
+    border: 1px solid #333; padding: 0.15rem 0.3rem; background: rgba(0,0,0,0.5);
+  }
+  .zindex-scene .zi-escalate:hover { color: #ff0; border-color: #ff0; }
+
+  /* ===== SCENE 2: !IMPORTANT ===== */
+  .important-scene .imp-box {
+    padding: 1.5rem; margin: 1rem 0; text-align: center;
+    font-size: 1rem; border: 2px solid #333;
+    transition: all 0.5s ease;
+    position: relative;
+  }
+  .important-scene .imp-rule {
+    font-size: 0.65rem; color: #666; margin-top: 0.3rem;
+    font-style: italic;
+  }
+  .important-scene .imp-bang {
+    display: none; position: absolute; top: -10px; right: -10px;
+    font-size: 1.5rem; animation: bang-shake 0.3s infinite;
+  }
+  @keyframes bang-shake {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+  }
+  .important-scene .nuke-btn {
+    display: block; margin: 1.5rem auto; background: #ff000022;
+    border: 2px solid #ff0000; color: #ff0000;
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
+    padding: 0.5rem 1.5rem; cursor: pointer; letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .important-scene .nuke-btn:hover { background: #ff000044; }
+
+  /* ===== SCENE 3: OVERFLOW BREAKOUT ===== */
+  .overflow-scene .of-container {
+    border: 2px dashed #ff00ff; padding: 1rem; margin: 1rem;
+    position: relative; overflow: hidden;
+    transition: all 0.5s ease;
+    height: 200px;
+  }
+  .overflow-scene .of-container.busted {
+    overflow: visible !important;
+  }
+  .overflow-scene .of-label {
+    position: absolute; top: -0.8rem; left: 0.5rem;
+    font-size: 0.6rem; color: #ff00ff; background: #0a0a12;
+    padding: 0 0.3rem;
+  }
+  .overflow-scene .of-child {
+    width: 80px; height: 80px; position: absolute;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: bold; border: 2px solid;
+    cursor: grab; transition: all 0.3s ease;
+  }
+  .overflow-scene .of-child.escaping {
+    animation: escape-wiggle 0.5s ease infinite alternate;
+  }
+  .overflow-scene .of-child.free {
+    animation: float-away 3s ease forwards;
+  }
+  @keyframes escape-wiggle {
+    from { transform: rotate(-3deg) translate(-2px, -2px); }
+    to { transform: rotate(3deg) translate(2px, 2px); }
+  }
+  @keyframes float-away {
+    to { transform: translate(var(--fx), var(--fy)) rotate(720deg) scale(0.3); opacity: 0; }
+  }
+
+  /* ===== SCENE 4: SPECIFICITY ===== */
+  .specificity-scene .spec-target {
+    text-align: center; padding: 2rem; margin: 1rem 0;
+    font-size: 1.5rem; font-weight: bold;
+    border: 2px solid #333; transition: all 0.5s ease;
+    position: relative;
+  }
+  .specificity-scene .spec-rules {
+    display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0;
+  }
+  .specificity-scene .spec-rule {
+    display: flex; align-items: center; gap: 0.8rem;
+    padding: 0.6rem 0.8rem; border: 1px solid #222; background: #111;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .specificity-scene .spec-rule:hover { border-color: #555; }
+  .specificity-scene .spec-rule.active { border-color: #00ffff; background: #00ffff0a; }
+  .specificity-scene .spec-rule.defeated { opacity: 0.3; text-decoration: line-through; }
+  .specificity-scene .spec-selector { font-size: 0.75rem; color: #ff5f87; flex: 1; }
+  .specificity-scene .spec-score {
+    font-size: 0.6rem; color: #888; background: #1a1a1a;
+    padding: 0.2rem 0.5rem; border: 1px solid #333;
+    white-space: nowrap;
+  }
+  .specificity-scene .spec-color { width: 16px; height: 16px; border-radius: 2px; }
+
+  /* ===== SCENE 5: BOX MODEL ===== */
+  .boxmodel-scene .bm-demo {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 50vh; position: relative;
+  }
+  .boxmodel-scene .bm-layer {
+    display: flex; align-items: center; justify-content: center;
+    position: relative; transition: all 0.5s ease;
+  }
+  .boxmodel-scene .bm-label {
+    position: absolute; font-size: 0.55rem; color: rgba(255,255,255,0.5);
+    letter-spacing: 0.1em; text-transform: uppercase; pointer-events: none;
+  }
+  .boxmodel-scene .bm-explode-btn {
+    position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    background: none; border: 1px solid #ff00ff; color: #ff00ff;
+    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    padding: 0.3rem 0.8rem; cursor: pointer; letter-spacing: 0.1em;
+  }
+
+  .stage-hidden { display: none; }
+
+  /* Scanlines */
+  body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999998;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+
+<header>
+  <h1>CSS Chaos</h1>
+  <p>The comedy of specificity, z-index, overflow &amp; !important</p>
+</header>
+
+<div class="scenes" id="sceneNav"></div>
+<div id="stageContainer"></div>
+
+<script>
+// ============================================================
+// SCENE DEFINITIONS
+// ============================================================
+const sceneConfigs = [
+  { id: 'zindex', title: 'Z-Index Wars', setup: setupZIndex },
+  { id: 'important', title: '!important', setup: setupImportant },
+  { id: 'overflow', title: 'Overflow Breakout', setup: setupOverflow },
+  { id: 'specificity', title: 'Specificity Battle', setup: setupSpecificity },
+  { id: 'boxmodel', title: 'Box Model Explode', setup: setupBoxModel },
+];
+
+const nav = document.getElementById('sceneNav');
+const container = document.getElementById('stageContainer');
+
+sceneConfigs.forEach((cfg, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'scene-btn' + (i === 0 ? ' active' : '');
+  btn.textContent = cfg.title;
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    showScene(cfg.id);
+  });
+  nav.appendChild(btn);
+});
+
+let currentScene = null;
+function showScene(id) {
+  const cfg = sceneConfigs.find(c => c.id === id);
+  container.innerHTML = '';
+  const stage = document.createElement('div');
+  stage.className = 'stage ' + id + '-scene';
+  container.appendChild(stage);
+  currentScene = id;
+  cfg.setup(stage);
+}
+
+// ============================================================
+// SCENE 1: Z-INDEX WARS
+// ============================================================
+function setupZIndex(stage) {
+  stage.style.minHeight = '500px';
+  stage.style.position = 'relative';
+
+  const colors = ['#ff0066', '#00ffcc', '#ffcc00', '#8844ff', '#ff8800', '#00aaff'];
+  const names = ['Modal', 'Dropdown', 'Tooltip', 'Toast', 'Banner', 'Popup'];
+  let boxes = [];
+  let maxZ = 100;
+
+  const statusDiv = document.createElement('div');
+  statusDiv.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  statusDiv.innerHTML = 'Click a box to escalate its z-index. <span style="color:#ff0">First one to z-index: 2147483647 wins.</span>';
+  stage.appendChild(statusDiv);
+
+  const warzone = document.createElement('div');
+  warzone.style.cssText = 'position:relative;height:400px;';
+  stage.appendChild(warzone);
+
+  names.forEach((name, i) => {
+    const box = document.createElement('div');
+    box.className = 'zi-box';
+    let z = (i + 1) * 10;
+    box.style.zIndex = z;
+    box.style.borderColor = colors[i];
+    box.style.background = colors[i] + '15';
+    box.style.color = colors[i];
+    box.style.left = (30 + (i % 3) * 200) + 'px';
+    box.style.top = (20 + Math.floor(i / 3) * 180) + 'px';
+    box.innerHTML = `<span class="zi-label">${name}</span><span class="zi-val">z-index: ${z}</span>`;
+
+    const escalate = document.createElement('div');
+    escalate.className = 'zi-escalate';
+    escalate.textContent = '+';
+    escalate.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Escalate!
+      const currentZ = parseInt(box.style.zIndex);
+      let newZ;
+      if (currentZ < 999) newZ = currentZ * 10 + 1;
+      else if (currentZ < 99999) newZ = currentZ * 10;
+      else if (currentZ < 9999999) newZ = currentZ * 100;
+      else newZ = Math.min(2147483647, currentZ * 10);
+
+      box.style.zIndex = newZ;
+      box.querySelector('.zi-val').textContent = `z-index: ${newZ.toLocaleString()}`;
+
+      // Flash effect
+      box.style.boxShadow = `0 0 30px ${colors[i]}`;
+      setTimeout(() => { box.style.boxShadow = 'none'; }, 300);
+
+      // Check for winner
+      if (newZ >= 2147483647) {
+        box.querySelector('.zi-val').textContent = 'z-index: 2147483647 (MAX!)';
+        box.style.boxShadow = `0 0 40px ${colors[i]}, 0 0 80px ${colors[i]}`;
+        statusDiv.innerHTML = `<span style="color:${colors[i]}">${name} WINS the Z-Index War!</span> (but at what cost?)`;
+      }
+    });
+    box.appendChild(escalate);
+
+    box.addEventListener('click', () => {
+      box.style.zIndex = parseInt(box.style.zIndex) + 1;
+      box.querySelector('.zi-val').textContent = `z-index: ${box.style.zIndex}`;
+    });
+
+    warzone.appendChild(box);
+    boxes.push(box);
+  });
+}
+
+// ============================================================
+// SCENE 2: !IMPORTANT
+// ============================================================
+function setupImportant(stage) {
+  const desc = document.createElement('div');
+  desc.style.cssText = 'text-align:center;margin-bottom:1.5rem;font-size:0.7rem;color:#555;';
+  desc.textContent = 'CSS rules compete for this box. Click "!important" to nuke them all.';
+  stage.appendChild(desc);
+
+  const target = document.createElement('div');
+  target.className = 'imp-box';
+  target.textContent = 'I am a humble <div>';
+  target.style.color = '#ccc';
+  target.style.background = '#1a1a1a';
+  stage.appendChild(target);
+
+  const bang = document.createElement('div');
+  bang.className = 'imp-bang';
+  bang.textContent = '!';
+  target.appendChild(bang);
+
+  const rules = [
+    { selector: 'div', color: '#5fafff', bg: '#001133', spec: '(0,0,1)' },
+    { selector: '.box', color: '#87d787', bg: '#001a00', spec: '(0,1,0)' },
+    { selector: '#main', color: '#ff5f87', bg: '#1a0011', spec: '(1,0,0)' },
+    { selector: 'div.box#main', color: '#ffaf5f', bg: '#1a1100', spec: '(1,1,1)' },
+    { selector: 'style=""', color: '#ff00ff', bg: '#1a001a', spec: '(inline)' },
+  ];
+
+  const rulesContainer = document.createElement('div');
+  rulesContainer.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;';
+  stage.appendChild(rulesContainer);
+
+  rules.forEach((rule, i) => {
+    const ruleEl = document.createElement('div');
+    ruleEl.style.cssText = 'display:flex;align-items:center;gap:0.8rem;padding:0.6rem;border:1px solid #222;background:#111;cursor:pointer;transition:all 0.3s;';
+
+    const swatch = document.createElement('div');
+    swatch.style.cssText = `width:16px;height:16px;background:${rule.color};border-radius:2px;`;
+
+    const sel = document.createElement('div');
+    sel.style.cssText = 'font-size:0.75rem;color:#ff5f87;flex:1;';
+    sel.textContent = `${rule.selector} { color: ${rule.color}; background: ${rule.bg}; }`;
+
+    const score = document.createElement('div');
+    score.style.cssText = 'font-size:0.6rem;color:#888;background:#1a1a1a;padding:0.2rem 0.5rem;border:1px solid #333;';
+    score.textContent = rule.spec;
+
+    ruleEl.appendChild(swatch);
+    ruleEl.appendChild(sel);
+    ruleEl.appendChild(score);
+
+    ruleEl.addEventListener('click', () => {
+      // Apply this rule
+      target.style.color = rule.color;
+      target.style.background = rule.bg;
+      target.style.borderColor = rule.color;
+      target.querySelector('.imp-rule').textContent = `Active: ${rule.selector} ${rule.spec}`;
+
+      // Highlight active
+      rulesContainer.querySelectorAll('div').forEach(r => r.style.borderColor = '#222');
+      ruleEl.style.borderColor = rule.color;
+    });
+
+    rulesContainer.appendChild(ruleEl);
+  });
+
+  const ruleLabel = document.createElement('div');
+  ruleLabel.className = 'imp-rule';
+  ruleLabel.textContent = 'No rule applied';
+  target.appendChild(ruleLabel);
+
+  // The nuclear option
+  const nuke = document.createElement('button');
+  nuke.className = 'nuke-btn';
+  nuke.innerHTML = '&#9762; Apply !important &#9762;';
+  nuke.addEventListener('click', () => {
+    target.style.cssText = 'padding:1.5rem;margin:1rem 0;text-align:center;font-size:1rem;border:2px solid;position:relative;' +
+      'color:#ff0000 !important;background:#330000 !important;border-color:#ff0000 !important;';
+    target.textContent = '!IMPORTANT WINS. EVERYTHING IS RED NOW.';
+    target.style.animation = 'bang-shake 0.1s infinite';
+    bang.style.display = 'block';
+    target.appendChild(bang);
+
+    const ruleLabel2 = document.createElement('div');
+    ruleLabel2.className = 'imp-rule';
+    ruleLabel2.textContent = '* { color: red !important; } - THERE IS NO ESCAPE';
+    ruleLabel2.style.color = '#ff6666';
+    target.appendChild(ruleLabel2);
+
+    // "Infect" other elements
+    rulesContainer.querySelectorAll('div').forEach(r => {
+      r.style.borderColor = '#ff0000';
+      r.style.color = '#ff0000';
+      r.style.opacity = '0.5';
+    });
+    desc.style.color = '#ff0000';
+    desc.textContent = '!important has taken over. There is no specificity anymore.';
+  });
+  stage.appendChild(nuke);
+}
+
+// ============================================================
+// SCENE 3: OVERFLOW BREAKOUT
+// ============================================================
+function setupOverflow(stage) {
+  const desc = document.createElement('div');
+  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  desc.textContent = 'These boxes are trapped behind overflow: hidden. Click them to set them free.';
+  stage.appendChild(desc);
+
+  const containerEl = document.createElement('div');
+  containerEl.className = 'of-container';
+  stage.appendChild(containerEl);
+
+  const label = document.createElement('div');
+  label.className = 'of-label';
+  label.textContent = 'overflow: hidden';
+  containerEl.appendChild(label);
+
+  const childColors = ['#ff0066', '#00ffcc', '#ffcc00', '#8844ff', '#ff8800'];
+  const childNames = ['<div>', '<span>', '<p>', '<a>', '<li>'];
+
+  childNames.forEach((name, i) => {
+    const child = document.createElement('div');
+    child.className = 'of-child';
+    child.style.borderColor = childColors[i];
+    child.style.background = childColors[i] + '22';
+    child.style.color = childColors[i];
+    child.style.left = (20 + i * 85) + 'px';
+    child.style.top = (40 + (i % 2) * 60) + 'px';
+    child.textContent = name;
+
+    // Half of them poke out
+    if (i >= 3) {
+      child.style.left = (containerEl.offsetWidth - 40 + i * 30) + 'px';
+      child.classList.add('escaping');
+    }
+
+    child.addEventListener('click', () => {
+      // Set it free!
+      const fx = (Math.random() - 0.5) * 600;
+      const fy = -(200 + Math.random() * 300);
+      child.style.setProperty('--fx', fx + 'px');
+      child.style.setProperty('--fy', fy + 'px');
+      child.classList.remove('escaping');
+      child.classList.add('free');
+      child.style.zIndex = '10';
+
+      // Check if the container should bust
+      const remaining = containerEl.querySelectorAll('.of-child:not(.free)');
+      if (remaining.length <= 1) {
+        containerEl.classList.add('busted');
+        label.textContent = 'overflow: visible (BUSTED)';
+        label.style.color = '#00ff88';
+        containerEl.style.borderColor = '#00ff88';
+        containerEl.style.borderStyle = 'solid';
+        desc.textContent = 'overflow: hidden has been defeated! The boxes roam free.';
+        desc.style.color = '#00ff88';
+      }
+    });
+
+    containerEl.appendChild(child);
+  });
+
+  // Second container with scroll
+  const container2 = document.createElement('div');
+  container2.className = 'of-container';
+  container2.style.overflow = 'scroll';
+  container2.style.borderColor = '#00ffff';
+  stage.appendChild(container2);
+
+  const label2 = document.createElement('div');
+  label2.className = 'of-label';
+  label2.textContent = 'overflow: scroll';
+  label2.style.color = '#00ffff';
+  container2.appendChild(label2);
+
+  // Fill with lots of content to make scrollbars
+  for (let i = 0; i < 15; i++) {
+    const line = document.createElement('div');
+    line.style.cssText = `padding:0.3rem;font-size:0.65rem;color:#00ffff44;white-space:nowrap;`;
+    line.textContent = `<div class="row-${i}"> `.repeat(5) + '(the scrollbar is the real boss)';
+    container2.appendChild(line);
+  }
+}
+
+// ============================================================
+// SCENE 4: SPECIFICITY BATTLE
+// ============================================================
+function setupSpecificity(stage) {
+  const desc = document.createElement('div');
+  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  desc.textContent = 'Click each rule to apply it. Higher specificity wins!';
+  stage.appendChild(desc);
+
+  const target = document.createElement('div');
+  target.className = 'spec-target';
+  target.textContent = 'The Target Element';
+  target.style.background = '#1a1a1a';
+  target.style.color = '#888';
+  stage.appendChild(target);
+
+  const scoreBoard = document.createElement('div');
+  scoreBoard.style.cssText = 'text-align:center;margin:0.5rem 0;font-size:0.6rem;color:#555;';
+  scoreBoard.textContent = 'Current winner: none';
+  stage.appendChild(scoreBoard);
+
+  const rules = [
+    { sel: '*', spec: [0,0,0,0], color: '#555', bg: '#111', weight: 0 },
+    { sel: 'div', spec: [0,0,0,1], color: '#5fafff', bg: '#001133', weight: 1 },
+    { sel: '.target', spec: [0,0,1,0], color: '#87d787', bg: '#001a00', weight: 10 },
+    { sel: 'div.target', spec: [0,0,1,1], color: '#d7af5f', bg: '#1a1100', weight: 11 },
+    { sel: '#hero', spec: [0,1,0,0], color: '#ff5f87', bg: '#1a0011', weight: 100 },
+    { sel: '#hero.target', spec: [0,1,1,0], color: '#ff87ff', bg: '#1a001a', weight: 110 },
+    { sel: '#hero.target.big', spec: [0,1,2,0], color: '#ffaf5f', bg: '#1a0f00', weight: 120 },
+    { sel: 'style=""', spec: [1,0,0,0], color: '#ff00ff', bg: '#1a001a', weight: 1000 },
+  ];
+
+  let currentWeight = -1;
+  const rulesContainer = document.createElement('div');
+  rulesContainer.className = 'spec-rules';
+  stage.appendChild(rulesContainer);
+
+  rules.forEach((rule) => {
+    const ruleEl = document.createElement('div');
+    ruleEl.className = 'spec-rule';
+
+    const swatch = document.createElement('div');
+    swatch.className = 'spec-color';
+    swatch.style.background = rule.color;
+
+    const sel = document.createElement('div');
+    sel.className = 'spec-selector';
+    sel.textContent = `${rule.sel} { color: ${rule.color}; }`;
+
+    const score = document.createElement('div');
+    score.className = 'spec-score';
+    score.textContent = `(${rule.spec.join(',')})`;
+
+    ruleEl.appendChild(swatch);
+    ruleEl.appendChild(sel);
+    ruleEl.appendChild(score);
+
+    ruleEl.addEventListener('click', () => {
+      if (rule.weight >= currentWeight) {
+        // This rule wins
+        currentWeight = rule.weight;
+        target.style.color = rule.color;
+        target.style.background = rule.bg;
+        target.style.borderColor = rule.color;
+        scoreBoard.innerHTML = `Current winner: <span style="color:${rule.color}">${rule.sel}</span> (${rule.spec.join(',')})`;
+
+        rulesContainer.querySelectorAll('.spec-rule').forEach(r => r.classList.remove('active'));
+        ruleEl.classList.add('active');
+
+        // Mark lower rules as defeated
+        rules.forEach((r, j) => {
+          const el = rulesContainer.children[j];
+          if (r.weight < currentWeight) el.classList.add('defeated');
+          else el.classList.remove('defeated');
+        });
+      } else {
+        // This rule loses
+        ruleEl.style.animation = 'bang-shake 0.2s ease';
+        setTimeout(() => { ruleEl.style.animation = ''; }, 200);
+        scoreBoard.innerHTML += ' <span style="color:#ff0000">(blocked!)</span>';
+      }
+    });
+
+    rulesContainer.appendChild(ruleEl);
+  });
+}
+
+// ============================================================
+// SCENE 5: BOX MODEL EXPLODE
+// ============================================================
+function setupBoxModel(stage) {
+  const desc = document.createElement('div');
+  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  desc.textContent = 'The CSS box model. Click "Explode" to see every layer.';
+  stage.appendChild(desc);
+
+  const demo = document.createElement('div');
+  demo.className = 'bm-demo';
+  demo.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:50vh;position:relative;';
+  stage.appendChild(demo);
+
+  let exploded = false;
+
+  function buildBoxModel() {
+    demo.innerHTML = '';
+
+    const layers = [
+      { name: 'margin', color: '#ffaf5f', size: 280 },
+      { name: 'border', color: '#ff5f87', size: 230 },
+      { name: 'padding', color: '#87d787', size: 180 },
+      { name: 'content', color: '#5fafff', size: 120 },
+    ];
+
+    layers.forEach((layer, i) => {
+      const div = document.createElement('div');
+      div.className = 'bm-layer';
+      div.style.width = layer.size + 'px';
+      div.style.height = layer.size + 'px';
+      div.style.position = 'absolute';
+      div.style.border = `2px ${i === 1 ? 'solid' : 'dashed'} ${layer.color}`;
+      div.style.background = layer.color + '11';
+
+      if (exploded) {
+        const offset = (i - 1.5) * 90;
+        div.style.transform = `translateY(${offset}px)`;
+      }
+
+      const label = document.createElement('div');
+      label.className = 'bm-label';
+      label.style.top = '-1rem';
+      label.style.left = '0.3rem';
+      label.style.color = layer.color;
+      label.textContent = layer.name;
+      div.appendChild(label);
+
+      // Dimensions
+      const dimLabel = document.createElement('div');
+      dimLabel.className = 'bm-label';
+      dimLabel.style.top = 'auto';
+      dimLabel.style.bottom = '2px';
+      dimLabel.style.right = '4px';
+      dimLabel.style.left = 'auto';
+      dimLabel.style.color = layer.color + '88';
+      const sizes = ['margin: 25px', 'border: 3px solid', 'padding: 30px', '120 x 120'];
+      dimLabel.textContent = sizes[i];
+      div.appendChild(dimLabel);
+
+      demo.appendChild(div);
+    });
+
+    const btn = document.createElement('button');
+    btn.className = 'bm-explode-btn';
+    btn.textContent = exploded ? 'Collapse' : 'Explode';
+    btn.style.position = 'relative';
+    btn.style.marginTop = exploded ? '250px' : '180px';
+    btn.addEventListener('click', () => {
+      exploded = !exploded;
+      buildBoxModel();
+    });
+    demo.appendChild(btn);
+  }
+
+  buildBoxModel();
+}
+
+// Start first scene
+showScene('zindex');
+</script>
+</body>
+</html>

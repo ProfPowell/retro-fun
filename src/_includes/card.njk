@@ -1,0 +1,11 @@
+<a class="card"{% if idx >= cardLimit %} data-hidden{% endif %} href="{{ item.url | url }}"{% if item.slug == 'vibe-code-racer' %} id="card-viberacer"{% endif %}>
+  <div class="card-preview {{ item.preview }}"></div>
+  <div class="card-info">
+    <div class="card-date">{{ item.date | readableDate }}</div>
+    <h2>{{ item.title }}</h2>
+    <p>{{ item.description }}</p>
+    {%- for tag in item.tags %}
+    <span class="tag{% if item.tagTypes[loop.index0] %} tag--{{ item.tagTypes[loop.index0] }}{% endif %}">{{ tag }}</span>
+    {%- endfor %}
+  </div>
+</a>
