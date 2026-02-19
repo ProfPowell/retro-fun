@@ -295,19 +295,41 @@
       width: 100%;
       max-width: none;
       flex-direction: row;
-      flex-wrap: wrap;
-      padding: 0.8rem;
+      flex-wrap: nowrap;
+      padding: 0.5rem 0.8rem;
       border-right: none;
       border-bottom: 1px solid #222;
       gap: 0.5rem;
-      max-height: 160px;
+      max-height: none;
+      overflow: hidden;
+      flex-shrink: 0;
     }
     .ascii-art {
-      font-size: 0.5rem;
+      font-size: 0.38rem;
+      line-height: 1.2;
       min-height: auto;
+      flex-shrink: 0;
     }
-    .stats { width: auto; flex: 1; min-width: 150px; }
-    .voice-toggle { width: auto; flex: 1; min-width: 150px; }
+    .stats {
+      width: auto;
+      flex: 1;
+      min-width: 0;
+      gap: 0.3rem;
+      font-size: 0.55rem;
+    }
+    .smugness-bar { height: 6px; }
+    .voice-toggle {
+      width: auto;
+      min-width: 0;
+      flex-shrink: 0;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.5rem;
+      align-self: center;
+    }
+    .chat-panel { min-height: 0; }
+    .msg { max-width: 90%; font-size: 0.7rem; }
+    .input-bar input { font-size: 1rem; }
+    .topbar-title { font-size: 0.65rem; letter-spacing: 0.1em; }
   }
 </style>
 </head>

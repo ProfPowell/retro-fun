@@ -210,11 +210,19 @@ body.extreme-mode #brand-banner{animation:banner-glitch 2s infinite}
 @media(max-width:768px){
   #main{flex-direction:column}
   #code-panel{flex:0 0 50%;border-right:none;border-bottom:1px solid var(--border)}
-  #ctrl-panel{flex:1}
+  #ctrl-panel{flex:1;overflow-y:auto}
   #brand-banner{display:none}
   #minimap{display:none}
   #title-hud{font-size:0.45rem;gap:4px}
+  #title-row{overflow-x:auto}
+  .title-text{font-size:0.5rem;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .file-tab{padding:2px 6px;font-size:0.5rem}
+  #tab-bar{overflow-x:auto}
+  .mode-box{width:auto;max-width:90vw;min-width:0}
+  #model-grid{grid-template-columns:1fr;max-width:90vw}
+  .model-card .model-art{font-size:0.55rem}
+  #prompt-input{font-size:1rem}
+  .line-num{width:28px;padding-right:4px;margin-right:4px}
 }
 </style>
 </head>

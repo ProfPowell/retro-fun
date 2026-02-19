@@ -40,6 +40,8 @@
     height: 100vh;
     overflow: hidden;
     transition: background 0.3s;
+    display: flex;
+    flex-direction: column;
   }
 
   /* CRT scanline overlay */
@@ -160,13 +162,14 @@
   /* === MAIN LAYOUT === */
   #main {
     display: flex;
-    height: calc(100vh - 61px);
+    flex: 1;
+    min-height: 0;
   }
 
   /* Face panel */
   #face-panel {
     width: 40%;
-    min-width: 280px;
+    min-width: min(280px, 100%);
     background: var(--face-bg);
     display: flex;
     align-items: center;
@@ -494,13 +497,25 @@
     #face-panel {
       width: 100%;
       min-width: unset;
-      height: 35vh;
+      height: 25vh;
       border-right: none;
       border-bottom: 1px solid var(--border);
     }
-    #hud { font-size: 0.5rem; gap: 0.4rem; }
+    #hud {
+      font-size: 0.5rem;
+      gap: 0.3rem;
+      padding: 0 0.4rem;
+      flex-wrap: wrap;
+      height: auto;
+      min-height: 28px;
+      max-height: 56px;
+    }
     .hud-btn { font-size: 0.45rem; padding: 0.1rem 0.3rem; }
+    .hud-spacer { display: none; }
     .temp-group { display: none; }
+    .separator { display: none; }
+    #chat-panel { min-height: 0; }
+    #input-bar input { font-size: 1rem; padding: 0.6rem 0.75rem; }
     .burn-title { font-size: 1.5rem; }
     .ocean-warning { font-size: 1.2rem; }
   }
