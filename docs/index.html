@@ -742,6 +742,35 @@
     100% { transform: translateY(80px); opacity: 0.3; }
   }
 
+  /* Retroize preview */
+  .preview-retroize {
+    background: #0a0a0a;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+  }
+  .preview-retroize::before {
+    content: 'IMG';
+    font-family: monospace; font-size: 2.5rem; font-weight: bold;
+    color: #00ff88;
+    text-shadow: 0 0 10px #00ff88, 0 0 30px #00ff8844;
+    animation: retroize-morph 3s ease-in-out infinite;
+  }
+  .preview-retroize::after {
+    content: '> RETROIZE_';
+    position: absolute; bottom: 12%; left: 50%;
+    transform: translateX(-50%);
+    font-family: monospace; font-size: 0.65rem;
+    color: #00ffff; letter-spacing: 0.2em;
+    text-shadow: 0 0 6px #00ffff;
+    animation: blink-cursor 1s step-end infinite;
+  }
+  @keyframes retroize-morph {
+    0%, 100% { filter: none; transform: scale(1); }
+    25% { filter: blur(2px); color: #ff00ff; text-shadow: 0 0 10px #ff00ff, 3px 0 0 #00ffff, -3px 0 0 #ff0000; }
+    50% { filter: none; transform: scale(1.05); color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+    75% { filter: contrast(2) brightness(1.2); color: #ffff00; text-shadow: 0 0 10px #ffff00; }
+  }
+
   @keyframes twinkle {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
@@ -797,6 +826,17 @@
 </header>
 
 <div class="grid">
+  <a class="card" href="demos/retroize/">
+    <div class="card-preview preview-retroize"></div>
+    <div class="card-info">
+      <h2>Retroize</h2>
+      <p>Apply retro effects to any image &mdash; ASCII, 8-bit, CRT, dither, glitch &amp; more</p>
+      <span class="tag tag--canvas">Canvas</span>
+      <span class="tag">Tool</span>
+      <span class="tag">Retro</span>
+    </div>
+  </a>
+
   <a class="card" href="demos/llmliza/">
     <div class="card-preview preview-llmliza"></div>
     <div class="card-info">
