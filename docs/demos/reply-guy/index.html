@@ -411,6 +411,11 @@
         <button class="trigger-chip" data-topic="What's your favorite movie?">Movies</button>
         <button class="trigger-chip" data-topic="I love coffee">Food</button>
         <button class="trigger-chip" data-topic="What music do you listen to?">Music</button>
+        <button class="trigger-chip" data-topic="I hand-code all my HTML and CSS">Old Web</button>
+        <button class="trigger-chip" data-topic="I'm building a site with Next.js and TypeScript">New Web</button>
+        <button class="trigger-chip" data-topic="I think taxes are too high">Right</button>
+        <button class="trigger-chip" data-topic="We need universal healthcare">Left</button>
+        <button class="trigger-chip" data-topic="I've been watching anime lately">Japan</button>
       </div>
     </div>
   </div>
@@ -759,7 +764,7 @@
       ]
     },
     programming: {
-      keywords: ['javascript', 'python', 'rust', 'code', 'programming', 'vim', 'linux', 'react', 'developer', 'coding', 'typescript', 'golang'],
+      keywords: ['javascript', 'python', 'rust', 'code', 'programming', 'vim', 'linux', 'developer', 'coding', 'golang'],
       label: 'Code Snob Mode',
       messages: [
         'WELL ACTUALLY... you should be using Rust for that. For everything, actually.',
@@ -786,7 +791,7 @@
       ]
     },
     movies: {
-      keywords: ['movie', 'film', 'marvel', 'star wars', 'anime', 'show', 'netflix', 'cinema', 'director', 'series'],
+      keywords: ['movie', 'film', 'marvel', 'star wars', 'show', 'netflix', 'cinema', 'director', 'series'],
       label: 'Film Bro Mode',
       messages: [
         'WELL ACTUALLY... the book was better. The book is ALWAYS better. I\'ve read them all.',
@@ -823,6 +828,76 @@
         'I have over 3,000 records. No, you can\'t come see them. The humidity in my listening room is precisely controlled.',
         'Have you even listened to the album on a proper hi-fi setup? Because you haven\'t actually heard it until you have.',
         'Anyway, I could recommend some deep cuts but you\'re probably not ready for them yet.'
+      ]
+    },
+    webdevOld: {
+      keywords: ['html', 'css', 'vanilla', 'semantic', 'accessibility', 'web standards', 'progressive enhancement', 'hand-coded', 'no framework', 'plain javascript'],
+      label: 'Old Web Dev Gatekeeper Mode',
+      messages: [
+        'WELL ACTUALLY... you shouldn\'t even TOUCH React until you can build a website in pure HTML and CSS. Like I did. In 2003.',
+        'I hand-write all my CSS. No preprocessors. No utility classes. CERTAINLY no Tailwind. Real developers understand the cascade.',
+        'Do you even know what semantic HTML means? Of course you don\'t. You div-soup people never do.',
+        'Progressive enhancement isn\'t just a buzzword, it\'s a PHILOSOPHY. One that died when bootcamp grads discovered npm install.',
+        'I can build a fully accessible, standards-compliant website in a single HTML file. Can your precious framework do that? Actually, don\'t answer.',
+        'Remember when you could View Source on any website and actually LEARN something? Before webpack turned everything into minified garbage?',
+        'The best JavaScript is NO JavaScript. If your website needs 400KB of JS just to render a blog post, you have fundamentally failed as a developer.',
+        'Anyway, come back when you\'ve memorized the entire MDN Web Docs. I have. Including the deprecated APIs. ESPECIALLY the deprecated APIs.'
+      ]
+    },
+    webdevNew: {
+      keywords: ['react', 'next', 'nextjs', 'vercel', 'tailwind', 'typescript', 'vite', 'webpack', 'framework', 'component', 'npm', 'node', 'fullstack', 'frontend'],
+      label: 'Modern Web Dev Bro Mode',
+      messages: [
+        'WELL ACTUALLY... if your project doesn\'t have at least 400 npm dependencies, is it even a real application? I don\'t think so.',
+        'I just scaffolded a new Next.js app with TypeScript, Tailwind, Prisma, tRPC, and Zod. It\'s a todo list. But a PRODUCTION-GRADE todo list.',
+        'You\'re still writing plain CSS? In 2024? That\'s like churning your own butter. Cute, but deeply inefficient.',
+        'My DX is optimized to the millisecond. Hot module replacement, instant preview deploys, AI autocomplete. I barely even write code anymore. That\'s the dream.',
+        'Load times? Users have fast internet now. If they don\'t, that\'s a THEM problem, not a ME problem.',
+        'I literally cannot take a developer seriously if their package.json has fewer than 200 dependencies. That\'s not an app, that\'s a hobby project.',
+        'Server components, edge functions, incremental static regeneration — if those words don\'t excite you, you\'re in the wrong profession.',
+        'Anyway, I need to go. My Vercel bill just hit $400 for a blog with 12 readers but the ARCHITECTURE is immaculate.'
+      ]
+    },
+    politicsRight: {
+      keywords: ['conservative', 'republican', 'trump', 'freedom', 'taxes', 'gun', 'border', 'woke', 'liberal', 'constitution', 'maga', 'government'],
+      label: 'Constitutional Scholar Mode',
+      messages: [
+        'WELL ACTUALLY... I\'ve read the Constitution. The ENTIRE thing. In the original parchment font. Let me explain what the founders REALLY meant.',
+        'I\'m not Republican, I\'m a CLASSICAL LIBERAL. There\'s a huge difference that I will now spend 45 minutes explaining.',
+        'The free market would solve this problem in about 30 seconds if the GOVERNMENT would just get out of the way. It\'s basic economics. I took one course.',
+        'I\'m fiscally conservative and socially liberal. Which means I want everyone to have rights, but I don\'t want to pay for any of them.',
+        'Have you even read Hayek? Or Friedman? Or the Federalist Papers? No? Then I\'m afraid your opinion is constitutionally invalid.',
+        'People call me extreme but I just believe in FREEDOM. The freedom to do what I want. Other people\'s freedom is more of a case-by-case basis.',
+        'I actually referenced this exact Supreme Court case in a Reddit argument last week. Scalia\'s dissent in that one was *chef\'s kiss*.',
+        'Anyway, I don\'t discuss politics. I discuss FACTS. And the fact is I\'m right. That\'s not political, that\'s just logic.'
+      ]
+    },
+    politicsLeft: {
+      keywords: ['progressive', 'democrat', 'bernie', 'socialist', 'climate', 'healthcare', 'equity', 'capitalism', 'union', 'rights', 'green', 'welfare'],
+      label: 'Actually Socialist Mode',
+      messages: [
+        'WELL ACTUALLY... that\'s a perfect example of late-stage capitalism and I have a 12-part thread about it.',
+        'It\'s not socialism, it\'s DEMOCRATIC socialism. There\'s a huge difference that I will now explain using Scandinavian countries as props.',
+        'Have you read Marx? Not just the Communist Manifesto, that\'s baby stuff. I mean Das Kapital. Volume 2. The one about circulation.',
+        'Everything — and I mean EVERYTHING — is a systemic issue. Your bad day? Systemic. Your coffee order? Reflects power structures. Your haircut? Imperialism.',
+        'I\'m not saying capitalism is evil, I\'m just saying every single problem in human history can be traced back to capitalism. Draw your own conclusions.',
+        'I actually have a very nuanced take on this but it requires understanding intersectionality, which I will now explain from my $3,000 MacBook at this independent coffee shop.',
+        'You know in Finland they have free healthcare, free education, and everyone is happy? I\'ve never been to Finland but I\'ve read several tweets about it.',
+        'Anyway, I need to go. There\'s a community organizing meeting at 7 but first I need to order from Amazon. Don\'t judge me, there\'s no ethical consumption under capitalism.'
+      ]
+    },
+    japan: {
+      keywords: ['anime', 'manga', 'japan', 'japanese', 'otaku', 'sushi', 'tokyo', 'samurai', 'ramen', 'weeb', 'naruto', 'one piece', 'studio ghibli', 'kawaii'],
+      label: 'Japan Expert Mode',
+      messages: [
+        'WELL ACTUALLY... as someone who has watched over 500 anime — and yes I track them on MAL — I think I understand Japanese culture better than most.',
+        'It\'s not "soo-shee," it\'s "su-shi." The vowels are pure. I learned this from watching subbed anime, which is the ONLY valid way to watch anime.',
+        'Japan has this concept called "wabi-sabi" — the beauty of imperfection. I learned about it from a Studio Ghibli film and now I bring it up constantly.',
+        'I\'m basically self-taught in Japanese. I know like 200 words. Mostly from anime. "Omae wa mou shindeiru" counts as conversational, right?',
+        'The thing about Japanese culture that most people don\'t understand — and by most people I mean everyone except me — is that it\'s all about HONOR and DISCIPLINE.',
+        'I\'m planning to move to Tokyo next year. I\'ve never visited but I\'ve watched enough slice-of-life anime to know exactly what daily life is like there.',
+        'Don\'t even get me started on dubs. If you watch dubbed anime, you\'re not watching anime. You\'re watching an American cartoon with Japanese art. It\'s basically cultural erasure.',
+        'Anyway, I have to go. New episode of One Piece just dropped and I need to write a 3,000-word analysis of the power scaling implications for the subreddit.'
       ]
     }
   };
