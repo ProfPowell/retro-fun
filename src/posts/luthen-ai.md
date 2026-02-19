@@ -2,6 +2,7 @@
 title: "Luthen AI"
 description: "I'm condemned to use the tools of my enemy to defeat them."
 date: 2026-02-19
+image: /img/retroized-luthen.png
 ---
 
 You want to know what I give up using Generative AI?

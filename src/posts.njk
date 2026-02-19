@@ -8,6 +8,11 @@ permalink: /posts/
 <div class="grid">
   {%- for p in postItems | reverse %}
   <a class="card" href="{{ p.url | url }}">
+    {% if p.data.image %}
+    <div class="card-preview card-preview--img" style="background-image: url('{{ p.data.image | url }}')"></div>
+    {% else %}
+    <div class="card-preview preview-post-default"></div>
+    {% endif %}
     <div class="card-info">
       <div class="card-date">{{ p.date | readableDate }}</div>
       <h2>{{ p.data.title }}</h2>

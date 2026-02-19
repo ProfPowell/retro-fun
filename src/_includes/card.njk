@@ -1,5 +1,9 @@
 <a class="card"{% if idx >= cardLimit %} data-hidden{% endif %} href="{{ item.url | url }}"{% if item.slug == 'vibe-code-racer' %} id="card-viberacer"{% endif %}>
+  {% if item.image %}
+  <div class="card-preview card-preview--img" style="background-image: url('{{ item.image | url }}')"></div>
+  {% else %}
   <div class="card-preview {{ item.preview }}"></div>
+  {% endif %}
   <div class="card-info">
     <div class="card-date">{{ item.date | readableDate }}</div>
     <h2>{{ item.title }}</h2>

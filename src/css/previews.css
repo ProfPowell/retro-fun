@@ -1,3 +1,18 @@
+/* Default post preview */
+.preview-post-default {
+  background: #0a0a12;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.preview-post-default::before {
+  content: '> POST_';
+  font-family: monospace; font-size: 1.4rem; font-weight: bold;
+  color: #aa88ff;
+  text-shadow: 0 0 10px #aa88ff, 0 0 30px #aa88ff44;
+  letter-spacing: 0.2em;
+  animation: blink-cursor 1s step-end infinite;
+}
+
 /* Preview backgrounds - animated thumbnails */
 .preview-starfield {
   background: radial-gradient(ellipse at center, #0a0a2e 0%, #000 70%);
