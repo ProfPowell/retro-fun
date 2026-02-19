@@ -10,7 +10,7 @@
   canvas { display: block; }
   .back {
     position: fixed; top: 1rem; right: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    font-family: 'Courier New', monospace; font-size: 0.9rem; padding: 0.5rem;
     color: #333; text-decoration: none; letter-spacing: 0.15em;
     text-transform: uppercase; z-index: 10;
   }
@@ -27,10 +27,14 @@
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let W, H;
+let S = 1;
+function fs(px) { return Math.round(px * S); }
 
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  const minDim = Math.min(W, H);
+  S = Math.min(2.5, Math.max(1, 580 / minDim));
 }
 window.addEventListener('resize', resize);
 resize();
@@ -168,7 +172,7 @@ class RuleDrop {
     ctx.globalAlpha = alpha;
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rotation);
-    ctx.font = `${this.size}px monospace`;
+    ctx.font = `${fs(this.size)}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -211,7 +215,7 @@ function drawCascadeLayers() {
   // "Stylesheet" source at top
   ctx.fillStyle = '#ffffff08';
   ctx.fillRect(0, 0, W, 40);
-  ctx.font = '9px monospace';
+  ctx.font = `${fs(9)}px monospace`;
   ctx.fillStyle = '#333';
   ctx.textAlign = 'center';
   ctx.fillText('STYLESHEETS (User Agent / Author / Inline)', W / 2, 25);
@@ -234,7 +238,7 @@ function drawCascadeLayers() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.font = '8px monospace';
+    ctx.font = `${fs(8)}px monospace`;
     ctx.fillStyle = '#333';
     ctx.textAlign = 'right';
     ctx.fillText(layer.label, W - 10, layer.y + 3);
@@ -257,7 +261,7 @@ function drawDOMElements() {
     ctx.strokeRect(x + 2, groundY, w - 4, barH);
 
     // Tag label
-    ctx.font = 'bold 11px monospace';
+    ctx.font = `bold ${fs(11)}px monospace`;
     ctx.fillStyle = el.color;
     ctx.textAlign = 'center';
     ctx.fillText(el.tag, x + w / 2, groundY + 15);
@@ -268,10 +272,10 @@ function drawDOMElements() {
       if (rule.time <= 0) return;
       ctx.save();
       ctx.globalAlpha = rule.time * 0.7;
-      ctx.font = '7px monospace';
+      ctx.font = `${fs(7)}px monospace`;
       ctx.fillStyle = rule.color;
       ctx.textAlign = 'center';
-      ctx.fillText(rule.text, x + w / 2, groundY + 30 + i * 12);
+      ctx.fillText(rule.text, x + w / 2, groundY + 30 + i * fs(12));
       ctx.restore();
     });
 
@@ -280,7 +284,7 @@ function drawDOMElements() {
   });
 
   // Ground label
-  ctx.font = '9px monospace';
+  ctx.font = `${fs(9)}px monospace`;
   ctx.fillStyle = '#333';
   ctx.textAlign = 'center';
   ctx.fillText('DOM ELEMENTS (Computed Styles)', W / 2, H - 8);
@@ -330,7 +334,7 @@ function drawCliffs() {
   ctx.fill();
 
   // Cliff tag textures
-  ctx.font = '6px monospace';
+  ctx.font = `${fs(6)}px monospace`;
   ctx.fillStyle = '#1a1a25';
   const cliffTags = ['<aside>', '<nav>', '<div>', '<section>', '<header>'];
   for (let y = 0; y < H; y += 20) {
@@ -357,7 +361,7 @@ function draw() {
   }
 
   // Title
-  ctx.font = 'bold 12px monospace';
+  ctx.font = `bold ${fs(12)}px monospace`;
   ctx.fillStyle = '#ffffff15';
   ctx.textAlign = 'center';
   ctx.fillText('THE CASCADE', W / 2, H * 0.12);

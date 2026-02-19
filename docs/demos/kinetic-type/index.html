@@ -10,14 +10,14 @@
   canvas { display: block; }
   .back {
     position: fixed; top: 1rem; right: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    font-family: 'Courier New', monospace; font-size: 0.9rem; padding: 0.5rem;
     color: #444; text-decoration: none; letter-spacing: 0.15em;
     text-transform: uppercase; z-index: 10;
   }
   .back:hover { color: #ff00ff; }
   .hud {
     position: fixed; top: 1rem; left: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    font-family: 'Courier New', monospace; font-size: 0.85rem;
     color: #333; letter-spacing: 0.15em; text-transform: uppercase;
     pointer-events: none; z-index: 10;
   }
@@ -32,10 +32,14 @@
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let W, H;
+let S = 1;
+function fs(px) { return Math.round(px * S); }
 
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  const minDim = Math.min(W, H);
+  S = Math.min(2.5, Math.max(1, 580 / minDim));
 }
 window.addEventListener('resize', resize);
 resize();
@@ -290,7 +294,7 @@ function draw() {
 
   // Letter count
   ctx.fillStyle = '#222';
-  ctx.font = '10px monospace';
+  ctx.font = `${fs(10)}px monospace`;
   ctx.textAlign = 'right';
   ctx.fillText(`${letters.length} letters`, W - 16, 28);
 

@@ -9,7 +9,7 @@
   body { background: #0a0a12; font-family: 'Courier New', monospace; color: #ccc; overflow-x: hidden; }
   .back {
     position: fixed; top: 1rem; right: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    font-family: 'Courier New', monospace; font-size: 0.9rem; padding: 0.5rem;
     color: #444; text-decoration: none; letter-spacing: 0.15em;
     text-transform: uppercase; z-index: 999999;
   }
@@ -22,13 +22,13 @@
     font-size: 1.5rem; letter-spacing: 0.3em; color: #ff00ff;
     text-shadow: 0 0 20px #ff00ff44; text-transform: uppercase;
   }
-  header p { color: #444; font-size: 0.7rem; letter-spacing: 0.2em; margin-top: 0.3rem; }
+  header p { color: #444; font-size: 0.85rem; letter-spacing: 0.2em; margin-top: 0.3rem; }
 
   .scenes { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; padding: 1rem; }
   .scene-btn {
     background: none; border: 1px solid #333; color: #666;
-    font-family: 'Courier New', monospace; font-size: 0.6rem;
-    padding: 0.35rem 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
+    padding: 0.45rem 0.8rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
   }
   .scene-btn:hover { border-color: #00ffff; color: #00ffff; }
   .scene-btn.active { border-color: #ff00ff; color: #ff00ff; }
@@ -50,12 +50,12 @@
     font-size: 1.2rem; font-weight: bold; display: block; margin-bottom: 0.3rem;
   }
   .zindex-scene .zi-val {
-    font-size: 0.6rem; color: #888; display: block;
+    font-size: 0.8rem; color: #888; display: block;
   }
   .zindex-scene .zi-escalate {
     position: absolute; bottom: 0.5rem; right: 0.5rem;
-    font-size: 0.5rem; color: #666; cursor: pointer;
-    border: 1px solid #333; padding: 0.15rem 0.3rem; background: rgba(0,0,0,0.5);
+    font-size: 0.75rem; color: #666; cursor: pointer;
+    border: 1px solid #333; padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.5);
   }
   .zindex-scene .zi-escalate:hover { color: #ff0; border-color: #ff0; }
 
@@ -67,7 +67,7 @@
     position: relative;
   }
   .important-scene .imp-rule {
-    font-size: 0.65rem; color: #666; margin-top: 0.3rem;
+    font-size: 0.85rem; color: #666; margin-top: 0.3rem;
     font-style: italic;
   }
   .important-scene .imp-bang {
@@ -100,13 +100,13 @@
   }
   .overflow-scene .of-label {
     position: absolute; top: -0.8rem; left: 0.5rem;
-    font-size: 0.6rem; color: #ff00ff; background: #0a0a12;
+    font-size: 0.8rem; color: #ff00ff; background: #0a0a12;
     padding: 0 0.3rem;
   }
   .overflow-scene .of-child {
     width: 80px; height: 80px; position: absolute;
     display: flex; align-items: center; justify-content: center;
-    font-size: 0.6rem; font-weight: bold; border: 2px solid;
+    font-size: 0.8rem; font-weight: bold; border: 2px solid;
     cursor: grab; transition: all 0.3s ease;
   }
   .overflow-scene .of-child.escaping {
@@ -143,7 +143,7 @@
   .specificity-scene .spec-rule.defeated { opacity: 0.3; text-decoration: line-through; }
   .specificity-scene .spec-selector { font-size: 0.75rem; color: #ff5f87; flex: 1; }
   .specificity-scene .spec-score {
-    font-size: 0.6rem; color: #888; background: #1a1a1a;
+    font-size: 0.8rem; color: #888; background: #1a1a1a;
     padding: 0.2rem 0.5rem; border: 1px solid #333;
     white-space: nowrap;
   }
@@ -159,13 +159,13 @@
     position: relative; transition: all 0.5s ease;
   }
   .boxmodel-scene .bm-label {
-    position: absolute; font-size: 0.55rem; color: rgba(255,255,255,0.5);
+    position: absolute; font-size: 0.75rem; color: rgba(255,255,255,0.5);
     letter-spacing: 0.1em; text-transform: uppercase; pointer-events: none;
   }
   .boxmodel-scene .bm-explode-btn {
     position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
     background: none; border: 1px solid #ff00ff; color: #ff00ff;
-    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    font-family: 'Courier New', monospace; font-size: 0.85rem;
     padding: 0.3rem 0.8rem; cursor: pointer; letter-spacing: 0.1em;
   }
 
@@ -240,7 +240,7 @@ function setupZIndex(stage) {
   let maxZ = 100;
 
   const statusDiv = document.createElement('div');
-  statusDiv.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  statusDiv.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.85rem;color:#555;';
   statusDiv.innerHTML = 'Click a box to escalate its z-index. <span style="color:#ff0">First one to z-index: 2147483647 wins.</span>';
   stage.appendChild(statusDiv);
 
@@ -304,7 +304,7 @@ function setupZIndex(stage) {
 // ============================================================
 function setupImportant(stage) {
   const desc = document.createElement('div');
-  desc.style.cssText = 'text-align:center;margin-bottom:1.5rem;font-size:0.7rem;color:#555;';
+  desc.style.cssText = 'text-align:center;margin-bottom:1.5rem;font-size:0.85rem;color:#555;';
   desc.textContent = 'CSS rules compete for this box. Click "!important" to nuke them all.';
   stage.appendChild(desc);
 
@@ -340,11 +340,11 @@ function setupImportant(stage) {
     swatch.style.cssText = `width:16px;height:16px;background:${rule.color};border-radius:2px;`;
 
     const sel = document.createElement('div');
-    sel.style.cssText = 'font-size:0.75rem;color:#ff5f87;flex:1;';
+    sel.style.cssText = 'font-size:0.85rem;color:#ff5f87;flex:1;';
     sel.textContent = `${rule.selector} { color: ${rule.color}; background: ${rule.bg}; }`;
 
     const score = document.createElement('div');
-    score.style.cssText = 'font-size:0.6rem;color:#888;background:#1a1a1a;padding:0.2rem 0.5rem;border:1px solid #333;';
+    score.style.cssText = 'font-size:0.8rem;color:#888;background:#1a1a1a;padding:0.2rem 0.5rem;border:1px solid #333;';
     score.textContent = rule.spec;
 
     ruleEl.appendChild(swatch);
@@ -406,7 +406,7 @@ function setupImportant(stage) {
 // ============================================================
 function setupOverflow(stage) {
   const desc = document.createElement('div');
-  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.85rem;color:#555;';
   desc.textContent = 'These boxes are trapped behind overflow: hidden. Click them to set them free.';
   stage.appendChild(desc);
 
@@ -480,7 +480,7 @@ function setupOverflow(stage) {
   // Fill with lots of content to make scrollbars
   for (let i = 0; i < 15; i++) {
     const line = document.createElement('div');
-    line.style.cssText = `padding:0.3rem;font-size:0.65rem;color:#00ffff44;white-space:nowrap;`;
+    line.style.cssText = `padding:0.3rem;font-size:0.85rem;color:#00ffff44;white-space:nowrap;`;
     line.textContent = `<div class="row-${i}"> `.repeat(5) + '(the scrollbar is the real boss)';
     container2.appendChild(line);
   }
@@ -491,7 +491,7 @@ function setupOverflow(stage) {
 // ============================================================
 function setupSpecificity(stage) {
   const desc = document.createElement('div');
-  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.85rem;color:#555;';
   desc.textContent = 'Click each rule to apply it. Higher specificity wins!';
   stage.appendChild(desc);
 
@@ -503,7 +503,7 @@ function setupSpecificity(stage) {
   stage.appendChild(target);
 
   const scoreBoard = document.createElement('div');
-  scoreBoard.style.cssText = 'text-align:center;margin:0.5rem 0;font-size:0.6rem;color:#555;';
+  scoreBoard.style.cssText = 'text-align:center;margin:0.5rem 0;font-size:0.8rem;color:#555;';
   scoreBoard.textContent = 'Current winner: none';
   stage.appendChild(scoreBoard);
 
@@ -578,7 +578,7 @@ function setupSpecificity(stage) {
 // ============================================================
 function setupBoxModel(stage) {
   const desc = document.createElement('div');
-  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#555;';
+  desc.style.cssText = 'text-align:center;margin-bottom:1rem;font-size:0.85rem;color:#555;';
   desc.textContent = 'The CSS box model. Click "Explode" to see every layer.';
   stage.appendChild(desc);
 
