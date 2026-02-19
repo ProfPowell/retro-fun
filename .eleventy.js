@@ -3,6 +3,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/css": "css" });
   eleventyConfig.addPassthroughCopy({ "src/js": "js" });
   eleventyConfig.addPassthroughCopy({ "src/demos": "demos" });
+  eleventyConfig.addPassthroughCopy({ "src/img": "img" });
 
   // Ignore demos from template processing (they are passthrough-copied)
   eleventyConfig.ignores.add("src/demos/**");
