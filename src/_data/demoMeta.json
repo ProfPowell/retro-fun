@@ -146,18 +146,18 @@
     "slug": "vibe-code-racer",
     "title": "Vibe Code Racer",
     "description": "Race to 1M LOC with agents, technical debt, and vibes",
-    "date": "2026-02-17",
+    "date": "2026-02-19",
     "url": "/demos/vibe-code-racer/",
     "preview": "preview-viberacer",
     "tags": ["CSS", "Satire"],
     "tagTypes": ["css", ""],
-    "order": 1
+    "order": 3
   },
   {
     "slug": "llmliza",
     "title": "LLMliza",
     "description": "Satirical ELIZA chatbot powered by Glaze People Today (GPT)",
-    "date": "2026-02-17",
+    "date": "2026-02-19",
     "url": "/demos/llmliza/",
     "preview": "preview-llmliza",
     "tags": ["Canvas", "CSS", "Satire"],
