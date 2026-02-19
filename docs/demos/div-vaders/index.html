@@ -2,24 +2,93 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Div Vaders // RETRO FUN</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+  body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
   canvas { display: block; image-rendering: pixelated; }
   .back {
-    position: fixed; top: 1rem; right: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.7rem;
-    color: #333; text-decoration: none; letter-spacing: 0.15em;
-    text-transform: uppercase; z-index: 10;
+    position: fixed; top: 0.8rem; right: 0.8rem;
+    font-family: 'Courier New', monospace; font-size: 0.85rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 30;
+    padding: 0.4rem 0.6rem;
   }
   .back:hover { color: #00ffff; }
+
+  /* ===== TOUCH CONTROLS ===== */
+  #touch-ui {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 20;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #touch-ui.visible { display: flex; }
+
+  .touch-btn {
+    flex: 1;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 28px;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.05s;
+  }
+  .touch-btn-move {
+    color: #00ccdd;
+    background: rgba(0, 200, 220, 0.06);
+    border-top: 1px solid rgba(0, 200, 220, 0.15);
+  }
+  .touch-btn-move.active {
+    background: rgba(0, 200, 220, 0.2);
+  }
+  .touch-btn-fire {
+    flex: 1.5;
+    color: #ff4466;
+    background: rgba(255, 50, 80, 0.08);
+    border-top: 1px solid rgba(255, 50, 80, 0.2);
+    font-size: 22px;
+    letter-spacing: 0.15em;
+  }
+  .touch-btn-fire.active {
+    background: rgba(255, 50, 80, 0.25);
+  }
+
+  @media (min-height: 700px) {
+    .touch-btn { height: 84px; }
+  }
+  @media (min-height: 900px) {
+    .touch-btn { height: 96px; }
+  }
 </style>
 </head>
 <body>
 <a class="back" href="../../">&larr; Back</a>
 <canvas id="c"></canvas>
+
+<div id="touch-ui">
+  <div class="touch-btn touch-btn-move" id="btn-left">&laquo;</div>
+  <div class="touch-btn touch-btn-fire" id="btn-fire">FIRE</div>
+  <div class="touch-btn touch-btn-move" id="btn-right">&raquo;</div>
+</div>
+
 <script>
 // =====================================================================
 // DIV VADERS - The Markup Battle
@@ -30,12 +99,48 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let W, H;
 
+// =====================================================================
+// RESPONSIVE SCALING
+// =====================================================================
+
+let S = 1;           // UI scale factor
+let gameBottom;      // effective bottom of play area (above touch controls)
+let touchH = 0;     // height of touch control bar
+let isMobile = false;
+
+const touchUI = document.getElementById('touch-ui');
+
+function detectMobile() {
+  return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (W < 700);
+}
+
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
+
+  isMobile = detectMobile();
+
+  // Scale factor: ensures text is readable on small screens
+  const minDim = Math.min(W, H);
+  S = Math.min(2.5, Math.max(1, 580 / minDim));
+
+  // Touch control height
+  if (isMobile) {
+    const btn = document.querySelector('.touch-btn');
+    touchH = btn ? btn.offsetHeight : 80;
+    touchUI.classList.add('visible');
+  } else {
+    touchH = 0;
+    touchUI.classList.remove('visible');
+  }
+
+  gameBottom = H - touchH;
 }
 window.addEventListener('resize', resize);
 resize();
+
+// Scaled font size helper
+function fs(px) { return Math.round(px * S); }
 
 // =====================================================================
 // AUDIO ENGINE - 8-bit sound effects via Web Audio API
@@ -75,7 +180,6 @@ function playSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
       osc.connect(gain); gain.connect(audioCtx.destination);
       osc.start(now); osc.stop(now + 0.2);
-      // Noise burst
       const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
       const d = buf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -89,7 +193,6 @@ function playSound(type) {
       break;
     }
     case 'hit-good': {
-      // Sad descending tone - you shot a friendly!
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
@@ -102,7 +205,6 @@ function playSound(type) {
       break;
     }
     case 'hit-armor': {
-      // Ping - tag took a hit but survived
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'square';
@@ -127,7 +229,6 @@ function playSound(type) {
       break;
     }
     case 'player-die': {
-      // Long chunky explosion
       for (let k = 0; k < 4; k++) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -142,7 +243,6 @@ function playSound(type) {
       break;
     }
     case 'wave-clear': {
-      // Victory fanfare
       [523, 659, 784, 1047].forEach((f, i) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -222,8 +322,6 @@ const GOOD_TAGS = [
   '<figcaption>', '<abbr>', '<cite>', '<blockquote>',
 ];
 
-const BAD_TAGS_COMMON = ['<div>'];
-
 const BAD_TAGS_OBSOLETE = [
   '<font>', '<center>', '<blink>', '<spacer>',
   '<big>', '<tt>', '<strike>', '<frame>',
@@ -232,7 +330,6 @@ const BAD_TAGS_OBSOLETE = [
 ];
 
 function randomBadTag() {
-  // 60% div, 40% obsolete
   if (Math.random() < 0.6) return '<div>';
   return BAD_TAGS_OBSOLETE[Math.floor(Math.random() * BAD_TAGS_OBSOLETE.length)];
 }
@@ -254,15 +351,12 @@ let techDebt = 0;
 let semantics = 100;
 let meterWarnTimer = 0;
 
-// Player
 let player = { x: 0, y: 0, w: 56, h: 22, alive: true, flash: 0, deathTimer: 0 };
 
-// Bullets
 let playerBullets = [];
 let enemyBullets = [];
 let shootCooldown = 0;
 
-// Enemies
 let enemies = [];
 let formationX = 0, formationY = 0;
 let formationDir = 1;
@@ -271,19 +365,15 @@ let moveTimer = 0;
 let moveInterval = 40;
 let enemyShootTimer = 0;
 
-// Saucer
 let saucer = null;
 let saucerTimer = 0;
 let saucerDrops = [];
 let saucerHumTimer = 0;
 
-// Particles
 let particles = [];
 
-// Screen shake
 let shakeX = 0, shakeY = 0, shakeMag = 0;
 
-// UI timers
 let waveClearTimer = 0;
 let titleBlink = 0;
 let titleStars = [];
@@ -295,14 +385,16 @@ for (let i = 0; i < 120; i++) {
   });
 }
 
-// Flash messages
 let flashMessages = [];
 
 // =====================================================================
-// INPUT
+// INPUT - Keyboard + Touch
 // =====================================================================
 
 const keys = {};
+
+// Touch button states
+const touch = { left: false, right: false, fire: false };
 
 window.addEventListener('keydown', e => {
   keys[e.key] = true;
@@ -325,7 +417,7 @@ window.addEventListener('keyup', e => {
   keys[e.code] = false;
 });
 
-// Touch / click support for start
+// Canvas tap for title/game-over
 canvas.addEventListener('click', () => {
   if (gameState === STATE.TITLE) {
     initAudio();
@@ -335,6 +427,46 @@ canvas.addEventListener('click', () => {
     titleBlink = 0;
   }
 });
+
+// --- Touch control wiring ---
+function setupTouchButton(id, stateKey) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  function activate(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    initAudio();
+    touch[stateKey] = true;
+    el.classList.add('active');
+    // Also handle title/game-over transitions from any button
+    if (gameState === STATE.TITLE) { startGame(); }
+    else if (gameState === STATE.GAME_OVER) { gameState = STATE.TITLE; titleBlink = 0; }
+  }
+  function deactivate(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    touch[stateKey] = false;
+    el.classList.remove('active');
+  }
+
+  el.addEventListener('pointerdown', activate, { passive: false });
+  el.addEventListener('pointerup', deactivate, { passive: false });
+  el.addEventListener('pointercancel', deactivate, { passive: false });
+  el.addEventListener('pointerleave', deactivate, { passive: false });
+
+  // Prevent context menu on long-press
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+setupTouchButton('btn-left', 'left');
+setupTouchButton('btn-right', 'right');
+setupTouchButton('btn-fire', 'fire');
+
+// Helper: is a direction/action active (keyboard OR touch)
+function inputLeft() { return keys['ArrowLeft'] || keys['a'] || keys['A'] || touch.left; }
+function inputRight() { return keys['ArrowRight'] || keys['d'] || keys['D'] || touch.right; }
+function inputFire() { return keys['Space'] || keys['ArrowUp'] || keys['w'] || keys['W'] || touch.fire; }
 
 // =====================================================================
 // GAME LOGIC
@@ -349,7 +481,7 @@ function startGame() {
   player.alive = true;
   player.flash = 0;
   player.x = W / 2;
-  player.y = H - 60;
+  player.y = gameBottom - 28;
   playerBullets = [];
   enemyBullets = [];
   enemies = [];
@@ -368,17 +500,18 @@ function spawnWave() {
   enemyBullets = [];
   saucerDrops = [];
 
-  // Grid size scales with wave
-  const cols = Math.min(11, 6 + Math.floor(wave * 0.4));
-  const rows = Math.min(5, 3 + Math.floor(wave * 0.2));
+  // Fewer columns on narrow screens
+  const maxCols = W < 450 ? 5 : W < 650 ? 7 : 11;
+  const cols = Math.min(maxCols, 6 + Math.floor(wave * 0.4));
+  const maxRows = gameBottom < 500 ? 3 : 5;
+  const rows = Math.min(maxRows, 3 + Math.floor(wave * 0.2));
 
-  // Tag cell sizing
-  const tagW = Math.min(72, Math.floor((W - 80) / cols - 6));
-  const tagH = 26;
-  const gapX = 6;
-  const gapY = 6;
+  // Tag cell sizing - fit to screen width
+  const gapX = Math.round(5 * S);
+  const gapY = Math.round(5 * S);
+  const tagW = Math.min(Math.round(72 * S), Math.floor((W - 40) / cols - gapX));
+  const tagH = Math.round(28 * S);
 
-  // More bad tags as waves progress
   const badRatio = Math.min(0.85, 0.3 + wave * 0.045);
 
   for (let r = 0; r < rows; r++) {
@@ -402,10 +535,9 @@ function spawnWave() {
     }
   }
 
-  // Center the formation
   const formW = cols * (tagW + gapX);
   formationX = (W - formW) / 2;
-  formationY = 55;
+  formationY = Math.round(50 * S);
   formationDir = 1;
   formationSpeed = 0.3 + wave * 0.1;
   moveInterval = Math.max(6, 35 - wave * 2);
@@ -428,27 +560,26 @@ function spawnExplosion(x, y, color, count) {
       vy: Math.sin(angle) * speed - 1,
       life: 1,
       decay: 0.015 + Math.random() * 0.02,
-      size: 2 + Math.random() * 4,
+      size: (2 + Math.random() * 4) * S,
       color,
     });
   }
 }
 
 function spawnTextDebris(text, x, y, color) {
-  // Individual characters fly out
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch === '<' || ch === '>' || ch === ' ') continue;
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
     const speed = 2 + Math.random() * 3;
     particles.push({
-      x: x + (i - text.length / 2) * 6,
+      x: x + (i - text.length / 2) * 6 * S,
       y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       life: 1,
       decay: 0.01 + Math.random() * 0.01,
-      size: 8,
+      size: fs(9),
       color,
       char: ch,
     });
@@ -486,12 +617,12 @@ function update() {
     if (shakeMag < 0.3) { shakeMag = 0; shakeX = 0; shakeY = 0; }
   }
 
-  // Update particles always
+  // Update particles
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
-    p.vy += 0.05; // gravity on debris
+    p.vy += 0.05;
     p.life -= p.decay;
     if (p.life <= 0) particles.splice(i, 1);
   }
@@ -515,16 +646,15 @@ function update() {
     return;
   }
 
-  // Dying state - respawn timer
+  // Dying state
   if (gameState === STATE.DYING) {
     player.deathTimer--;
     if (player.deathTimer <= 0) {
       player.alive = true;
-      player.flash = 90; // invincibility
+      player.flash = 90;
       player.x = W / 2;
       gameState = STATE.PLAYING;
     }
-    // Still update enemies etc while dying
   }
 
   // Meter warning
@@ -537,21 +667,20 @@ function update() {
 
   // --- Player ---
   if (player.alive) {
-    const speed = 5;
-    if (keys['ArrowLeft'] || keys['a'] || keys['A']) player.x -= speed;
-    if (keys['ArrowRight'] || keys['d'] || keys['D']) player.x += speed;
+    const speed = 5 * S;
+    if (inputLeft()) player.x -= speed;
+    if (inputRight()) player.x += speed;
     player.x = Math.max(player.w / 2, Math.min(W - player.w / 2, player.x));
-    player.y = H - 60;
+    player.y = gameBottom - 28 * S;
 
     if (player.flash > 0) player.flash--;
 
-    // Shooting
     if (shootCooldown > 0) shootCooldown--;
-    if ((keys['Space'] || keys['ArrowUp'] || keys['w'] || keys['W']) && shootCooldown === 0) {
+    if (inputFire() && shootCooldown === 0) {
       if (playerBullets.length < 3) {
         playerBullets.push({
           x: player.x,
-          y: player.y - player.h / 2 - 6,
+          y: player.y - player.h / 2 - 6 * S,
           vy: -9,
         });
         shootCooldown = 10;
@@ -559,6 +688,10 @@ function update() {
       }
     }
   }
+
+  // Player ship size (scales with S)
+  player.w = Math.round(56 * S);
+  player.h = Math.round(22 * S);
 
   // --- Player bullets ---
   for (let i = playerBullets.length - 1; i >= 0; i--) {
@@ -569,7 +702,6 @@ function update() {
     if (!b) continue;
     let hit = false;
 
-    // Hit enemies
     for (const e of enemies) {
       if (!e.alive) continue;
       const ex = formationX + e.localX;
@@ -603,10 +735,9 @@ function update() {
       }
     }
 
-    // Hit saucer
     if (!hit && saucer) {
       if (b.x > saucer.x - saucer.w / 2 && b.x < saucer.x + saucer.w / 2 &&
-          b.y > saucer.y - 12 && b.y < saucer.y + 12) {
+          b.y > saucer.y - 12 * S && b.y < saucer.y + 12 * S) {
         score += 50;
         addFlash('+50', saucer.x, saucer.y - 15, '#ff00ff');
         spawnExplosion(saucer.x, saucer.y, '#ff00ff', 15);
@@ -617,11 +748,10 @@ function update() {
       }
     }
 
-    // Hit saucer drops
     if (!hit) {
       for (let di = saucerDrops.length - 1; di >= 0; di--) {
         const d = saucerDrops[di];
-        if (Math.abs(b.x - d.x) < 22 && Math.abs(b.y - d.y) < 14) {
+        if (Math.abs(b.x - d.x) < 22 * S && Math.abs(b.y - d.y) < 14 * S) {
           score += 5;
           addFlash('+5', d.x, d.y - 10, '#ffff00');
           spawnExplosion(d.x, d.y, '#ff4444', 5);
@@ -641,7 +771,6 @@ function update() {
   if (moveTimer >= moveInterval) {
     moveTimer = 0;
 
-    // Find alive bounds
     let minX = Infinity, maxX = -Infinity;
     let aliveCount = 0;
     for (const e of enemies) {
@@ -653,7 +782,6 @@ function update() {
     }
 
     if (aliveCount > 0) {
-      // Speed up as fewer enemies remain
       const speedMult = 1 + (1 - aliveCount / enemies.length) * 2;
       const stepX = formationDir * formationSpeed * 8 * speedMult;
       const nextMin = minX + stepX;
@@ -661,7 +789,7 @@ function update() {
 
       if (nextMax > W - 10 || nextMin < 10) {
         formationDir *= -1;
-        formationY += 12;
+        formationY += Math.round(10 * S);
       } else {
         formationX += stepX;
       }
@@ -673,7 +801,6 @@ function update() {
   const shootInterval = Math.max(25, 100 - wave * 8);
   if (enemyShootTimer >= shootInterval && gameState === STATE.PLAYING) {
     enemyShootTimer = 0;
-    // Bottom-most enemy in each column
     const colBottoms = {};
     for (const e of enemies) {
       if (!e.alive) continue;
@@ -699,9 +826,8 @@ function update() {
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     const b = enemyBullets[i];
     b.y += b.vy;
-    if (b.y > H + 20) { enemyBullets.splice(i, 1); continue; }
+    if (b.y > gameBottom + 20) { enemyBullets.splice(i, 1); continue; }
 
-    // Hit player
     if (player.alive && player.flash === 0) {
       if (Math.abs(b.x - player.x) < player.w / 2 + 3 &&
           Math.abs(b.y - player.y) < player.h / 2 + 5) {
@@ -711,11 +837,10 @@ function update() {
       }
     }
 
-    // Hit ground - bad tags landing hurts meters
-    if (b.y > H - 35 && b.bad) {
+    if (b.y > gameBottom - 8 && b.bad) {
       techDebt = Math.min(100, techDebt + 1);
       semantics = Math.max(0, semantics - 0.5);
-      spawnExplosion(b.x, H - 35, '#ff444466', 3);
+      spawnExplosion(b.x, gameBottom - 8, '#ff444466', 3);
       enemyBullets.splice(i, 1);
       checkGameOver();
     }
@@ -729,9 +854,8 @@ function update() {
     d.wobble = (d.wobble || 0) + 0.15;
     d.x += Math.sin(d.wobble) * 0.5;
 
-    if (d.y > H + 30) { saucerDrops.splice(i, 1); continue; }
+    if (d.y > gameBottom + 30) { saucerDrops.splice(i, 1); continue; }
 
-    // Hit player
     if (player.alive && player.flash === 0) {
       if (Math.abs(d.x - player.x) < player.w / 2 + 16 &&
           Math.abs(d.y - player.y) < player.h / 2 + 10) {
@@ -741,12 +865,11 @@ function update() {
       }
     }
 
-    // Hit ground
-    if (saucerDrops[i] && d.y > H - 35) {
+    if (saucerDrops[i] && d.y > gameBottom - 8) {
       techDebt = Math.min(100, techDebt + 2);
       semantics = Math.max(0, semantics - 1);
-      spawnExplosion(d.x, H - 35, '#ff4444', 4);
-      addFlash('<div> LANDED!', d.x, H - 50, '#ff4444');
+      spawnExplosion(d.x, gameBottom - 8, '#ff4444', 4);
+      addFlash('<div> LANDED!', d.x, gameBottom - 22, '#ff4444');
       saucerDrops.splice(i, 1);
       checkGameOver();
     }
@@ -756,11 +879,11 @@ function update() {
   for (const e of enemies) {
     if (!e.alive) continue;
     const ey = formationY + e.localY + e.h;
-    if (ey > H - 45) {
+    if (ey > gameBottom - 18 * S) {
       if (e.bad) {
         techDebt = Math.min(100, techDebt + 4);
         semantics = Math.max(0, semantics - 3);
-        addFlash('INVADED!', formationX + e.localX + e.w / 2, H - 55, '#ff0000');
+        addFlash('INVADED!', formationX + e.localX + e.w / 2, gameBottom - 28 * S, '#ff0000');
       }
       e.alive = false;
       spawnExplosion(formationX + e.localX + e.w / 2, ey, e.bad ? '#ff0000' : '#00ff00', 4);
@@ -775,9 +898,9 @@ function update() {
     const dir = Math.random() > 0.5 ? 1 : -1;
     saucer = {
       x: dir > 0 ? -90 : W + 90,
-      y: 32,
+      y: Math.round(32 * S),
       dir, speed: 1.5 + wave * 0.15,
-      w: 90,
+      w: Math.round(90 * S),
       dropTimer: 40 + Math.random() * 30,
       dropInterval: Math.max(15, 45 - wave * 2),
     };
@@ -786,7 +909,6 @@ function update() {
 
   if (saucer) {
     saucer.x += saucer.dir * saucer.speed;
-
     saucerHumTimer++;
     if (saucerHumTimer % 20 === 0) playSound('saucer-hum');
 
@@ -811,7 +933,6 @@ function update() {
   // --- Check wave clear ---
   const aliveBad = enemies.filter(e => e.alive && e.bad);
   if (aliveBad.length === 0 && enemies.length > 0 && gameState === STATE.PLAYING) {
-    // All bad tags destroyed! Wave clear!
     for (const e of enemies) {
       if (e.alive) {
         e.alive = false;
@@ -837,24 +958,23 @@ function drawTag(text, x, y, w, h, bad, flash, hp, maxHp) {
   const bgColor = bad ? (flash > 0 ? '#660022' : '#220011') : (flash > 0 ? '#005522' : '#001a0a');
   const borderColor = flash > 0 ? '#ffffff' : (bad ? '#ff446688' : '#00ff8866');
 
-  // Background
   ctx.fillStyle = bgColor;
   ctx.fillRect(x, y, w, h);
 
-  // Border
   ctx.strokeStyle = borderColor;
   ctx.lineWidth = flash > 0 ? 2 : 1;
   ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
 
-  // HP bar for armored tags
   if (maxHp > 1 && hp > 0) {
     const hpW = (w - 6) * (hp / maxHp);
     ctx.fillStyle = '#ffaa0066';
-    ctx.fillRect(x + 3, y + h - 5, hpW, 3);
+    ctx.fillRect(x + 3, y + h - Math.round(5 * S), hpW, Math.round(3 * S));
   }
 
-  // Tag text
-  const fontSize = Math.min(11, Math.max(7, w / text.length * 1.2));
+  // Tag text - scale font to fit box, with a readable minimum
+  const charW = w / text.length;
+  const fitSize = Math.floor(charW * 1.5);
+  const fontSize = Math.max(fs(8), Math.min(fs(13), fitSize));
   ctx.font = `bold ${fontSize}px monospace`;
   ctx.fillStyle = baseColor;
   ctx.textAlign = 'center';
@@ -867,7 +987,7 @@ function drawTag(text, x, y, w, h, bad, flash, hp, maxHp) {
     ctx.shadowColor = '#00ff88';
     ctx.shadowBlur = flash > 0 ? 8 : 3;
   }
-  ctx.fillText(text, x + w / 2, y + h / 2 - (maxHp > 1 ? 2 : 0));
+  ctx.fillText(text, x + w / 2, y + h / 2 - (maxHp > 1 ? Math.round(2 * S) : 0));
   ctx.shadowBlur = 0;
 }
 
@@ -880,89 +1000,78 @@ function drawPlayer() {
   const w = player.w;
   const h = player.h;
 
-  // Ship body
   ctx.fillStyle = '#00bbdd';
   ctx.beginPath();
   ctx.moveTo(x - w / 2, y + h / 2);
-  ctx.lineTo(x - w / 2 + 6, y - h / 2);
-  ctx.lineTo(x + w / 2 - 6, y - h / 2);
+  ctx.lineTo(x - w / 2 + 6 * S, y - h / 2);
+  ctx.lineTo(x + w / 2 - 6 * S, y - h / 2);
   ctx.lineTo(x + w / 2, y + h / 2);
   ctx.closePath();
   ctx.fill();
 
-  // Cannon
   ctx.fillStyle = '#00eeff';
-  ctx.fillRect(x - 2, y - h / 2 - 8, 4, 10);
+  ctx.fillRect(x - 2 * S, y - h / 2 - 8 * S, 4 * S, 10 * S);
 
-  // Cockpit stripe
   ctx.fillStyle = '#004455';
-  ctx.fillRect(x - w / 2 + 8, y - h / 2 + 3, w - 16, 4);
+  ctx.fillRect(x - w / 2 + 8 * S, y - h / 2 + 3 * S, w - 16 * S, 4 * S);
 
-  // Label
-  ctx.font = 'bold 7px monospace';
+  ctx.font = `bold ${fs(8)}px monospace`;
   ctx.fillStyle = '#001a22';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('<body>', x, y + 3);
+  ctx.fillText('<body>', x, y + 3 * S);
 
-  // Glow
   ctx.shadowColor = '#00ffff';
   ctx.shadowBlur = 10;
   ctx.strokeStyle = '#00ffff44';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(x - w / 2, y + h / 2);
-  ctx.lineTo(x - w / 2 + 6, y - h / 2);
-  ctx.lineTo(x + w / 2 - 6, y - h / 2);
+  ctx.lineTo(x - w / 2 + 6 * S, y - h / 2);
+  ctx.lineTo(x + w / 2 - 6 * S, y - h / 2);
   ctx.lineTo(x + w / 2, y + h / 2);
   ctx.closePath();
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // Engine glow
   ctx.fillStyle = '#00ffff44';
-  ctx.fillRect(x - 8, y + h / 2, 4, 3 + Math.random() * 4);
-  ctx.fillRect(x + 4, y + h / 2, 4, 3 + Math.random() * 4);
+  ctx.fillRect(x - 8 * S, y + h / 2, 4 * S, (3 + Math.random() * 4) * S);
+  ctx.fillRect(x + 4 * S, y + h / 2, 4 * S, (3 + Math.random() * 4) * S);
 }
 
 function drawBullets() {
-  // Player bullets - linter bolts
   for (const b of playerBullets) {
     ctx.fillStyle = '#00ffff';
     ctx.shadowColor = '#00ffff';
     ctx.shadowBlur = 8;
-    ctx.fillRect(b.x - 1.5, b.y - 6, 3, 12);
+    ctx.fillRect(b.x - 1.5 * S, b.y - 6 * S, 3 * S, 12 * S);
     ctx.shadowBlur = 0;
-    // Trail
     ctx.globalAlpha = 0.25;
     ctx.fillStyle = '#00ffff';
-    ctx.fillRect(b.x - 1, b.y + 6, 2, 10);
+    ctx.fillRect(b.x - 1 * S, b.y + 6 * S, 2 * S, 10 * S);
     ctx.globalAlpha = 0.1;
-    ctx.fillRect(b.x - 0.5, b.y + 16, 1, 8);
+    ctx.fillRect(b.x - 0.5 * S, b.y + 16 * S, 1 * S, 8 * S);
     ctx.globalAlpha = 1;
   }
 
-  // Enemy bullets
   for (const b of enemyBullets) {
     const color = b.bad ? '#ff4444' : '#ffcc00';
     ctx.fillStyle = color;
     ctx.shadowColor = color;
     ctx.shadowBlur = 5;
-    ctx.fillRect(b.x - 2, b.y - 5, 4, 10);
+    ctx.fillRect(b.x - 2 * S, b.y - 5 * S, 4 * S, 10 * S);
     ctx.shadowBlur = 0;
-    // Tag label
-    ctx.font = '6px monospace';
+    ctx.font = `${fs(8)}px monospace`;
     ctx.fillStyle = color + '88';
     ctx.textAlign = 'center';
-    ctx.fillText(b.tag, b.x, b.y + 12);
+    ctx.fillText(b.tag, b.x, b.y + 12 * S);
   }
 
-  // Saucer drops - falling divs!
   for (const d of saucerDrops) {
     ctx.save();
     ctx.translate(d.x, d.y);
     ctx.rotate(Math.sin(d.wobble || 0) * 0.2);
-    ctx.font = 'bold 13px monospace';
+    ctx.font = `bold ${fs(14)}px monospace`;
     ctx.fillStyle = '#ff3344';
     ctx.shadowColor = '#ff0022';
     ctx.shadowBlur = 8;
@@ -980,28 +1089,25 @@ function drawSaucer() {
   const y = saucer.y;
   const pulse = 0.7 + Math.sin(Date.now() * 0.008) * 0.3;
 
-  // Saucer body
   ctx.fillStyle = `rgba(255, 0, 255, ${pulse * 0.6})`;
   ctx.shadowColor = '#ff00ff';
   ctx.shadowBlur = 15;
   ctx.beginPath();
-  ctx.ellipse(x, y, saucer.w / 2, 11, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y, saucer.w / 2, 11 * S, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#330033';
   ctx.shadowBlur = 0;
   ctx.beginPath();
-  ctx.ellipse(x, y, saucer.w / 2 - 5, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y, saucer.w / 2 - 5 * S, 7 * S, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Dome
   ctx.fillStyle = `rgba(255, 0, 255, ${pulse * 0.4})`;
   ctx.beginPath();
-  ctx.ellipse(x, y - 6, 20, 8, 0, Math.PI, 0);
+  ctx.ellipse(x, y - 6 * S, 20 * S, 8 * S, 0, Math.PI, 0);
   ctx.fill();
 
-  // Label
-  ctx.font = 'bold 10px monospace';
+  ctx.font = `bold ${fs(12)}px monospace`;
   ctx.fillStyle = '#ff66ff';
   ctx.shadowColor = '#ff00ff';
   ctx.shadowBlur = 8;
@@ -1010,51 +1116,55 @@ function drawSaucer() {
   ctx.fillText('<marquee>', x, y + 1);
   ctx.shadowBlur = 0;
 
-  // Blinking lights
   for (let i = 0; i < 5; i++) {
     const angle = (Date.now() * 0.005 + i * Math.PI * 2 / 5);
     const lx = x + Math.cos(angle) * (saucer.w / 2 - 3);
-    const ly = y + Math.sin(angle) * 5;
+    const ly = y + Math.sin(angle) * 5 * S;
     ctx.fillStyle = i % 2 ? '#ff00ff' : '#ffff00';
-    ctx.fillRect(lx - 1, ly - 1, 2, 2);
+    ctx.fillRect(lx - 1 * S, ly - 1 * S, 2 * S, 2 * S);
   }
 }
 
 function drawHUD() {
-  const barW = Math.min(180, W * 0.2);
-  const barH = 14;
-  const hudY = 6;
-  const barGap = 4;
+  // Responsive HUD layout
+  const isNarrow = W < 600;
+  const barW = isNarrow ? Math.min(W * 0.44, 200) : Math.min(180, W * 0.2);
+  const barH = Math.round(16 * S);
+  const hudY = Math.round(6 * S);
+  const barGap = Math.round(4 * S);
 
   // Score
-  ctx.font = 'bold 13px monospace';
+  ctx.font = `bold ${fs(14)}px monospace`;
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(`SCORE ${score}`, 10, hudY);
+  ctx.fillText(`SCORE ${score}`, Math.round(10 * S), hudY);
 
   // High score
-  ctx.font = '9px monospace';
+  ctx.font = `${fs(10)}px monospace`;
   ctx.fillStyle = '#555';
-  ctx.fillText(`HI ${highScore}`, 10, hudY + 17);
+  ctx.fillText(`HI ${highScore}`, Math.round(10 * S), hudY + fs(17));
 
-  // Wave / Page
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#888';
-  ctx.fillText(`PAGE ${wave}`, W / 2, hudY);
+  // Page + enemy count
+  if (!isNarrow) {
+    ctx.font = `bold ${fs(13)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#888';
+    ctx.fillText(`PAGE ${wave}`, W / 2, hudY);
 
-  // Enemy count
-  const badLeft = enemies.filter(e => e.alive && e.bad).length;
-  const goodLeft = enemies.filter(e => e.alive && !e.bad).length;
-  ctx.font = '8px monospace';
-  ctx.fillStyle = '#ff4444';
-  ctx.fillText(`BAD:${badLeft}`, W / 2 - 35, hudY + 16);
-  ctx.fillStyle = '#00cc66';
-  ctx.fillText(`OK:${goodLeft}`, W / 2 + 35, hudY + 16);
+    const badLeft = enemies.filter(e => e.alive && e.bad).length;
+    const goodLeft = enemies.filter(e => e.alive && !e.bad).length;
+    ctx.font = `${fs(9)}px monospace`;
+    ctx.fillStyle = '#ff4444';
+    ctx.fillText(`BAD:${badLeft}`, W / 2 - 35 * S, hudY + fs(16));
+    ctx.fillStyle = '#00cc66';
+    ctx.fillText(`OK:${goodLeft}`, W / 2 + 35 * S, hudY + fs(16));
+  }
 
-  // --- Tech Debt meter ---
-  const tdX = W - barW - 10;
+  // --- Meters (top-right, or stacked on narrow) ---
+  const tdX = W - barW - Math.round(10 * S);
+
+  // Tech Debt meter
   ctx.fillStyle = '#111';
   ctx.fillRect(tdX, hudY, barW, barH);
 
@@ -1072,12 +1182,13 @@ function drawHUD() {
   ctx.lineWidth = 1;
   ctx.strokeRect(tdX, hudY, barW, barH);
 
-  ctx.font = 'bold 8px monospace';
+  ctx.font = `bold ${fs(9)}px monospace`;
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
-  ctx.fillText(`TECH DEBT ${Math.floor(techDebt)}%`, tdX + barW / 2, hudY + barH / 2 + 1);
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`DEBT ${Math.floor(techDebt)}%`, tdX + barW / 2, hudY + barH / 2);
 
-  // --- Semantics meter ---
+  // Semantics meter
   const semY = hudY + barH + barGap;
   ctx.fillStyle = '#111';
   ctx.fillRect(tdX, semY, barW, barH);
@@ -1095,10 +1206,20 @@ function drawHUD() {
   ctx.lineWidth = 1;
   ctx.strokeRect(tdX, semY, barW, barH);
 
-  ctx.font = 'bold 8px monospace';
+  ctx.font = `bold ${fs(9)}px monospace`;
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
-  ctx.fillText(`SEMANTICS ${Math.floor(semantics)}%`, tdX + barW / 2, semY + barH / 2 + 1);
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`SEM ${Math.floor(semantics)}%`, tdX + barW / 2, semY + barH / 2);
+
+  // On narrow screens, show PAGE below meters
+  if (isNarrow) {
+    const badLeft = enemies.filter(e => e.alive && e.bad).length;
+    ctx.font = `bold ${fs(10)}px monospace`;
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'center';
+    ctx.fillText(`PAGE ${wave}  BAD:${badLeft}`, tdX + barW / 2, semY + barH + barGap + fs(6));
+  }
 }
 
 function drawParticles() {
@@ -1122,7 +1243,7 @@ function drawFlashMessages() {
   for (const f of flashMessages) {
     ctx.save();
     ctx.globalAlpha = Math.max(0, f.life);
-    ctx.font = 'bold 10px monospace';
+    ctx.font = `bold ${fs(12)}px monospace`;
     ctx.fillStyle = f.color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1144,7 +1265,6 @@ function drawTitleScreen() {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
 
-  // Animated stars
   for (const s of titleStars) {
     s.y += s.speed;
     if (s.y > 1) { s.y = 0; s.x = Math.random(); }
@@ -1154,19 +1274,19 @@ function drawTitleScreen() {
   }
 
   titleBlink++;
-  const cy = H * 0.25;
 
-  // Big title
-  const titleSize = Math.min(64, W * 0.09);
+  const usableH = gameBottom;
+  const cy = usableH * 0.18;
+
+  // Big title - scales with screen width
+  const titleSize = Math.min(fs(64), W * 0.1);
   ctx.font = `bold ${titleSize}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Shadow
   ctx.fillStyle = '#440000';
   ctx.fillText('DIV VADERS', W / 2 + 3, cy + 3);
 
-  // Main
   ctx.shadowColor = '#ff0044';
   ctx.shadowBlur = 25;
   ctx.fillStyle = '#ff2244';
@@ -1174,77 +1294,81 @@ function drawTitleScreen() {
   ctx.shadowBlur = 0;
 
   // Subtitle
-  ctx.font = 'bold 12px monospace';
+  ctx.font = `bold ${fs(12)}px monospace`;
   ctx.fillStyle = '#666';
-  ctx.fillText('CAN YOU WIN THE MARKUP BATTLE?', W / 2, cy + titleSize * 0.6);
+  ctx.fillText('THE MARKUP BATTLE', W / 2, cy + titleSize * 0.65);
 
   // Enemy showcase
-  const showY = cy + titleSize * 0.6 + 40;
+  const showY = cy + titleSize * 0.65 + fs(30);
   const lineup = [
-    { tag: '<div>', color: '#ff2244', pts: '10', desc: 'MEANINGLESS' },
+    { tag: '<div>', color: '#ff2244', pts: '10', desc: 'ENEMY' },
     { tag: '<font>', color: '#ff6644', pts: '30', desc: 'OBSOLETE' },
     { tag: '<blink>', color: '#ff8844', pts: '30', desc: 'DEPRECATED' },
-    { tag: '<center>', color: '#ff6644', pts: '30', desc: 'PRESENTATIONAL' },
-    { tag: '<marquee>', color: '#ff00ff', pts: '50', desc: 'SAUCER BOSS' },
+    { tag: '<marquee>', color: '#ff00ff', pts: '50', desc: 'SAUCER' },
   ];
 
-  ctx.font = '10px monospace';
+  const lineH = fs(22);
+  ctx.font = `${fs(11)}px monospace`;
   lineup.forEach((s, i) => {
-    const sy = showY + i * 24;
+    const sy = showY + i * lineH;
     ctx.fillStyle = s.color;
     ctx.textAlign = 'right';
     ctx.shadowColor = s.color;
     ctx.shadowBlur = 4;
-    ctx.fillText(s.tag, W / 2 - 30, sy);
+    ctx.fillText(s.tag, W / 2 - fs(20), sy);
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#ffff00';
     ctx.textAlign = 'center';
-    ctx.fillText(`= ${s.pts} PTS`, W / 2 + 30, sy);
-    ctx.fillStyle = '#444';
+    ctx.fillText(`${s.pts}`, W / 2 + fs(15), sy);
+    ctx.fillStyle = '#555';
     ctx.textAlign = 'left';
-    ctx.fillText(s.desc, W / 2 + 75, sy);
+    ctx.fillText(s.desc, W / 2 + fs(40), sy);
   });
 
-  // Warning box
-  const warnY = showY + lineup.length * 24 + 20;
-  ctx.strokeStyle = '#00ff8844';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(W / 2 - 180, warnY - 10, 360, 45);
-
-  ctx.font = 'bold 11px monospace';
+  // Warning
+  const warnY = showY + lineup.length * lineH + fs(18);
+  ctx.font = `bold ${fs(11)}px monospace`;
   ctx.fillStyle = '#00ff88';
   ctx.textAlign = 'center';
-  ctx.fillText('CAUTION: DON\'T SHOOT SEMANTIC TAGS!', W / 2, warnY + 4);
-  ctx.font = '8px monospace';
-  ctx.fillStyle = '#448866';
-  ctx.fillText('<header> <nav> <main> <article> <section> <aside> <footer>', W / 2, warnY + 20);
+  ctx.fillText('DON\'T SHOOT SEMANTIC TAGS!', W / 2, warnY);
 
-  // Meters explanation
-  const meterY = warnY + 55;
-  ctx.font = '9px monospace';
+  ctx.font = `${fs(9)}px monospace`;
+  ctx.fillStyle = '#448866';
+  const tagLine = W < 500
+    ? '<header> <nav> <main> <article>'
+    : '<header> <nav> <main> <article> <section> <aside> <footer>';
+  ctx.fillText(tagLine, W / 2, warnY + fs(16));
+
+  // Meter explanation
+  const meterY = warnY + fs(36);
+  ctx.font = `${fs(10)}px monospace`;
   ctx.fillStyle = '#ff4444';
-  ctx.fillText('TECH DEBT hits 100% + SEMANTICS hits 0% = GAME OVER', W / 2, meterY);
+  ctx.fillText('DEBT 100% + SEMANTICS 0% = GAME OVER', W / 2, meterY);
   ctx.fillStyle = '#00cc66';
-  ctx.fillText('CLEAR A PAGE = -25% DEBT & +25% SEMANTICS', W / 2, meterY + 16);
+  ctx.fillText('CLEAR A PAGE = -25% DEBT +25% SEM', W / 2, meterY + fs(16));
 
   // Start prompt
   if (Math.floor(titleBlink / 25) % 2) {
-    ctx.font = 'bold 18px monospace';
+    ctx.font = `bold ${fs(20)}px monospace`;
     ctx.fillStyle = '#00ffff';
     ctx.shadowColor = '#00ffff';
     ctx.shadowBlur = 15;
-    ctx.fillText('PRESS SPACE TO START', W / 2, H * 0.82);
+    const startText = isMobile ? 'TAP TO START' : 'PRESS SPACE TO START';
+    ctx.fillText(startText, W / 2, usableH * 0.82);
     ctx.shadowBlur = 0;
   }
 
   // Controls
-  ctx.font = '9px monospace';
-  ctx.fillStyle = '#333';
-  ctx.fillText('ARROWS / WASD = MOVE     SPACE / UP / W = FIRE', W / 2, H * 0.89);
+  if (!isMobile) {
+    ctx.font = `${fs(10)}px monospace`;
+    ctx.fillStyle = '#333';
+    ctx.fillText('ARROWS / WASD = MOVE     SPACE = FIRE', W / 2, usableH * 0.90);
+  }
 
   if (highScore > 0) {
+    ctx.font = `${fs(10)}px monospace`;
     ctx.fillStyle = '#555';
-    ctx.fillText(`HIGH SCORE: ${highScore}`, W / 2, H * 0.93);
+    ctx.fillText(`HIGH SCORE: ${highScore}`, W / 2, usableH * 0.94);
   }
 
   drawScanlines();
@@ -1255,46 +1379,49 @@ function drawGameOverScreen() {
   ctx.fillStyle = 'rgba(0,0,0,0.85)';
   ctx.fillRect(0, 0, W, H);
 
-  const cy = H / 2;
+  const cy = gameBottom / 2;
 
-  ctx.font = `bold ${Math.min(52, W * 0.07)}px monospace`;
+  const goSize = Math.min(fs(52), W * 0.09);
+  ctx.font = `bold ${goSize}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#ff0000';
   ctx.shadowColor = '#ff0000';
   ctx.shadowBlur = 20;
-  ctx.fillText('GAME OVER', W / 2, cy - 70);
+  ctx.fillText('GAME OVER', W / 2, cy - fs(50));
   ctx.shadowBlur = 0;
 
-  ctx.font = '13px monospace';
+  ctx.font = `${fs(13)}px monospace`;
   ctx.fillStyle = '#ff4444';
-  ctx.fillText('THE WEB HAS FALLEN TO DIV SOUP', W / 2, cy - 30);
-  ctx.font = '10px monospace';
+  ctx.fillText('THE WEB HAS FALLEN TO DIV SOUP', W / 2, cy - fs(20));
+
+  ctx.font = `${fs(10)}px monospace`;
   ctx.fillStyle = '#883333';
-  ctx.fillText('VALIDITY HAS BEEN EXTINGUISHED IN CYBERSPACE', W / 2, cy - 12);
+  ctx.fillText('VALIDITY EXTINGUISHED', W / 2, cy - fs(4));
 
-  ctx.font = 'bold 18px monospace';
+  ctx.font = `bold ${fs(20)}px monospace`;
   ctx.fillStyle = '#fff';
-  ctx.fillText(`SCORE: ${score}`, W / 2, cy + 20);
+  ctx.fillText(`SCORE: ${score}`, W / 2, cy + fs(25));
 
-  ctx.font = '12px monospace';
+  ctx.font = `${fs(13)}px monospace`;
   ctx.fillStyle = '#888';
-  ctx.fillText(`PAGES CLEARED: ${wave - 1}`, W / 2, cy + 45);
+  ctx.fillText(`PAGES CLEARED: ${wave - 1}`, W / 2, cy + fs(48));
 
   if (score >= highScore && score > 0) {
-    ctx.font = 'bold 14px monospace';
+    ctx.font = `bold ${fs(15)}px monospace`;
     ctx.fillStyle = '#ffff00';
     ctx.shadowColor = '#ffff00';
     ctx.shadowBlur = 8;
-    ctx.fillText('NEW HIGH SCORE!', W / 2, cy + 70);
+    ctx.fillText('NEW HIGH SCORE!', W / 2, cy + fs(72));
     ctx.shadowBlur = 0;
   }
 
   titleBlink++;
   if (Math.floor(titleBlink / 25) % 2) {
-    ctx.font = 'bold 14px monospace';
+    ctx.font = `bold ${fs(16)}px monospace`;
     ctx.fillStyle = '#00ffff';
-    ctx.fillText('PRESS SPACE TO CONTINUE', W / 2, cy + 105);
+    const contText = isMobile ? 'TAP TO CONTINUE' : 'PRESS SPACE TO CONTINUE';
+    ctx.fillText(contText, W / 2, cy + fs(100));
   }
 
   drawScanlines();
@@ -1305,29 +1432,30 @@ function drawWaveClearOverlay() {
   ctx.fillStyle = 'rgba(0, 10, 5, 0.5)';
   ctx.fillRect(0, 0, W, H);
 
+  const cy = gameBottom / 2;
   const pulse = Math.sin(Date.now() * 0.01) * 0.3 + 0.7;
 
-  ctx.font = `bold ${Math.min(44, W * 0.06)}px monospace`;
+  const clearSize = Math.min(fs(44), W * 0.07);
+  ctx.font = `bold ${clearSize}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = `rgba(0, 255, 136, ${pulse})`;
   ctx.shadowColor = '#00ff88';
   ctx.shadowBlur = 25;
-  ctx.fillText(`PAGE ${wave} CLEARED!`, W / 2, H / 2 - 30);
+  ctx.fillText(`PAGE ${wave} CLEARED!`, W / 2, cy - fs(20));
   ctx.shadowBlur = 0;
 
-  ctx.font = 'bold 14px monospace';
+  ctx.font = `bold ${fs(15)}px monospace`;
   ctx.fillStyle = '#00ff88';
-  ctx.fillText('VALID MARKUP RESTORED', W / 2, H / 2 + 5);
+  ctx.fillText('VALID MARKUP RESTORED', W / 2, cy + fs(10));
 
-  ctx.font = '12px monospace';
+  ctx.font = `${fs(13)}px monospace`;
   ctx.fillStyle = '#88ffaa';
-  ctx.fillText('TECH DEBT -25%   SEMANTICS +25%', W / 2, H / 2 + 30);
+  ctx.fillText('DEBT -25%   SEMANTICS +25%', W / 2, cy + fs(32));
 }
 
 // --- GAME FIELD ---
 function drawGameField() {
-  // Background
   ctx.fillStyle = '#000008';
   ctx.fillRect(0, 0, W, H);
 
@@ -1341,8 +1469,8 @@ function drawGameField() {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 
-  // Ground line - "content zone"
-  const groundY = H - 38;
+  // Ground line - content zone
+  const groundY = gameBottom - 8;
   ctx.strokeStyle = '#00ffff15';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
@@ -1351,11 +1479,6 @@ function drawGameField() {
   ctx.lineTo(W, groundY);
   ctx.stroke();
   ctx.setLineDash([]);
-
-  ctx.font = '7px monospace';
-  ctx.fillStyle = '#0a2a2a';
-  ctx.textAlign = 'center';
-  ctx.fillText('— YOUR CONTENT ZONE —', W / 2, H - 18);
 
   // Draw enemies
   for (const e of enemies) {
