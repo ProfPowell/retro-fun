@@ -65,7 +65,7 @@ module.exports = function (eleventyConfig) {
       input: "src",
       output: "docs",
     },
-    pathPrefix: "/retro-fun/",
+    pathPrefix: "/",
     markdownTemplateEngine: "njk",
     htmlTemplateEngine: "njk",
   };
