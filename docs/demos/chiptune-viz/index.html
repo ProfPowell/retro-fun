@@ -17,7 +17,7 @@
     top: 1rem;
     right: 1rem;
     font-family: 'Courier New', monospace;
-    font-size: 0.7rem;
+    font-size: 0.9rem; padding: 0.5rem;
     color: #333;
     text-decoration: none;
     letter-spacing: 0.15em;
@@ -68,8 +68,8 @@
     border: 1px solid #333;
     color: #666;
     font-family: 'Courier New', monospace;
-    font-size: 0.65rem;
-    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
     cursor: pointer;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -108,9 +108,14 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
 let W, H;
+let S = 1;
+function fs(px) { return Math.round(px * S); }
+
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  const minDim = Math.min(W, H);
+  S = Math.min(2.5, Math.max(1, 580 / minDim));
 }
 window.addEventListener('resize', resize);
 resize();
@@ -367,7 +372,7 @@ function drawScope() {
   }
 
   // Center text
-  ctx.font = '10px monospace';
+  ctx.font = `${fs(10)}px monospace`;
   ctx.fillStyle = '#ffffff44';
   ctx.textAlign = 'center';
   ctx.fillText('CHIPTUNE', cx, cy - 5);
@@ -388,7 +393,7 @@ function draw() {
   }
 
   // Title
-  ctx.font = '10px monospace';
+  ctx.font = `${fs(10)}px monospace`;
   ctx.fillStyle = '#333';
   ctx.textAlign = 'left';
   ctx.fillText('CHIPTUNE VISUALIZER // 8-BIT AUDIO', 16, H - 16);

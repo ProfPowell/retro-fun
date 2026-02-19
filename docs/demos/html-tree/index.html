@@ -10,14 +10,14 @@
   canvas { display: block; margin: 0 auto; }
   .back {
     position: fixed; top: 1rem; right: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    font-family: 'Courier New', monospace; font-size: 0.9rem; padding: 0.5rem;
     color: #444; text-decoration: none; letter-spacing: 0.15em;
     text-transform: uppercase; z-index: 10;
   }
   .back:hover { color: #00ff88; }
   .hud {
     position: fixed; top: 1rem; left: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.6rem;
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
     color: #333; letter-spacing: 0.1em; pointer-events: none; z-index: 10;
   }
 </style>
@@ -33,6 +33,9 @@ const ctx = canvas.getContext('2d');
 // Size to viewport
 const W = canvas.width = window.innerWidth;
 const H = canvas.height = Math.max(window.innerHeight, 900);
+const minDim = Math.min(W, H);
+const S = Math.min(2.5, Math.max(1, 580 / minDim));
+function fs(px) { return Math.round(px * S); }
 
 let time = 0;
 
@@ -148,7 +151,7 @@ function drawBark(x, y, width, height, tag, depth) {
   ctx.clip();
 
   const fontSize = Math.max(6, Math.min(10, width * 0.5));
-  ctx.font = `${fontSize}px monospace`;
+  ctx.font = `${fs(fontSize)}px monospace`;
   ctx.textAlign = 'center';
 
   const label = `<${tag}>`;
@@ -192,7 +195,7 @@ function drawLeaf(x, y, size, tag) {
 
   // Tag label
   ctx.fillStyle = color;
-  ctx.font = `bold ${Math.max(7, leafSize * 0.6)}px monospace`;
+  ctx.font = `bold ${fs(Math.max(7, leafSize * 0.6))}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(`<${tag}>`, 0, 0);
@@ -249,7 +252,7 @@ function drawGround() {
 
   // Grass made of tiny tags
   const grassTags = ['<div>', '<p>', '<br>', '<hr>', '<li>', '<td>'];
-  ctx.font = '7px monospace';
+  ctx.font = `${fs(7)}px monospace`;
   for (let gx = 0; gx < W; gx += 12) {
     const sway = Math.sin(time * 1.5 + gx * 0.05) * 3;
     const height = 8 + Math.sin(gx * 0.3) * 4;
@@ -273,7 +276,7 @@ function drawGround() {
 
 // Sky - stars made of comment tags
 function drawSky() {
-  ctx.font = '6px monospace';
+  ctx.font = `${fs(6)}px monospace`;
   ctx.fillStyle = '#ffffff11';
   let rng = 42;
   for (let i = 0; i < 60; i++) {
@@ -291,7 +294,7 @@ function drawSky() {
 // Roots
 function drawRoots(cx, groundY) {
   const rootTags = ['<!DOCTYPE>', '<html>', '<head>', '<meta>', '<link>'];
-  ctx.font = '7px monospace';
+  ctx.font = `${fs(7)}px monospace`;
 
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * Math.PI * 0.8 + Math.PI * 0.1;
@@ -317,7 +320,7 @@ function drawRoots(cx, groundY) {
 function drawTitle(cx, groundY) {
   const y = groundY - 30;
   ctx.save();
-  ctx.font = 'bold 11px monospace';
+  ctx.font = `bold ${fs(11)}px monospace`;
   ctx.textAlign = 'center';
   ctx.fillStyle = '#5a4a2a';
   ctx.fillText('THE HTML TREE', cx, y);

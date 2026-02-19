@@ -14,7 +14,7 @@
   }
   .back {
     position: fixed; top: 1rem; right: 1rem;
-    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    font-family: 'Courier New', monospace; font-size: 0.9rem; padding: 0.5rem;
     color: #444; text-decoration: none; letter-spacing: 0.15em;
     text-transform: uppercase; z-index: 100;
   }
@@ -28,7 +28,7 @@
     color: #ff00ff;
     text-shadow: 0 0 20px #ff00ff44;
   }
-  header p { color: #444; font-size: 0.7rem; letter-spacing: 0.2em; margin-top: 0.3rem; }
+  header p { color: #444; font-size: 0.85rem; letter-spacing: 0.2em; margin-top: 0.3rem; }
 
   .scene-list {
     display: flex; gap: 0.5rem; justify-content: center;
@@ -36,8 +36,8 @@
   }
   .scene-btn {
     background: none; border: 1px solid #333; color: #666;
-    font-family: 'Courier New', monospace; font-size: 0.6rem;
-    padding: 0.35rem 0.7rem; cursor: pointer; letter-spacing: 0.1em;
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
+    padding: 0.45rem 0.8rem; cursor: pointer; letter-spacing: 0.1em;
     text-transform: uppercase; transition: all 0.2s;
   }
   .scene-btn:hover { border-color: #00ffff; color: #00ffff; }
@@ -56,7 +56,7 @@
   }
   .pane-header {
     background: #1a1a1a; padding: 0.5rem 0.8rem; border-bottom: 1px solid #222;
-    font-size: 0.6rem; color: #555; letter-spacing: 0.15em; text-transform: uppercase;
+    font-size: 0.8rem; color: #555; letter-spacing: 0.15em; text-transform: uppercase;
     display: flex; align-items: center; gap: 0.5rem;
   }
   .pane-header .dot { width: 6px; height: 6px; border-radius: 50%; }
@@ -175,7 +175,7 @@
   .status {
     position: fixed; bottom: 0; left: 0; right: 0;
     background: #111; border-top: 1px solid #222;
-    padding: 0.4rem 1rem; font-size: 0.6rem; color: #444;
+    padding: 0.4rem 1rem; font-size: 0.8rem; color: #444;
     display: flex; justify-content: space-between;
     letter-spacing: 0.1em;
   }
@@ -326,7 +326,7 @@ const scenes = {
     steps: [
       { code: '<span class="syn-comment">&lt;!-- div soup, the developers favorite --&gt;</span>', render: null, delay: 500 },
       { code: '<span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"wrapper"</span><span class="syn-tag">&gt;</span>',
-        render: '<div id="nest-0" style="border:1px solid #ff00ff;padding:12px;margin:4px;opacity:0;font-size:0.55rem;color:#ff00ff66" class="anim-fadein">&lt;div class="wrapper"&gt;</div>', delay: 400 },
+        render: '<div id="nest-0" style="border:1px solid #ff00ff;padding:12px;margin:4px;opacity:0;font-size:0.75rem;color:#ff00ff66" class="anim-fadein">&lt;div class="wrapper"&gt;</div>', delay: 400 },
       { code: '  <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"container"</span><span class="syn-tag">&gt;</span>',
         renderAction: 'nestDiv:nest-0:container:#00ffff', delay: 400 },
       { code: '    <span class="syn-tag">&lt;div</span> <span class="syn-attr">class</span>=<span class="syn-val">"inner"</span><span class="syn-tag">&gt;</span>',
@@ -571,7 +571,7 @@ function executeAction(action) {
       div.style.padding = '10px';
       div.style.margin = '6px 0 0 0';
       div.style.opacity = '0';
-      div.style.fontSize = '0.55rem';
+      div.style.fontSize = '0.75rem';
       div.style.color = color + '66';
       div.style.transition = 'opacity 0.3s ease';
       div.innerHTML = `&lt;div class="${cls}"&gt;`;
