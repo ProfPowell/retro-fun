@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 <title>Div Vaders // RETRO FUN</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+  html { overscroll-behavior: none; }
   body {
     background: #000;
     overflow: hidden;
     font-family: 'Courier New', monospace;
-    touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
@@ -31,7 +31,6 @@
     position: fixed;
     bottom: 0; left: 0; right: 0;
     z-index: 20;
-    touch-action: none;
     -webkit-user-select: none;
     user-select: none;
   }
@@ -135,9 +134,57 @@ function resize() {
   }
 
   gameBottom = H - touchH;
+
+  // Re-clamp enemy formation to new viewport bounds
+  if (enemies.length > 0) {
+    let aliveMinLX = Infinity, aliveMaxLX = -Infinity, aliveMaxLY = -Infinity;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      aliveMinLX = Math.min(aliveMinLX, e.localX);
+      aliveMaxLX = Math.max(aliveMaxLX, e.localX + e.w);
+      aliveMaxLY = Math.max(aliveMaxLY, e.localY + e.h);
+    }
+    if (aliveMaxLX !== -Infinity) {
+      if (formationX + aliveMaxLX > W - 10) formationX = W - 10 - aliveMaxLX;
+      if (formationX + aliveMinLX < 10) formationX = 10 - aliveMinLX;
+      if (formationY + aliveMaxLY > gameBottom - 50 * S) {
+        formationY = gameBottom - 50 * S - aliveMaxLY;
+      }
+      if (formationY < 10) formationY = 10;
+    }
+  }
 }
 window.addEventListener('resize', resize);
 resize();
+
+// Prevent iOS Safari pinch-zoom gestures
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
+
+// Prevent multi-touch zoom on Chrome/Firefox
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+// Visual Viewport zoom recovery
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    if (window.visualViewport.scale !== 1) {
+      var vp = document.querySelector('meta[name="viewport"]');
+      vp.setAttribute('content', vp.getAttribute('content'));
+    }
+    resize();
+  });
+}
+
+// Orientation change — delayed resize for iOS viewport update
+window.addEventListener('orientationchange', function() {
+  setTimeout(resize, 150);
+});
 
 // Scaled font size helper
 function fs(px) { return Math.round(px * S); }
