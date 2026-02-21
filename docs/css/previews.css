@@ -422,6 +422,39 @@
   to { opacity: 1; transform: scaleX(1.05); }
 }
 
+/* Rug Pull preview */
+.preview-rugpull {
+  background: #0a0808;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+}
+.preview-rugpull::before {
+  content: '$RUGCOIN';
+  font-family: monospace; font-size: 1.4rem; font-weight: bold;
+  color: #cc9933;
+  text-shadow: 0 0 10px #cc993388, 0 0 20px #cc993344;
+  animation: rugpull-pulse 2s ease-in-out infinite;
+}
+.preview-rugpull::after {
+  content: '>>> PULL <<<';
+  position: absolute; bottom: 18%; left: 50%;
+  transform: translateX(-50%);
+  font-family: monospace; font-size: 0.75rem; font-weight: bold;
+  color: #ff3333;
+  text-shadow: 0 0 8px #ff3333;
+  animation: rugpull-yank 1.5s ease-in-out infinite;
+}
+@keyframes rugpull-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+@keyframes rugpull-yank {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  30% { transform: translateX(-50%) translateY(-4px); }
+  50% { transform: translateX(-30%) translateY(2px); opacity: 0.5; }
+  70% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
+}
+
 /* === GAME SECTION PREVIEWS === */
 .preview-replyguy {
   background: #0a0a0a;

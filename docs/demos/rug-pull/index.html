@@ -1,0 +1,2258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<title>Rug Pull // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+  html { overscroll-behavior: none; }
+  body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  canvas { display: block; image-rendering: pixelated; }
+  .back {
+    position: fixed; top: 0.8rem; right: 0.8rem;
+    font-family: 'Courier New', monospace; font-size: 0.85rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 30;
+    padding: 0.4rem 0.6rem;
+  }
+  .back:hover { color: #00ffff; }
+
+  /* ===== TOUCH CONTROLS ===== */
+  #touch-ui {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 20;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #touch-ui.visible { display: flex; }
+
+  .touch-btn {
+    flex: 1;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 22px;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.05s;
+    letter-spacing: 0.1em;
+  }
+  .touch-btn-shill {
+    flex: 2;
+    color: #33ff33;
+    background: rgba(50, 255, 50, 0.08);
+    border-top: 1px solid rgba(50, 255, 50, 0.2);
+  }
+  .touch-btn-shill.active {
+    background: rgba(50, 255, 50, 0.25);
+  }
+  .touch-btn-pull {
+    flex: 1;
+    color: #ff4466;
+    background: rgba(255, 50, 80, 0.08);
+    border-top: 1px solid rgba(255, 50, 80, 0.2);
+  }
+  .touch-btn-pull.active {
+    background: rgba(255, 50, 80, 0.25);
+  }
+
+  @media (min-height: 700px) {
+    .touch-btn { height: 84px; }
+  }
+  @media (min-height: 900px) {
+    .touch-btn { height: 96px; }
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+
+<div id="touch-ui">
+  <div class="touch-btn touch-btn-shill" id="btn-shill">SHILL</div>
+  <div class="touch-btn touch-btn-pull" id="btn-pull">PULL</div>
+</div>
+
+<script>
+// =====================================================================
+// RUG PULL — A CRYPTO SCAM SIMULATOR
+// Launch shitcoins, lure normies, mash SHILL, yank the rug for profit.
+// =====================================================================
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+// =====================================================================
+// RESPONSIVE SCALING
+// =====================================================================
+
+let S = 1;
+let gameBottom;
+let touchH = 0;
+let isMobile = false;
+
+const touchUI = document.getElementById('touch-ui');
+const btnShill = document.getElementById('btn-shill');
+const btnPull = document.getElementById('btn-pull');
+
+function detectMobile() {
+  return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (W < 700);
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  isMobile = detectMobile();
+  const minDim = Math.min(W, H);
+  S = Math.min(2.5, Math.max(1, 580 / minDim));
+  if (isMobile) {
+    const btn = document.querySelector('.touch-btn');
+    touchH = btn ? btn.offsetHeight : 80;
+    touchUI.classList.add('visible');
+  } else {
+    touchH = 0;
+    touchUI.classList.remove('visible');
+  }
+  gameBottom = H - touchH;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Mobile touch prevention
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    if (window.visualViewport.scale !== 1) {
+      var vp = document.querySelector('meta[name="viewport"]');
+      vp.setAttribute('content', vp.getAttribute('content'));
+    }
+    resize();
+  });
+}
+window.addEventListener('orientationchange', function() {
+  setTimeout(resize, 150);
+});
+
+function fs(px) { return Math.round(px * S); }
+
+// =====================================================================
+// AUDIO ENGINE
+// =====================================================================
+
+let audioCtx;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  switch (type) {
+    case 'shill': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(800 + Math.random() * 400, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.05);
+      break;
+    }
+    case 'rug-pull': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.5);
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      const src = audioCtx.createBufferSource(); src.buffer = buf;
+      const ng = audioCtx.createGain();
+      ng.gain.setValueAtTime(0.1, now);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      src.connect(ng); ng.connect(audioCtx.destination);
+      src.start(now); src.stop(now + 0.3);
+      break;
+    }
+    case 'hype-up': {
+      [400, 500, 600, 800].forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, now + i * 0.06);
+        gain.gain.linearRampToValueAtTime(0.05, now + i * 0.06 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.15);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.06); osc.stop(now + i * 0.06 + 0.15);
+      });
+      break;
+    }
+    case 'event-hit': {
+      [1200, 1600].forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.07, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.12);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.08); osc.stop(now + i * 0.08 + 0.12);
+      });
+      break;
+    }
+    case 'event-miss': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.2);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.2);
+      break;
+    }
+    case 'busted': {
+      for (let k = 0; k < 3; k++) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(k % 2 ? 600 : 400, now + k * 0.2);
+        gain.gain.setValueAtTime(0.1, now + k * 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + k * 0.2 + 0.18);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + k * 0.2); osc.stop(now + k * 0.2 + 0.18);
+      }
+      break;
+    }
+    case 'money': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2000, now);
+      osc.frequency.exponentialRampToValueAtTime(3000, now + 0.06);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.08);
+      break;
+    }
+    case 'game-over': {
+      [300, 250, 200, 100].forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.1, now + i * 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.2 + 0.3);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.2); osc.stop(now + i * 0.2 + 0.3);
+      });
+      break;
+    }
+    case 'shred': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1500, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.04);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.04);
+      break;
+    }
+    case 'jump': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.1);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.12);
+      break;
+    }
+    case 'hack': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 600 + Math.random() * 600;
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.1);
+      break;
+    }
+    case 'success': {
+      [523, 659, 784, 1047].forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, now + i * 0.1);
+        gain.gain.linearRampToValueAtTime(0.06, now + i * 0.1 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.2);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.2);
+      });
+      break;
+    }
+    case 'fail': {
+      [300, 200, 150].forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.08, now + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.2);
+      });
+      break;
+    }
+  }
+}
+
+// =====================================================================
+// GAME STATES
+// =====================================================================
+
+const ST = {
+  TITLE: 0, COIN_INTRO: 1, PUMPING: 2, PULLING: 3,
+  CONSEQUENCE: 4, MINIGAME: 5, ROUND_CLEAR: 6, BUSTED: 7, GAME_OVER: 8
+};
+
+let state = ST.TITLE;
+let stateTimer = 0;
+
+// =====================================================================
+// COIN NAMES
+// =====================================================================
+
+const CURATED_COINS = [
+  '$MOONCAT', '$ELONDOGE', '$SAFERUG', '$DEFINITELYNOTASCAM', '$RUGBUCKS',
+  '$MOONSAFE', '$DOGEMOON', '$SHIBARUG', '$CUMROCKET', '$BABYDOGE',
+  '$ELONGATE', '$SAFEMARS', '$BONFIRE', '$FEGTOKEN', '$PITBULL',
+  '$HOGECOIN', '$DOGELON', '$CUMMIES', '$BINGUS', '$GRUMPY',
+  '$MOONSHOT', '$RUGZILLA', '$APECOIN', '$PEPERUG', '$WOJAK',
+  '$NOTARUG', '$TRUSTME', '$100XGEM', '$LAMBOCOIN', '$WAGMITOKEN',
+  '$DIAMONDRUG', '$COPIUM', '$HOPIUM', '$YOLOCOIN', '$MEMECASH',
+  '$SCAMINU', '$PONZICOIN', '$YIELDRUG', '$DEFISCAM', '$NGMI'
+];
+let curatedPool = [];
+
+const PREFIXES = ['SAFE', 'MEGA', 'BABY', 'MOON', 'SUPER', 'DOGE', 'SHIBA', 'CHAD', 'BASED', 'TURBO'];
+const ROOTS = ['INU', 'MOON', 'MARS', 'ROCKET', 'ELON', 'PEPE', 'RUG', 'APE', 'DEGEN', 'PUMP'];
+const SUFFIXES = ['420', '69', 'X', 'COIN', 'TOKEN', 'DAO', 'SWAP', 'VERSE', 'FI', '2.0'];
+
+function generateCoinName() {
+  if (curatedPool.length > 0 && Math.random() < 0.6) {
+    const idx = Math.floor(Math.random() * curatedPool.length);
+    return curatedPool.splice(idx, 1)[0];
+  }
+  const p = PREFIXES[Math.floor(Math.random() * PREFIXES.length)];
+  const r = ROOTS[Math.floor(Math.random() * ROOTS.length)];
+  const s = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)];
+  return '$' + p + r + s;
+}
+
+// =====================================================================
+// GAME DATA
+// =====================================================================
+
+let round = 0;
+let coinName = '';
+let totalProfit = 0;
+let roundProfit = 0;
+let hype = 0;
+let suspicion = 0;
+let mashCount = 0;
+let mashCooldown = 0;
+let lives = 3;
+let normies = [];
+let particles = [];
+let events = [];
+let shakeX = 0, shakeY = 0;
+let highScore = parseInt(localStorage.getItem('rugpull-high') || '0');
+
+// Shill phrases
+const SHILL_PHRASES = [
+  'TO THE MOON!', 'WAGMI!', 'NOT A RUG!', 'DIAMOND HANDS!', 'LFG!',
+  '100X EASY!', 'DYOR!', 'NFA!', 'TRUST ME BRO!', 'APE IN!',
+  'BULLISH!', 'DEV DOXXED!', 'AUDIT PASSED!', 'LP LOCKED!', 'NEXT BTC!',
+  'GENERATIONAL WEALTH!', 'FEW UNDERSTAND!', 'EARLY!', 'STILL CHEAP!',
+  'WHALE ALERT!', 'HODL!', 'PUMP IT!', 'BUY THE DIP!', 'GEM ALERT!',
+  'HUGE ANNOUNCEMENT!', 'PARTNERSHIP SOON!', '1000X POTENTIAL!', 'SAFU!'
+];
+
+// Event types
+const EVENT_TYPES = [
+  { name: 'CELEBRITY ENDORSEMENT', hype: 25, normies: 5, color: '#ffaa00' },
+  { name: 'EXCHANGE LISTING', hype: 30, normies: 6, color: '#00ff88' },
+  { name: 'VIRAL TIKTOK', hype: 20, normies: 8, color: '#ff00ff' },
+  { name: 'WHALE BUYS IN', hype: 35, normies: 4, color: '#00ddff' },
+  { name: 'ELON TWEET', hype: 40, normies: 7, color: '#ffff00' },
+  { name: 'FAKE PARTNERSHIP', hype: 22, normies: 5, color: '#ff8844' },
+  { name: 'INFLUENCER SHILL', hype: 18, normies: 6, color: '#ff66aa' },
+  { name: 'REDDIT FOMO', hype: 15, normies: 9, color: '#ff4500' },
+  { name: 'COINBASE RUMOR', hype: 28, normies: 5, color: '#0052ff' },
+  { name: 'NFT COLLAB', hype: 16, normies: 4, color: '#aa66ff' }
+];
+
+// VIP types
+const VIP_TYPES = [
+  { name: 'SENATOR', title: 'Senator', minigame: 'bribe', icon: '🏛' },
+  { name: 'SEC AGENT', title: 'SEC Agent', minigame: 'shred', icon: '📋' },
+  { name: 'FBI AGENT', title: 'FBI Agent', minigame: 'flee', icon: '🔍' },
+  { name: 'CRYPTO SLEUTH', title: 'On-Chain Sleuth', minigame: 'hack', icon: '🔗' },
+  { name: 'IRS AUDITOR', title: 'IRS Auditor', minigame: 'shred', icon: '💰' },
+  { name: 'JOURNALIST', title: 'Crypto Journalist', minigame: 'hack', icon: '📰' },
+  { name: 'RIVAL SCAMMER', title: 'Rival Scammer', minigame: 'bribe', icon: '🐍' },
+  { name: 'YOUR MOM', title: 'Your Mom', minigame: 'flee', icon: '👩' }
+];
+
+// Normie types
+const NORMIE_TYPES = [
+  { type: 'degen', color: '#33ff33', weight: 3 },
+  { type: 'retail', color: '#ffff33', weight: 4 },
+  { type: 'influencer', color: '#ff8833', weight: 2 },
+  { type: 'techbro', color: '#33ffff', weight: 2 },
+  { type: 'nftbro', color: '#ff66cc', weight: 1 }
+];
+const NORMIE_POOL = [];
+for (const nt of NORMIE_TYPES) for (let i = 0; i < nt.weight; i++) NORMIE_POOL.push(nt);
+
+// Countries for aliases
+const COUNTRIES = [
+  'Cayman Islands', 'Dubai', 'Singapore', 'Montenegro', 'El Salvador',
+  'Bahamas', 'Malta', 'Panama', 'Seychelles', 'Belize', 'Monaco', 'Andorra'
+];
+const FIRST_NAMES = [
+  'Chad', 'Kyle', 'Vlad', 'Satoshi', 'Vitalik', 'Pavel', 'Sergei',
+  'Dmitri', 'Viktor', 'Lucas', 'Andre', 'Marco', 'Raj', 'Wei'
+];
+const LAST_NAMES = [
+  'Rugman', 'Ponzini', 'McScam', 'DeFraud', 'Yieldsworth',
+  'Moonberg', 'Pumpstein', 'Dumpsky', 'Exitov', 'Liquidez'
+];
+
+let currentAlias = '';
+let currentCountry = '';
+
+function generateAlias() {
+  currentAlias = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)] + ' ' +
+    LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+  currentCountry = COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)];
+}
+
+// =====================================================================
+// DIFFICULTY
+// =====================================================================
+
+function getDifficulty() {
+  return {
+    hypeDecay: 0.03 + round * 0.005,
+    eventSpeed: 2 + round * 0.4,
+    hitZoneW: Math.max(40, 120 - round * 15),
+    vipChance: Math.min(0.8, 0.02 * normies.filter(n => n.onRug).length + round * 0.05),
+    suspicionRate: 0.005 + round * 0.002,
+    eventInterval: Math.max(120, 300 - round * 30),
+    forcePullTimer: round >= 5 ? Math.max(300, 900 - (round - 5) * 100) : 0
+  };
+}
+
+// =====================================================================
+// RUG GEOMETRY
+// =====================================================================
+
+function rugRect() {
+  const rw = Math.min(W * 0.65, 400);
+  const rh = rw * 0.45;
+  const rx = (W - rw) / 2;
+  const ry = gameBottom * 0.45;
+  return { x: rx, y: ry, w: rw, h: rh };
+}
+
+// =====================================================================
+// RUG PULL ANIMATION
+// =====================================================================
+
+let pullPhase = 0; // 0=idle, 1=slide, 2=yank, 3=settle
+let pullTimer = 0;
+let pullOffsetX = 0;
+let rugSlideDir = 1;
+
+// =====================================================================
+// EVENT SYSTEM
+// =====================================================================
+
+let eventTimer = 0;
+let nextEventIn = 180;
+
+function spawnEvent() {
+  const et = EVENT_TYPES[Math.floor(Math.random() * EVENT_TYPES.length)];
+  events.push({
+    type: et,
+    x: W + 10,
+    y: gameBottom * 0.12 + Math.random() * gameBottom * 0.08,
+    hit: false,
+    missed: false
+  });
+}
+
+// =====================================================================
+// FORCED PULL
+// =====================================================================
+
+let forcePullCountdown = 0;
+let forcePullActive = false;
+
+// =====================================================================
+// MINIGAME DATA
+// =====================================================================
+
+let miniType = '';  // 'shred', 'bribe', 'flee', 'hack'
+let miniTimer = 0;
+let miniData = {};
+
+// =====================================================================
+// CONSEQUENCE DATA
+// =====================================================================
+
+let consequenceVIP = null;
+let consequenceTimer = 0;
+
+// =====================================================================
+// DRAWING HELPERS
+// =====================================================================
+
+function drawRug(offsetX) {
+  const r = rugRect();
+  const rx = r.x + (offsetX || 0);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(rx + 4, r.y + 4, r.w, r.h);
+
+  // Main rug body — deep red/maroon
+  ctx.fillStyle = '#5a1a1a';
+  ctx.fillRect(rx, r.y, r.w, r.h);
+
+  // Gold border
+  ctx.strokeStyle = '#cc9933';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(rx + 4, r.y + 4, r.w - 8, r.h - 8);
+
+  // Inner border pattern
+  ctx.strokeStyle = '#aa7722';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(rx + 10, r.y + 10, r.w - 20, r.h - 20);
+
+  // Diamond medallion center
+  const cx = rx + r.w / 2;
+  const cy = r.y + r.h / 2;
+  const ds = Math.min(r.w, r.h) * 0.18;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - ds);
+  ctx.lineTo(cx + ds, cy);
+  ctx.lineTo(cx, cy + ds);
+  ctx.lineTo(cx - ds, cy);
+  ctx.closePath();
+  ctx.fillStyle = '#cc9933';
+  ctx.fill();
+  ctx.fillStyle = '#3a0a0a';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - ds + 4);
+  ctx.lineTo(cx + ds - 4, cy);
+  ctx.lineTo(cx, cy + ds - 4);
+  ctx.lineTo(cx - ds + 4, cy);
+  ctx.closePath();
+  ctx.fill();
+
+  // Coin name on rug
+  ctx.fillStyle = '#cc9933';
+  ctx.font = `bold ${fs(10)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(coinName, cx, cy + 3);
+
+  // Fringe tassels at bottom
+  ctx.strokeStyle = '#cc9933';
+  ctx.lineWidth = 1;
+  for (let fx = rx + 6; fx < rx + r.w - 4; fx += 6) {
+    ctx.beginPath();
+    ctx.moveTo(fx, r.y + r.h);
+    ctx.lineTo(fx + (Math.random() - 0.5) * 2, r.y + r.h + 8);
+    ctx.stroke();
+  }
+
+  ctx.textAlign = 'left';
+}
+
+function drawNormie(n) {
+  const s = 2; // pixel scale
+  const x = Math.round(n.x);
+  const y = Math.round(n.y);
+  ctx.fillStyle = n.color;
+
+  // Head (3×3)
+  ctx.fillRect(x + s, y, s * 3, s * 3);
+  // Body (1×4)
+  ctx.fillRect(x + 2 * s, y + 3 * s, s, s * 4);
+  // Arms
+  ctx.fillRect(x, y + 4 * s, s * 5, s);
+  // Legs
+  ctx.fillRect(x + s, y + 7 * s, s, s * 2);
+  ctx.fillRect(x + 3 * s, y + 7 * s, s, s * 2);
+}
+
+function drawHypeMeter() {
+  const mw = 16;
+  const mh = gameBottom * 0.45;
+  const mx = 12;
+  const my = gameBottom * 0.25;
+
+  // Border
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(mx, my, mw, mh);
+
+  // Fill
+  const fillH = mh * Math.min(1, hype / 100);
+  const hRatio = hype / 100;
+  let col;
+  if (hRatio < 0.25) col = '#33ff33';
+  else if (hRatio < 0.5) col = '#aaff33';
+  else if (hRatio < 0.75) col = '#ffaa33';
+  else col = '#ff3333';
+
+  ctx.fillStyle = col;
+  ctx.fillRect(mx + 1, my + mh - fillH, mw - 2, fillH);
+
+  // Label
+  ctx.save();
+  ctx.translate(mx + mw / 2, my - 6);
+  ctx.fillStyle = '#888';
+  ctx.font = `${fs(8)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('HYPE', 0, 0);
+  ctx.restore();
+}
+
+function drawSuspicionMeter() {
+  const mw = 16;
+  const mh = gameBottom * 0.45;
+  const mx = W - 28;
+  const my = gameBottom * 0.25;
+
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(mx, my, mw, mh);
+
+  const fillH = mh * Math.min(1, suspicion / 100);
+  ctx.fillStyle = suspicion > 75 ? '#ff0000' : suspicion > 50 ? '#ff6600' : '#ff9900';
+  ctx.fillRect(mx + 1, my + mh - fillH, mw - 2, fillH);
+
+  ctx.save();
+  ctx.translate(mx + mw / 2, my - 6);
+  ctx.fillStyle = '#888';
+  ctx.font = `${fs(8)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('SUS', 0, 0);
+  ctx.restore();
+}
+
+function drawHUD() {
+  // Top-left: coin name + round
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = `bold ${fs(12)}px monospace`;
+  ctx.textAlign = 'left';
+  ctx.fillText(coinName, 12, fs(16));
+  ctx.fillStyle = '#888';
+  ctx.font = `${fs(9)}px monospace`;
+  ctx.fillText(`ROUND ${round}`, 12, fs(28));
+
+  // Top-center: normie count
+  const onRug = normies.filter(n => n.onRug).length;
+  ctx.fillStyle = '#aaa';
+  ctx.font = `${fs(10)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(`ON RUG: ${onRug}`, W / 2, fs(16));
+
+  // Threat icons based on round
+  if (round >= 2) {
+    ctx.font = `${fs(9)}px monospace`;
+    ctx.fillStyle = '#ff6666';
+    const threats = [];
+    if (round >= 2) threats.push('🔗');
+    if (round >= 3) threats.push('📰');
+    if (round >= 4) threats.push('🐍');
+    if (round >= 5) threats.push('⚠');
+    ctx.fillText(threats.join(' '), W / 2, fs(28));
+  }
+
+  // Top-right: total profit + lives
+  ctx.fillStyle = '#33ff33';
+  ctx.font = `bold ${fs(11)}px monospace`;
+  ctx.textAlign = 'right';
+  ctx.fillText('$' + totalProfit.toLocaleString(), W - 12, fs(16));
+  ctx.fillStyle = '#ff4444';
+  ctx.font = `${fs(12)}px monospace`;
+  let lifeStr = '';
+  for (let i = 0; i < 3; i++) lifeStr += i < lives ? '♦' : '◇';
+  ctx.fillText(lifeStr, W - 12, fs(30));
+
+  ctx.textAlign = 'left';
+
+  // Forced pull warning
+  if (forcePullActive && forcePullCountdown > 0) {
+    const secs = Math.ceil(forcePullCountdown / 60);
+    ctx.fillStyle = secs <= 3 ? '#ff0000' : '#ff8800';
+    ctx.font = `bold ${fs(14)}px monospace`;
+    ctx.textAlign = 'center';
+    const warn = `SEC RAID IN ${secs}s - PULL NOW!`;
+    ctx.fillText(warn, W / 2, gameBottom * 0.92);
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life--;
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.gravity) p.vy += 0.15;
+    const alpha = Math.max(0, p.life / p.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    if (p.text) {
+      ctx.font = `bold ${p.size || fs(10)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.textAlign = 'left';
+    } else {
+      ctx.fillRect(p.x, p.y, p.size || 3, p.size || 3);
+    }
+    ctx.globalAlpha = 1;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function spawnTextParticle(text, x, y, color, size) {
+  particles.push({
+    text, x, y, color,
+    vx: (Math.random() - 0.5) * 2,
+    vy: -1.5 - Math.random() * 2,
+    life: 50, maxLife: 50,
+    size: size || fs(10),
+    gravity: false
+  });
+}
+
+function spawnMoneyParticle(x, y) {
+  particles.push({
+    text: '$', x, y, color: '#33ff33',
+    vx: (Math.random() - 0.5) * 3,
+    vy: -2 - Math.random() * 3,
+    life: 60, maxLife: 60,
+    size: fs(12),
+    gravity: false
+  });
+}
+
+// =====================================================================
+// CRT SCANLINES
+// =====================================================================
+
+function drawScanlines() {
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillRect(0, y, W, 1);
+  }
+}
+
+// =====================================================================
+// TITLE SCREEN
+// =====================================================================
+
+let titleBlink = 0;
+
+function drawTitle() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // Title
+  ctx.fillStyle = '#ff3333';
+  ctx.font = `bold ${fs(28)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('RUG PULL', W / 2, H * 0.22);
+
+  // Subtitle
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = `${fs(11)}px monospace`;
+  ctx.fillText('A CRYPTO SCAM SIMULATOR', W / 2, H * 0.22 + fs(22));
+
+  // Description box
+  ctx.fillStyle = '#888';
+  ctx.font = `${fs(9)}px monospace`;
+  const desc = [
+    'Launch shitcoins. Lure normies onto the rug.',
+    'Mash SHILL to build hype. Tap events for bonuses.',
+    'Yank the rug for profit. Avoid the feds.',
+    '3 identities. Don\'t get caught.'
+  ];
+  desc.forEach((line, i) => {
+    ctx.fillText(line, W / 2, H * 0.38 + i * fs(15));
+  });
+
+  // Controls
+  ctx.fillStyle = '#555';
+  ctx.font = `${fs(8)}px monospace`;
+  if (isMobile) {
+    ctx.fillText('SHILL button = build hype  |  PULL button = yank rug', W / 2, H * 0.58);
+    ctx.fillText('Tap events as they scroll by', W / 2, H * 0.58 + fs(14));
+  } else {
+    ctx.fillText('SPACE / S = SHILL  |  ENTER / P = PULL  |  Click = tap events', W / 2, H * 0.58);
+  }
+
+  // Draw a preview rug
+  const pr = rugRect();
+  drawRug(0);
+
+  // High score
+  if (highScore > 0) {
+    ctx.fillStyle = '#ff6666';
+    ctx.font = `${fs(9)}px monospace`;
+    ctx.fillText(`HIGH SCORE: $${highScore.toLocaleString()}`, W / 2, H * 0.88);
+  }
+
+  // Blink prompt
+  titleBlink++;
+  if (titleBlink % 60 < 40) {
+    ctx.fillStyle = '#33ff33';
+    ctx.font = `bold ${fs(12)}px monospace`;
+    ctx.fillText(isMobile ? 'TAP TO START' : 'PRESS SPACE TO START', W / 2, H * 0.82);
+  }
+
+  ctx.textAlign = 'left';
+  drawScanlines();
+}
+
+// =====================================================================
+// COIN INTRO SCREEN
+// =====================================================================
+
+let introTimer = 0;
+
+function drawCoinIntro() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const progress = Math.min(1, introTimer / 90);
+
+  // Coin name reveal
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = `bold ${fs(22)}px monospace`;
+  ctx.textAlign = 'center';
+
+  if (progress < 0.3) {
+    // Scramble effect
+    let scrambled = '';
+    for (let i = 0; i < coinName.length; i++) {
+      scrambled += Math.random() < progress / 0.3 ? coinName[i] :
+        String.fromCharCode(33 + Math.floor(Math.random() * 90));
+    }
+    ctx.fillText(scrambled, W / 2, H * 0.35);
+  } else {
+    ctx.fillText(coinName, W / 2, H * 0.35);
+  }
+
+  // Round number
+  ctx.fillStyle = '#888';
+  ctx.font = `${fs(11)}px monospace`;
+  ctx.fillText(`ROUND ${round}`, W / 2, H * 0.35 + fs(25));
+
+  // Country/Alias
+  if (progress > 0.4) {
+    ctx.fillStyle = '#555';
+    ctx.font = `${fs(8)}px monospace`;
+    ctx.fillText(`Operating as: ${currentAlias}`, W / 2, H * 0.55);
+    ctx.fillText(`Location: ${currentCountry}`, W / 2, H * 0.55 + fs(14));
+  }
+
+  // Loading bar fake
+  if (progress > 0.5) {
+    const bw = W * 0.4;
+    const bx = (W - bw) / 2;
+    const by = H * 0.68;
+    ctx.strokeStyle = '#333';
+    ctx.strokeRect(bx, by, bw, 12);
+    const fill = Math.min(1, (progress - 0.5) / 0.5);
+    ctx.fillStyle = '#33ff33';
+    ctx.fillRect(bx + 1, by + 1, (bw - 2) * fill, 10);
+    ctx.fillStyle = '#33ff33';
+    ctx.font = `${fs(7)}px monospace`;
+    ctx.fillText('DEPLOYING CONTRACT...', W / 2, by + 28);
+  }
+
+  ctx.textAlign = 'left';
+  drawScanlines();
+}
+
+// =====================================================================
+// PUMPING STATE (Main gameplay)
+// =====================================================================
+
+function spawnNormie() {
+  if (normies.length >= 50) return;
+  const r = rugRect();
+  const nt = NORMIE_POOL[Math.floor(Math.random() * NORMIE_POOL.length)];
+  const fromLeft = Math.random() < 0.5;
+  const targetX = r.x + 10 + Math.random() * (r.w - 30);
+  const targetY = r.y + 10 + Math.random() * (r.h - 25);
+  normies.push({
+    x: fromLeft ? -10 : W + 10,
+    y: targetY,
+    targetX,
+    targetY,
+    color: nt.color,
+    type: nt.type,
+    onRug: false,
+    speed: 0.8 + Math.random() * 1.2,
+    flying: false,
+    vx: 0, vy: 0
+  });
+}
+
+function updateNormies() {
+  for (const n of normies) {
+    if (n.flying) {
+      n.x += n.vx;
+      n.y += n.vy;
+      n.vy += 0.3;
+      continue;
+    }
+    if (!n.onRug) {
+      const dx = n.targetX - n.x;
+      const dy = n.targetY - n.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 2) {
+        n.onRug = true;
+        n.x = n.targetX;
+        n.y = n.targetY;
+      } else {
+        n.x += (dx / dist) * n.speed;
+        n.y += (dy / dist) * n.speed;
+      }
+    }
+  }
+}
+
+function doShill() {
+  if (mashCooldown > 0) return;
+  mashCount++;
+  mashCooldown = 5;
+  const gain = 0.8 * Math.pow(0.98, mashCount);
+  hype = Math.min(100, hype + gain * 3);
+  shakeX = (Math.random() - 0.5) * 4;
+  shakeY = (Math.random() - 0.5) * 4;
+  playSound('shill');
+
+  // Spawn shill phrase
+  const r = rugRect();
+  const phrase = SHILL_PHRASES[Math.floor(Math.random() * SHILL_PHRASES.length)];
+  spawnTextParticle(phrase,
+    r.x + Math.random() * r.w,
+    r.y - 10 - Math.random() * 30,
+    '#33ff33', fs(8));
+
+  // Chance to spawn normie
+  if (Math.random() < 0.15 + hype * 0.003) {
+    spawnNormie();
+  }
+}
+
+function drawEvents() {
+  const diff = getDifficulty();
+  // Hit zone
+  const hzX = W * 0.4;
+  const hzW = diff.hitZoneW;
+  ctx.fillStyle = 'rgba(0, 255, 100, 0.06)';
+  ctx.fillRect(hzX, 0, hzW, gameBottom * 0.25);
+  ctx.strokeStyle = 'rgba(0, 255, 100, 0.2)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.strokeRect(hzX, 0, hzW, gameBottom * 0.25);
+  ctx.setLineDash([]);
+
+  for (const ev of events) {
+    // Banner
+    ctx.fillStyle = ev.hit ? 'rgba(0,255,100,0.3)' : ev.missed ? 'rgba(255,0,0,0.3)' : 'rgba(30,30,50,0.9)';
+    const tw = ctx.measureText(ev.type.name).width + 20;
+    ctx.fillRect(ev.x - 5, ev.y - fs(10), tw + 10, fs(16));
+
+    ctx.fillStyle = ev.hit ? '#33ff33' : ev.missed ? '#ff3333' : ev.type.color;
+    ctx.font = `bold ${fs(10)}px monospace`;
+    ctx.fillText(ev.type.name, ev.x, ev.y);
+
+    if (!ev.hit && !ev.missed) {
+      // Check if in hit zone
+      const evCenter = ev.x + tw / 2;
+      if (evCenter < hzX) {
+        ev.missed = true;
+        suspicion = Math.min(100, suspicion + 8);
+        playSound('event-miss');
+      }
+    }
+  }
+}
+
+function handleEventTap(tx, ty) {
+  const diff = getDifficulty();
+  const hzX = W * 0.4;
+  const hzW = diff.hitZoneW;
+
+  for (const ev of events) {
+    if (ev.hit || ev.missed) continue;
+    const tw = ctx.measureText(ev.type.name).width + 20;
+    const evCenter = ev.x + tw / 2;
+    // Check if in hit zone
+    if (evCenter >= hzX && evCenter <= hzX + hzW) {
+      ev.hit = true;
+      hype = Math.min(100, hype + ev.type.hype);
+      for (let i = 0; i < ev.type.normies; i++) spawnNormie();
+      playSound('event-hit');
+      spawnTextParticle('HIT!', ev.x, ev.y - 20, '#33ff33', fs(14));
+      return true;
+    }
+  }
+  return false;
+}
+
+function drawPumping() {
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  // Draw rug
+  drawRug(pullOffsetX);
+
+  // Draw normies
+  for (const n of normies) {
+    drawNormie(n);
+  }
+
+  ctx.restore();
+
+  // Decay shake
+  shakeX *= 0.8;
+  shakeY *= 0.8;
+
+  // Draw events
+  drawEvents();
+
+  // Draw meters
+  drawHypeMeter();
+  drawSuspicionMeter();
+
+  // Draw HUD
+  drawHUD();
+
+  // Draw particles
+  drawParticles();
+
+  // Desktop keybind hints
+  if (!isMobile) {
+    ctx.fillStyle = '#333';
+    ctx.font = `${fs(7)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('[SPACE] SHILL   [ENTER] PULL   [CLICK] TAP EVENTS', W / 2, gameBottom - 8);
+    ctx.textAlign = 'left';
+  }
+
+  drawScanlines();
+}
+
+// =====================================================================
+// RUG PULL ANIMATION
+// =====================================================================
+
+function initRugPull() {
+  state = ST.PULLING;
+  pullPhase = 1;
+  pullTimer = 0;
+  pullOffsetX = 0;
+  rugSlideDir = Math.random() < 0.5 ? 1 : -1;
+
+  // Calculate profit
+  const onRug = normies.filter(n => n.onRug).length;
+  const hypeMultiplier = 1 + (hype / 100) * 4;
+  roundProfit = Math.round(onRug * 1000 * hypeMultiplier);
+  totalProfit += roundProfit;
+
+  playSound('rug-pull');
+}
+
+function updatePulling() {
+  pullTimer++;
+
+  if (pullPhase === 1) {
+    // Slide phase
+    pullOffsetX += rugSlideDir * 8;
+    if (pullTimer > 15) {
+      pullPhase = 2;
+      pullTimer = 0;
+      // Launch normies
+      for (const n of normies) {
+        if (n.onRug) {
+          n.flying = true;
+          n.vx = (Math.random() - 0.5) * 8;
+          n.vy = -6 - Math.random() * 8;
+        }
+      }
+      shakeX = (Math.random() - 0.5) * 15;
+      shakeY = (Math.random() - 0.5) * 10;
+    }
+  } else if (pullPhase === 2) {
+    // Yank phase
+    pullOffsetX += rugSlideDir * 15;
+    if (pullTimer > 20) {
+      pullPhase = 3;
+      pullTimer = 0;
+      // Spawn money particles
+      const r = rugRect();
+      for (let i = 0; i < 20; i++) {
+        spawnMoneyParticle(r.x + Math.random() * r.w, r.y + Math.random() * r.h);
+      }
+      playSound('money');
+    }
+  } else if (pullPhase === 3) {
+    // Settle phase
+    if (pullTimer > 40) {
+      pullPhase = 0;
+      pullOffsetX = 0;
+      // Transition to consequence
+      state = ST.CONSEQUENCE;
+      consequenceTimer = 0;
+      checkConsequences();
+    }
+  }
+
+  // Update flying normies
+  updateNormies();
+}
+
+function drawPulling() {
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
+  drawRug(pullOffsetX);
+
+  for (const n of normies) {
+    drawNormie(n);
+  }
+
+  ctx.restore();
+
+  shakeX *= 0.85;
+  shakeY *= 0.85;
+
+  // Profit overlay
+  if (pullPhase >= 3) {
+    ctx.fillStyle = '#33ff33';
+    ctx.font = `bold ${fs(20)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`+$${roundProfit.toLocaleString()}`, W / 2, H * 0.3);
+    ctx.textAlign = 'left';
+  }
+
+  drawHUD();
+  drawParticles();
+  drawScanlines();
+}
+
+// =====================================================================
+// CONSEQUENCES
+// =====================================================================
+
+let hitVIP = false;
+let vipData = null;
+
+function checkConsequences() {
+  const diff = getDifficulty();
+  hitVIP = Math.random() < diff.vipChance;
+  if (hitVIP) {
+    vipData = VIP_TYPES[Math.floor(Math.random() * VIP_TYPES.length)];
+  } else {
+    vipData = null;
+  }
+}
+
+function drawConsequence() {
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+
+  consequenceTimer++;
+
+  if (hitVIP) {
+    // VIP reveal
+    if (consequenceTimer < 60) {
+      ctx.fillStyle = '#ff3333';
+      ctx.font = `bold ${fs(16)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('OH NO...', W / 2, H * 0.35);
+      ctx.textAlign = 'left';
+    } else if (consequenceTimer < 150) {
+      // Dramatic VIP display
+      ctx.fillStyle = '#ff3333';
+      ctx.font = `bold ${fs(14)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('YOU RUGGED A', W / 2, H * 0.25);
+
+      ctx.fillStyle = '#ffcc00';
+      ctx.font = `bold ${fs(22)}px monospace`;
+      ctx.fillText(vipData.name, W / 2, H * 0.38);
+
+      ctx.fillStyle = '#888';
+      ctx.font = `${fs(10)}px monospace`;
+      ctx.fillText(`${vipData.title} was on your rug!`, W / 2, H * 0.48);
+
+      if (consequenceTimer > 100) {
+        ctx.fillStyle = '#ff8800';
+        ctx.font = `bold ${fs(11)}px monospace`;
+        ctx.fillText(`MINI-GAME: ${vipData.minigame.toUpperCase()}`, W / 2, H * 0.6);
+
+        if (consequenceTimer % 40 < 25) {
+          ctx.fillStyle = '#33ff33';
+          ctx.font = `${fs(10)}px monospace`;
+          ctx.fillText(isMobile ? 'TAP TO CONTINUE' : 'PRESS SPACE', W / 2, H * 0.72);
+        }
+      }
+      ctx.textAlign = 'left';
+    } else {
+      // Wait for input to start minigame — handled in input
+      ctx.fillStyle = '#ffcc00';
+      ctx.font = `bold ${fs(22)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(vipData.name, W / 2, H * 0.38);
+      ctx.fillStyle = '#33ff33';
+      ctx.font = `${fs(10)}px monospace`;
+      if (consequenceTimer % 40 < 25) {
+        ctx.fillText(isMobile ? 'TAP TO CONTINUE' : 'PRESS SPACE', W / 2, H * 0.72);
+      }
+      ctx.textAlign = 'left';
+    }
+  } else {
+    // No VIP — round clear
+    ctx.fillStyle = '#33ff33';
+    ctx.font = `bold ${fs(16)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('CLEAN GETAWAY!', W / 2, H * 0.35);
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = `${fs(12)}px monospace`;
+    ctx.fillText(`+$${roundProfit.toLocaleString()}`, W / 2, H * 0.48);
+    ctx.textAlign = 'left';
+
+    if (consequenceTimer > 90) {
+      state = ST.ROUND_CLEAR;
+      stateTimer = 0;
+    }
+  }
+
+  drawScanlines();
+}
+
+// =====================================================================
+// ROUND CLEAR
+// =====================================================================
+
+function drawRoundClear() {
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+
+  stateTimer++;
+
+  ctx.fillStyle = '#33ff33';
+  ctx.font = `bold ${fs(18)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('ROUND CLEAR', W / 2, H * 0.25);
+
+  ctx.fillStyle = '#ffcc00';
+  ctx.font = `${fs(12)}px monospace`;
+  ctx.fillText(`Profit: $${roundProfit.toLocaleString()}`, W / 2, H * 0.38);
+  ctx.fillStyle = '#aaa';
+  ctx.fillText(`Total: $${totalProfit.toLocaleString()}`, W / 2, H * 0.48);
+
+  ctx.fillStyle = '#888';
+  ctx.font = `${fs(9)}px monospace`;
+  ctx.fillText(`Identity: ${currentAlias}`, W / 2, H * 0.58);
+  ctx.fillText(`Location: ${currentCountry}`, W / 2, H * 0.58 + fs(14));
+
+  if (stateTimer > 120) {
+    if (stateTimer % 40 < 25) {
+      ctx.fillStyle = '#33ff33';
+      ctx.font = `bold ${fs(11)}px monospace`;
+      ctx.fillText(isMobile ? 'TAP FOR NEXT ROUND' : 'PRESS SPACE', W / 2, H * 0.78);
+    }
+  }
+
+  ctx.textAlign = 'left';
+  drawScanlines();
+}
+
+// =====================================================================
+// MINI-GAMES
+// =====================================================================
+
+function initMinigame(type) {
+  state = ST.MINIGAME;
+  miniType = type;
+  miniTimer = 0;
+
+  // Update button labels
+  if (isMobile) {
+    if (type === 'bribe') {
+      btnShill.textContent = 'PAY';
+      btnPull.textContent = '---';
+    } else if (type === 'flee') {
+      btnShill.textContent = 'JUMP';
+      btnPull.textContent = '---';
+    } else if (type === 'shred') {
+      btnShill.textContent = 'TAP';
+      btnPull.textContent = '---';
+    } else if (type === 'hack') {
+      btnShill.textContent = 'TAP';
+      btnPull.textContent = '---';
+    }
+  }
+
+  switch (type) {
+    case 'shred':
+      miniData = {
+        docs: [],
+        missed: 0,
+        maxMiss: 3,
+        shredded: 0,
+        spawnTimer: 0,
+        duration: 600
+      };
+      break;
+    case 'bribe':
+      miniData = {
+        money: 0,
+        target: 100,
+        duration: 600,
+        mashGain: 1.5
+      };
+      break;
+    case 'flee':
+      miniData = {
+        playerY: 0,
+        vy: 0,
+        jumping: false,
+        groundY: 0,
+        obstacles: [],
+        spawnTimer: 0,
+        hits: 0,
+        maxHits: 3,
+        distance: 0,
+        duration: 600,
+        speed: 4
+      };
+      break;
+    case 'hack':
+      miniData = {
+        sequence: [],
+        playerSeq: [],
+        showing: true,
+        showIdx: 0,
+        showTimer: 0,
+        level: 1,
+        blocks: 4,
+        duration: 600,
+        failed: false,
+        won: false,
+        flashBlock: -1
+      };
+      // Generate first sequence
+      generateHackSequence();
+      break;
+  }
+}
+
+function generateHackSequence() {
+  miniData.sequence = [];
+  const len = miniData.level + 2; // 3, 4, 5...
+  for (let i = 0; i < len; i++) {
+    miniData.sequence.push(Math.floor(Math.random() * miniData.blocks));
+  }
+  miniData.playerSeq = [];
+  miniData.showing = true;
+  miniData.showIdx = 0;
+  miniData.showTimer = 0;
+  miniData.flashBlock = -1;
+}
+
+function updateMinigame() {
+  miniTimer++;
+
+  switch (miniType) {
+    case 'shred': {
+      miniData.spawnTimer++;
+      if (miniData.spawnTimer > 40) {
+        miniData.spawnTimer = 0;
+        miniData.docs.push({
+          x: 50 + Math.random() * (W - 100),
+          y: -20,
+          w: 40, h: 50,
+          speed: 1.5 + Math.random() * 1.5
+        });
+      }
+      for (let i = miniData.docs.length - 1; i >= 0; i--) {
+        miniData.docs[i].y += miniData.docs[i].speed;
+        if (miniData.docs[i].y > gameBottom) {
+          miniData.docs.splice(i, 1);
+          miniData.missed++;
+          playSound('event-miss');
+        }
+      }
+      if (miniData.missed >= miniData.maxMiss) return endMinigame(false);
+      if (miniTimer >= miniData.duration) return endMinigame(true);
+      break;
+    }
+    case 'bribe': {
+      miniData.money = Math.max(0, miniData.money - 0.1);
+      if (miniData.money >= miniData.target) return endMinigame(true);
+      if (miniTimer >= miniData.duration) return endMinigame(false);
+      break;
+    }
+    case 'flee': {
+      const groundLevel = gameBottom * 0.7;
+      if (miniData.groundY === 0) miniData.groundY = groundLevel;
+
+      miniData.distance += miniData.speed;
+      miniData.spawnTimer++;
+
+      // Spawn obstacles
+      if (miniData.spawnTimer > 50 + Math.random() * 40) {
+        miniData.spawnTimer = 0;
+        miniData.obstacles.push({
+          x: W + 20,
+          y: groundLevel - 20,
+          w: 20, h: 20
+        });
+      }
+
+      // Move obstacles
+      for (let i = miniData.obstacles.length - 1; i >= 0; i--) {
+        miniData.obstacles[i].x -= miniData.speed;
+        if (miniData.obstacles[i].x < -30) {
+          miniData.obstacles.splice(i, 1);
+        }
+      }
+
+      // Player physics
+      if (miniData.jumping) {
+        miniData.vy += 0.5;
+        miniData.playerY += miniData.vy;
+        if (miniData.playerY >= 0) {
+          miniData.playerY = 0;
+          miniData.jumping = false;
+          miniData.vy = 0;
+        }
+      }
+
+      // Collision
+      const px = W * 0.2;
+      const py = groundLevel + miniData.playerY - 16;
+      for (const ob of miniData.obstacles) {
+        if (px + 12 > ob.x && px < ob.x + ob.w && py + 16 > ob.y && py < ob.y + ob.h) {
+          miniData.hits++;
+          ob.x = -100; // remove
+          playSound('event-miss');
+        }
+      }
+
+      if (miniData.hits >= miniData.maxHits) return endMinigame(false);
+      if (miniTimer >= miniData.duration) return endMinigame(true);
+      break;
+    }
+    case 'hack': {
+      if (miniData.failed) return;
+      if (miniData.won) return;
+
+      if (miniData.showing) {
+        miniData.showTimer++;
+        if (miniData.showTimer < 30) {
+          miniData.flashBlock = miniData.sequence[miniData.showIdx];
+        } else if (miniData.showTimer < 40) {
+          miniData.flashBlock = -1;
+        } else {
+          miniData.showTimer = 0;
+          miniData.showIdx++;
+          if (miniData.showIdx >= miniData.sequence.length) {
+            miniData.showing = false;
+            miniData.flashBlock = -1;
+          }
+        }
+      }
+
+      if (miniTimer >= miniData.duration && !miniData.won) return endMinigame(false);
+      break;
+    }
+  }
+}
+
+function handleMinigameTap(tx, ty) {
+  switch (miniType) {
+    case 'shred': {
+      for (let i = miniData.docs.length - 1; i >= 0; i--) {
+        const d = miniData.docs[i];
+        if (tx > d.x - 15 && tx < d.x + d.w + 15 && ty > d.y - 10 && ty < d.y + d.h + 10) {
+          miniData.docs.splice(i, 1);
+          miniData.shredded++;
+          playSound('shred');
+          spawnTextParticle('SHRED!', d.x, d.y, '#ff8800', fs(10));
+          return;
+        }
+      }
+      break;
+    }
+    case 'hack': {
+      if (miniData.showing || miniData.failed || miniData.won) return;
+
+      // Check which block was tapped
+      const bw = Math.min(80, (W - 40) / miniData.blocks);
+      const bx0 = (W - bw * miniData.blocks) / 2;
+      const by = gameBottom * 0.45;
+      const bh = 60;
+
+      for (let i = 0; i < miniData.blocks; i++) {
+        const bx = bx0 + i * bw;
+        if (tx >= bx && tx <= bx + bw - 4 && ty >= by && ty <= by + bh) {
+          miniData.playerSeq.push(i);
+          miniData.flashBlock = i;
+          setTimeout(() => { if (miniData.flashBlock === i) miniData.flashBlock = -1; }, 200);
+          playSound('hack');
+
+          const idx = miniData.playerSeq.length - 1;
+          if (miniData.playerSeq[idx] !== miniData.sequence[idx]) {
+            miniData.failed = true;
+            playSound('fail');
+            setTimeout(() => endMinigame(false), 500);
+            return;
+          }
+
+          if (miniData.playerSeq.length === miniData.sequence.length) {
+            if (miniData.level >= 3) {
+              miniData.won = true;
+              playSound('success');
+              setTimeout(() => endMinigame(true), 500);
+            } else {
+              miniData.level++;
+              generateHackSequence();
+            }
+          }
+          return;
+        }
+      }
+      break;
+    }
+  }
+}
+
+function handleMinigameAction() {
+  switch (miniType) {
+    case 'bribe':
+      miniData.money = Math.min(miniData.target, miniData.money + miniData.mashGain);
+      playSound('money');
+      break;
+    case 'flee':
+      if (!miniData.jumping) {
+        miniData.jumping = true;
+        miniData.vy = -10;
+        playSound('jump');
+      }
+      break;
+  }
+}
+
+function endMinigame(passed) {
+  // Restore button labels
+  if (isMobile) {
+    btnShill.textContent = 'SHILL';
+    btnPull.textContent = 'PULL';
+  }
+
+  if (passed) {
+    playSound('success');
+    state = ST.ROUND_CLEAR;
+    stateTimer = 0;
+  } else {
+    playSound('busted');
+    lives--;
+    state = ST.BUSTED;
+    stateTimer = 0;
+  }
+}
+
+function drawMinigame() {
+  ctx.fillStyle = '#050510';
+  ctx.fillRect(0, 0, W, H);
+
+  // Title bar
+  ctx.fillStyle = '#ff8800';
+  ctx.font = `bold ${fs(12)}px monospace`;
+  ctx.textAlign = 'center';
+  const titles = { shred: 'SHRED THE EVIDENCE', bribe: 'BRIBE THE OFFICIAL', flee: 'FLEE TO THE AIRPORT', hack: 'HACK THE BLOCKCHAIN' };
+  ctx.fillText(titles[miniType] || miniType.toUpperCase(), W / 2, fs(20));
+
+  // Timer bar
+  const maxTime = miniData.duration || 600;
+  const timeLeft = Math.max(0, 1 - miniTimer / maxTime);
+  ctx.fillStyle = '#333';
+  ctx.fillRect(W * 0.1, fs(30), W * 0.8, 8);
+  ctx.fillStyle = timeLeft < 0.25 ? '#ff0000' : '#ffcc00';
+  ctx.fillRect(W * 0.1, fs(30), W * 0.8 * timeLeft, 8);
+
+  switch (miniType) {
+    case 'shred': {
+      // Draw docs
+      for (const d of miniData.docs) {
+        ctx.fillStyle = '#eee';
+        ctx.fillRect(d.x, d.y, d.w, d.h);
+        ctx.fillStyle = '#333';
+        ctx.font = `${fs(6)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('DOC', d.x + d.w / 2, d.y + d.h / 2 + 3);
+        // Lines
+        for (let ly = 8; ly < d.h - 8; ly += 8) {
+          ctx.fillStyle = '#aaa';
+          ctx.fillRect(d.x + 5, d.y + ly, d.w - 10, 1);
+        }
+      }
+      // Status
+      ctx.fillStyle = '#ff4444';
+      ctx.font = `${fs(9)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`MISSED: ${miniData.missed}/${miniData.maxMiss}  |  SHREDDED: ${miniData.shredded}`, W / 2, gameBottom - 20);
+      ctx.fillStyle = '#888';
+      ctx.font = `${fs(8)}px monospace`;
+      ctx.fillText('TAP DOCUMENTS TO SHRED', W / 2, gameBottom * 0.85);
+      break;
+    }
+    case 'bribe': {
+      // Money bar
+      const bw = W * 0.6;
+      const bx = (W - bw) / 2;
+      const by = gameBottom * 0.4;
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx, by, bw, 30);
+      ctx.fillStyle = '#33ff33';
+      ctx.fillRect(bx + 1, by + 1, (bw - 2) * (miniData.money / miniData.target), 28);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${fs(10)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`$${Math.floor(miniData.money)}/$${miniData.target}`, W / 2, by + 22);
+      ctx.fillStyle = '#888';
+      ctx.font = `${fs(9)}px monospace`;
+      ctx.fillText(isMobile ? 'MASH PAY BUTTON!' : 'MASH SPACE!', W / 2, by + 60);
+      break;
+    }
+    case 'flee': {
+      const groundLevel = miniData.groundY || gameBottom * 0.7;
+      // Ground
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, groundLevel, W, gameBottom - groundLevel);
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, groundLevel);
+      ctx.lineTo(W, groundLevel);
+      ctx.stroke();
+
+      // Player (stick figure running)
+      const px = W * 0.2;
+      const py = groundLevel + miniData.playerY - 16;
+      ctx.fillStyle = '#33ff33';
+      ctx.fillRect(px, py, 10, 16);
+      ctx.fillRect(px + 2, py - 6, 6, 6); // head
+
+      // Obstacles
+      ctx.fillStyle = '#ff4444';
+      for (const ob of miniData.obstacles) {
+        ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
+        ctx.fillStyle = '#cc0000';
+        ctx.font = `${fs(7)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText('!', ob.x + ob.w / 2, ob.y + ob.h / 2 + 3);
+        ctx.fillStyle = '#ff4444';
+      }
+
+      // Hits
+      ctx.fillStyle = '#ff4444';
+      ctx.font = `${fs(9)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`HITS: ${miniData.hits}/${miniData.maxHits}`, W / 2, gameBottom - 20);
+      ctx.fillStyle = '#888';
+      ctx.font = `${fs(8)}px monospace`;
+      ctx.fillText(isMobile ? 'TAP JUMP TO DODGE!' : 'PRESS SPACE TO JUMP!', W / 2, fs(50));
+      break;
+    }
+    case 'hack': {
+      // Draw blocks
+      const bw = Math.min(80, (W - 40) / miniData.blocks);
+      const bx0 = (W - bw * miniData.blocks) / 2;
+      const by = gameBottom * 0.45;
+      const bh = 60;
+      const blockColors = ['#ff3333', '#33ff33', '#3388ff', '#ffcc00'];
+
+      for (let i = 0; i < miniData.blocks; i++) {
+        const bx = bx0 + i * bw;
+        const isFlash = miniData.flashBlock === i;
+        ctx.fillStyle = isFlash ? blockColors[i] : '#222';
+        ctx.fillRect(bx + 2, by, bw - 4, bh);
+        ctx.strokeStyle = blockColors[i];
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bx + 2, by, bw - 4, bh);
+
+        ctx.fillStyle = isFlash ? '#000' : blockColors[i];
+        ctx.font = `bold ${fs(14)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(i + 1, bx + bw / 2, by + bh / 2 + fs(5));
+      }
+
+      // Status
+      ctx.fillStyle = miniData.showing ? '#ffcc00' : '#33ff33';
+      ctx.font = `${fs(9)}px monospace`;
+      ctx.textAlign = 'center';
+      if (miniData.showing) {
+        ctx.fillText('WATCH THE SEQUENCE...', W / 2, by - 30);
+      } else if (miniData.won) {
+        ctx.fillText('HACKED!', W / 2, by - 30);
+      } else if (miniData.failed) {
+        ctx.fillText('WRONG SEQUENCE!', W / 2, by - 30);
+      } else {
+        ctx.fillText(`REPEAT: ${miniData.playerSeq.length}/${miniData.sequence.length} (LEVEL ${miniData.level}/3)`, W / 2, by - 30);
+        ctx.fillStyle = '#888';
+        ctx.font = `${fs(8)}px monospace`;
+        ctx.fillText('TAP BLOCKS IN ORDER', W / 2, by + bh + 30);
+      }
+      break;
+    }
+  }
+
+  ctx.textAlign = 'left';
+  drawParticles();
+  drawScanlines();
+}
+
+// =====================================================================
+// BUSTED STATE
+// =====================================================================
+
+function drawBusted() {
+  ctx.fillStyle = '#100000';
+  ctx.fillRect(0, 0, W, H);
+
+  stateTimer++;
+
+  ctx.fillStyle = '#ff0000';
+  ctx.font = `bold ${fs(24)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('BUSTED!', W / 2, H * 0.2);
+
+  if (stateTimer > 30) {
+    ctx.fillStyle = '#ff8800';
+    ctx.font = `${fs(12)}px monospace`;
+    ctx.fillText(`${currentAlias} has been caught!`, W / 2, H * 0.33);
+
+    ctx.fillStyle = '#888';
+    ctx.font = `${fs(10)}px monospace`;
+    ctx.fillText('Identity burned. Fleeing to new country...', W / 2, H * 0.43);
+  }
+
+  if (stateTimer > 60) {
+    ctx.fillStyle = '#ff4444';
+    ctx.font = `${fs(14)}px monospace`;
+    let lifeStr = '';
+    for (let i = 0; i < 3; i++) lifeStr += i < lives ? '♦' : '◇';
+    ctx.fillText(`Identities: ${lifeStr}`, W / 2, H * 0.56);
+  }
+
+  if (stateTimer > 100) {
+    if (lives <= 0) {
+      if (stateTimer > 130) {
+        state = ST.GAME_OVER;
+        stateTimer = 0;
+        if (totalProfit > highScore) {
+          highScore = totalProfit;
+          localStorage.setItem('rugpull-high', String(highScore));
+        }
+        playSound('game-over');
+      }
+    } else {
+      if (stateTimer % 40 < 25) {
+        ctx.fillStyle = '#33ff33';
+        ctx.font = `bold ${fs(11)}px monospace`;
+        ctx.fillText(isMobile ? 'TAP TO CONTINUE' : 'PRESS SPACE', W / 2, H * 0.72);
+      }
+    }
+  }
+
+  ctx.textAlign = 'left';
+  drawScanlines();
+}
+
+// =====================================================================
+// GAME OVER — FBI MOST WANTED POSTER
+// =====================================================================
+
+function drawGameOver() {
+  // Off-white paper background
+  ctx.fillStyle = '#f0e8d8';
+  const pw = Math.min(W * 0.85, 420);
+  const ph = Math.min(gameBottom * 0.85, 560);
+  const px = (W - pw) / 2;
+  const py = (gameBottom - ph) / 2;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#f0e8d8';
+  ctx.fillRect(px, py, pw, ph);
+
+  // Paper shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(px + 4, py + 4, pw, ph);
+  ctx.fillStyle = '#f0e8d8';
+  ctx.fillRect(px, py, pw, ph);
+
+  // Red FBI header
+  ctx.fillStyle = '#cc0000';
+  ctx.fillRect(px, py, pw, 50);
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${fs(16)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('FBI MOST WANTED', px + pw / 2, py + 34);
+
+  // Pixel mugshot
+  const mugX = px + pw / 2 - 30;
+  const mugY = py + 65;
+  ctx.fillStyle = '#ddd';
+  ctx.fillRect(mugX - 5, mugY - 5, 70, 80);
+  ctx.fillStyle = '#888';
+  ctx.fillRect(mugX, mugY, 60, 70);
+  // Simple pixel face
+  ctx.fillStyle = '#ffcc88';
+  ctx.fillRect(mugX + 15, mugY + 10, 30, 35); // face
+  ctx.fillStyle = '#333';
+  ctx.fillRect(mugX + 22, mugY + 20, 5, 5); // eye L
+  ctx.fillRect(mugX + 33, mugY + 20, 5, 5); // eye R
+  ctx.fillRect(mugX + 25, mugY + 32, 10, 3); // mouth
+  ctx.fillStyle = '#442200';
+  ctx.fillRect(mugX + 12, mugY + 5, 36, 10); // hair
+
+  // Info
+  let infoY = mugY + 90;
+  ctx.fillStyle = '#222';
+  ctx.font = `bold ${fs(11)}px monospace`;
+  ctx.fillText(currentAlias, px + pw / 2, infoY);
+  infoY += fs(18);
+
+  ctx.fillStyle = '#555';
+  ctx.font = `${fs(8)}px monospace`;
+  ctx.fillText(`a.k.a. "The Rug Puller"`, px + pw / 2, infoY);
+  infoY += fs(18);
+
+  ctx.fillStyle = '#222';
+  ctx.font = `${fs(9)}px monospace`;
+  ctx.fillText(`Last seen: ${currentCountry}`, px + pw / 2, infoY);
+  infoY += fs(16);
+
+  ctx.fillText(`Charges: Wire Fraud, Securities Fraud`, px + pw / 2, infoY);
+  infoY += fs(14);
+  ctx.fillText(`Money Laundering, Rug Pulling`, px + pw / 2, infoY);
+  infoY += fs(22);
+
+  ctx.fillStyle = '#cc0000';
+  ctx.font = `bold ${fs(14)}px monospace`;
+  ctx.fillText(`TOTAL EXTRACTED: $${totalProfit.toLocaleString()}`, px + pw / 2, infoY);
+  infoY += fs(20);
+
+  ctx.fillStyle = '#222';
+  ctx.font = `${fs(9)}px monospace`;
+  ctx.fillText(`Rounds survived: ${round}`, px + pw / 2, infoY);
+  infoY += fs(16);
+
+  if (totalProfit >= highScore && highScore > 0) {
+    ctx.fillStyle = '#cc8800';
+    ctx.font = `bold ${fs(10)}px monospace`;
+    ctx.fillText('NEW HIGH SCORE!', px + pw / 2, infoY);
+    infoY += fs(16);
+  }
+
+  // Restart prompt
+  stateTimer++;
+  if (stateTimer > 60 && stateTimer % 50 < 30) {
+    ctx.fillStyle = '#333';
+    ctx.font = `bold ${fs(9)}px monospace`;
+    ctx.fillText(isMobile ? 'TAP TO PLAY AGAIN' : 'PRESS SPACE TO PLAY AGAIN', px + pw / 2, py + ph - 15);
+  }
+
+  ctx.textAlign = 'left';
+  drawScanlines();
+}
+
+// =====================================================================
+// GAME FLOW
+// =====================================================================
+
+function startGame() {
+  round = 0;
+  totalProfit = 0;
+  lives = 3;
+  curatedPool = [...CURATED_COINS];
+  generateAlias();
+  startRound();
+}
+
+function startRound() {
+  round++;
+  coinName = generateCoinName();
+  hype = 0;
+  suspicion = 0;
+  mashCount = 0;
+  mashCooldown = 0;
+  normies = [];
+  particles = [];
+  events = [];
+  pullPhase = 0;
+  pullTimer = 0;
+  pullOffsetX = 0;
+  roundProfit = 0;
+  hitVIP = false;
+  vipData = null;
+  eventTimer = 0;
+  nextEventIn = 180;
+  forcePullCountdown = 0;
+  forcePullActive = false;
+  shakeX = 0;
+  shakeY = 0;
+  state = ST.COIN_INTRO;
+  introTimer = 0;
+
+  // Spawn initial normies
+  for (let i = 0; i < 3; i++) spawnNormie();
+}
+
+function advanceFromConsequence() {
+  if (hitVIP && consequenceTimer >= 100) {
+    initMinigame(vipData.minigame);
+  }
+}
+
+function advanceFromBusted() {
+  if (stateTimer > 100 && lives > 0) {
+    generateAlias();
+    startRound();
+  }
+}
+
+function advanceFromRoundClear() {
+  if (stateTimer > 120) {
+    generateAlias();
+    startRound();
+  }
+}
+
+// =====================================================================
+// INPUT HANDLING
+// =====================================================================
+
+let shillDown = false;
+let pullDown = false;
+
+function handleAction(action) {
+  initAudio();
+
+  switch (state) {
+    case ST.TITLE:
+      if (action === 'shill' || action === 'pull') startGame();
+      break;
+    case ST.COIN_INTRO:
+      if (action === 'shill' && introTimer > 100) {
+        state = ST.PUMPING;
+      }
+      break;
+    case ST.PUMPING:
+      if (action === 'shill') doShill();
+      if (action === 'pull') {
+        const onRug = normies.filter(n => n.onRug).length;
+        if (onRug > 0) initRugPull();
+      }
+      break;
+    case ST.CONSEQUENCE:
+      if (action === 'shill') advanceFromConsequence();
+      break;
+    case ST.ROUND_CLEAR:
+      if (action === 'shill') advanceFromRoundClear();
+      break;
+    case ST.BUSTED:
+      if (action === 'shill') advanceFromBusted();
+      break;
+    case ST.GAME_OVER:
+      if (action === 'shill' && stateTimer > 60) startGame();
+      break;
+    case ST.MINIGAME:
+      if (action === 'shill') handleMinigameAction();
+      break;
+  }
+}
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'KeyS') {
+    e.preventDefault();
+    if (!shillDown) { shillDown = true; handleAction('shill'); }
+  }
+  if (e.code === 'Enter' || e.code === 'KeyP') {
+    e.preventDefault();
+    if (!pullDown) { pullDown = true; handleAction('pull'); }
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'Space' || e.code === 'KeyS') shillDown = false;
+  if (e.code === 'Enter' || e.code === 'KeyP') pullDown = false;
+});
+
+// Touch buttons
+btnShill.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  btnShill.classList.add('active');
+  handleAction('shill');
+}, { passive: false });
+btnShill.addEventListener('pointerup', () => btnShill.classList.remove('active'));
+btnShill.addEventListener('pointerleave', () => btnShill.classList.remove('active'));
+
+btnPull.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  btnPull.classList.add('active');
+  handleAction('pull');
+}, { passive: false });
+btnPull.addEventListener('pointerup', () => btnPull.classList.remove('active'));
+btnPull.addEventListener('pointerleave', () => btnPull.classList.remove('active'));
+
+// Canvas tap (for events, shred docs, hack blocks)
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  initAudio();
+  const rect = canvas.getBoundingClientRect();
+  const tx = e.clientX - rect.left;
+  const ty = e.clientY - rect.top;
+
+  if (state === ST.PUMPING) {
+    handleEventTap(tx, ty);
+  } else if (state === ST.MINIGAME) {
+    handleMinigameTap(tx, ty);
+  } else if (state === ST.TITLE) {
+    startGame();
+  } else if (state === ST.COIN_INTRO && introTimer > 100) {
+    state = ST.PUMPING;
+  } else if (state === ST.CONSEQUENCE) {
+    advanceFromConsequence();
+  } else if (state === ST.ROUND_CLEAR) {
+    advanceFromRoundClear();
+  } else if (state === ST.BUSTED) {
+    advanceFromBusted();
+  } else if (state === ST.GAME_OVER && stateTimer > 60) {
+    startGame();
+  }
+}, { passive: false });
+
+// Prevent context menu
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// =====================================================================
+// MAIN UPDATE LOOP
+// =====================================================================
+
+function update() {
+  switch (state) {
+    case ST.COIN_INTRO:
+      introTimer++;
+      break;
+
+    case ST.PUMPING: {
+      const diff = getDifficulty();
+
+      // Hype decay
+      hype = Math.max(0, hype - diff.hypeDecay);
+
+      // Suspicion passive rise
+      suspicion = Math.min(100, suspicion + diff.suspicionRate);
+
+      // Threat effects
+      if (round >= 2) suspicion = Math.min(100, suspicion + 0.003); // Sleuth
+      if (round >= 3 && Math.random() < 0.002) suspicion = Math.min(100, suspicion + 5); // Journalist spike
+      if (round >= 4 && Math.random() < 0.003) { // Rival steals normie
+        const onRugNormies = normies.filter(n => n.onRug);
+        if (onRugNormies.length > 0) {
+          const stolen = onRugNormies[Math.floor(Math.random() * onRugNormies.length)];
+          stolen.flying = true;
+          stolen.vy = -5;
+          stolen.vx = (Math.random() - 0.5) * 6;
+        }
+      }
+
+      // Forced pull timer
+      if (diff.forcePullTimer > 0) {
+        if (!forcePullActive) {
+          forcePullActive = true;
+          forcePullCountdown = diff.forcePullTimer;
+        }
+        forcePullCountdown--;
+        if (forcePullCountdown <= 0) {
+          // Force the pull
+          const onRug = normies.filter(n => n.onRug).length;
+          if (onRug > 0) initRugPull();
+          else {
+            // No normies, just end round with 0 profit
+            roundProfit = 0;
+            state = ST.CONSEQUENCE;
+            consequenceTimer = 0;
+            checkConsequences();
+          }
+        }
+      }
+
+      // Mash cooldown
+      if (mashCooldown > 0) mashCooldown--;
+
+      // Suspicion game-over check — force pull
+      if (suspicion >= 100) {
+        const onRug = normies.filter(n => n.onRug).length;
+        if (onRug > 0) {
+          initRugPull();
+        } else {
+          roundProfit = 0;
+          state = ST.CONSEQUENCE;
+          consequenceTimer = 0;
+          hitVIP = true;
+          vipData = VIP_TYPES[Math.floor(Math.random() * VIP_TYPES.length)];
+        }
+      }
+
+      // Events
+      eventTimer++;
+      if (eventTimer >= nextEventIn) {
+        eventTimer = 0;
+        nextEventIn = diff.eventInterval;
+        spawnEvent();
+      }
+
+      // Move events
+      for (let i = events.length - 1; i >= 0; i--) {
+        events[i].x -= diff.eventSpeed;
+        if (events[i].x < -300) events.splice(i, 1);
+      }
+
+      // Update normies
+      updateNormies();
+
+      // Remove off-screen flying normies
+      for (let i = normies.length - 1; i >= 0; i--) {
+        const n = normies[i];
+        if (n.flying && (n.y > H + 50 || n.x < -50 || n.x > W + 50)) {
+          normies.splice(i, 1);
+        }
+      }
+
+      break;
+    }
+
+    case ST.PULLING:
+      updatePulling();
+      break;
+
+    case ST.MINIGAME:
+      updateMinigame();
+      break;
+  }
+}
+
+// =====================================================================
+// MAIN DRAW LOOP
+// =====================================================================
+
+function draw() {
+  switch (state) {
+    case ST.TITLE: drawTitle(); break;
+    case ST.COIN_INTRO: drawCoinIntro(); break;
+    case ST.PUMPING: drawPumping(); break;
+    case ST.PULLING: drawPulling(); break;
+    case ST.CONSEQUENCE: drawConsequence(); break;
+    case ST.ROUND_CLEAR: drawRoundClear(); break;
+    case ST.MINIGAME: drawMinigame(); break;
+    case ST.BUSTED: drawBusted(); break;
+    case ST.GAME_OVER: drawGameOver(); break;
+  }
+}
+
+// =====================================================================
+// GAME LOOP
+// =====================================================================
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+
+</script>
+</body>
+</html>

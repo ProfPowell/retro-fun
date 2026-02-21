@@ -1,5 +1,16 @@
 [
   {
+    "slug": "rug-pull",
+    "title": "Rug Pull",
+    "description": "Launch shitcoins, lure normies onto the rug, mash SHILL, yank for profit — avoid the feds",
+    "date": "2026-02-20",
+    "url": "/demos/rug-pull/",
+    "preview": "preview-rugpull",
+    "tags": ["Canvas", "Audio", "Game"],
+    "tagTypes": ["canvas", "audio", "game"],
+    "order": 1
+  },
+  {
     "slug": "retroize",
     "title": "Retroize",
     "description": "Apply retro effects to any image — ASCII, 8-bit, CRT, dither, glitch & more",
