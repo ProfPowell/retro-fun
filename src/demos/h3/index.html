@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H3: Hip Hop HTML // RETRO FUN</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Recursive:wght,CASL,MONO@300..1000,0..1,0..1&display=swap');
+
+  :root {
+    --bump: 1;
+    --hue: 300;
+    --bass: 0;
+    --mid: 0;
+    --high: 0;
+    --energy: 0;
+    --beat: 0;
+    --bg-hue: 260;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: hsl(var(--bg-hue), 15%, 5%);
+    min-height: 100vh;
+    font-family: 'Recursive', 'Courier New', monospace;
+    color: #e0e0e0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transition: background 0.3s;
+  }
+
+  .back {
+    position: fixed; top: 1rem; right: 1rem;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 100;
+  }
+  .back:hover { color: #00ffff; }
+
+  /* ===== OVERLAY ===== */
+  .overlay {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; background: rgba(5,5,10,0.95);
+    flex-direction: column; gap: 2rem;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h2 {
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: #ff00ff;
+    text-shadow: 0 0 30px #ff00ff, 0 0 60px #ff00ff44;
+  }
+  .overlay p {
+    font-size: 0.7rem; color: #555; letter-spacing: 0.2em; text-align: center;
+  }
+  .track-picker {
+    display: flex; flex-direction: column; gap: 0.6rem;
+    max-width: 400px; width: 90%;
+  }
+  .track-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #333;
+    color: #aaa; padding: 0.8rem 1.2rem;
+    font-family: 'Courier New', monospace; font-size: 0.75rem;
+    letter-spacing: 0.1em; cursor: pointer;
+    text-align: left; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .track-btn:hover {
+    border-color: #ff00ff; color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff;
+    background: rgba(255,0,255,0.05);
+  }
+  .track-btn .track-title { font-weight: bold; display: block; margin-bottom: 0.2rem; }
+  .track-btn .track-desc { color: #555; font-size: 0.6rem; }
+
+  /* ===== HEADER ===== */
+  .page-header {
+    text-align: center;
+    padding: 3rem 1rem 1rem;
+  }
+  .page-header h1 {
+    font-size: clamp(2.5rem, 8vw, 6rem);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    line-height: 1;
+    font-variation-settings: "wght" calc(400 + var(--bass) * 600), "CASL" var(--mid), "MONO" 0;
+    color: hsl(calc(var(--hue)), 100%, calc(50% + var(--energy) * 30%));
+    text-shadow:
+      0 0 calc(10px + var(--beat) * 40px) hsl(calc(var(--hue)), 100%, 50%),
+      0 0 calc(5px + var(--beat) * 80px) hsl(calc(var(--hue) + 60), 100%, 50%);
+    transform: scale(calc(1 + var(--beat) * 0.08));
+    transition: text-shadow 0.1s, transform 0.1s;
+  }
+  .page-header .subtitle {
+    font-size: clamp(0.6rem, 2vw, 1rem);
+    letter-spacing: 0.4em;
+    color: hsl(calc(var(--hue) + 120), 80%, 60%);
+    margin-top: 0.5rem;
+    font-variation-settings: "wght" calc(300 + var(--mid) * 400);
+    opacity: calc(0.5 + var(--energy) * 0.5);
+  }
+
+  /* ===== CONTENT SECTIONS ===== */
+  .content {
+    max-width: 800px; margin: 0 auto;
+    padding: 2rem 1.5rem 8rem;
+  }
+
+  .section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid hsl(var(--hue), 40%, calc(15% + var(--energy) * 10%));
+    background: hsla(var(--hue), 20%, 8%, calc(0.5 + var(--bass) * 0.3));
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .section h2 {
+    font-size: clamp(1rem, 3vw, 1.6rem);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.8rem;
+    font-variation-settings: "wght" calc(500 + var(--bass) * 500), "CASL" var(--high);
+    color: hsl(calc(var(--hue) + 60), 90%, calc(55% + var(--energy) * 20%));
+    text-shadow: 0 0 calc(var(--beat) * 20px) hsl(calc(var(--hue) + 60), 100%, 60%);
+    transform: translateX(calc(var(--beat) * 3px));
+  }
+
+  .section p, .section li {
+    font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+    line-height: 1.8;
+    letter-spacing: 0.05em;
+    font-variation-settings: "wght" calc(350 + var(--mid) * 300), "CASL" calc(var(--high) * 0.6);
+    color: hsl(calc(var(--hue) + 180), calc(30% + var(--energy) * 50%), calc(60% + var(--high) * 20%));
+    transition: color 0.15s;
+  }
+
+  .section ul {
+    list-style: none; padding-left: 1rem;
+  }
+  .section li::before {
+    content: '\25b6 ';
+    color: hsl(var(--hue), 100%, 60%);
+    font-size: 0.6em;
+  }
+  .section li {
+    margin-bottom: 0.4rem;
+  }
+
+  .fake-ad {
+    text-align: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 1rem;
+    border: 1px dashed hsl(var(--hue), 50%, 25%);
+    color: hsl(calc(var(--hue) + 90), 60%, 50%);
+    font-variation-settings: "wght" calc(300 + var(--high) * 700);
+    transform: scale(calc(1 + var(--beat) * 0.04));
+  }
+
+  .credits {
+    text-align: center;
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    color: #333;
+    padding: 2rem 0;
+    text-transform: uppercase;
+    font-variation-settings: "wght" calc(300 + var(--energy) * 200);
+  }
+
+  /* ===== CONFETTI CANVAS ===== */
+  #confetti {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 40;
+  }
+
+  /* ===== PATTERN OVERLAY ===== */
+  #patternOverlay {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 30;
+    opacity: 0; transition: opacity 0.15s;
+  }
+
+  /* ===== NOW PLAYING BAR ===== */
+  .now-playing {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(5,5,10,0.92);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #222;
+    padding: 0.8rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    z-index: 60;
+    font-family: 'Courier New', monospace;
+  }
+  .now-playing.hidden { display: none; }
+  .np-btn {
+    background: none; border: 1px solid #555;
+    color: #888; font-family: 'Courier New', monospace;
+    font-size: 0.7rem; padding: 0.3rem 0.6rem;
+    cursor: pointer; letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .np-btn:hover { border-color: #ff00ff; color: #ff00ff; }
+  .np-track {
+    font-size: 0.65rem; color: #888; letter-spacing: 0.15em;
+    text-transform: uppercase; flex: 1;
+  }
+  .np-viz {
+    display: flex; align-items: flex-end; gap: 2px; height: 20px;
+  }
+  .np-viz-bar {
+    width: 3px; background: #ff00ff;
+    transition: height 0.08s;
+  }
+
+  /* ===== SCANLINES ===== */
+  .scanlines {
+    position: fixed; inset: 0; pointer-events: none; z-index: 35;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
+    );
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+
+<!-- Start overlay with track picker -->
+<div class="overlay" id="startOverlay">
+  <h2>H3: Hip Hop HTML</h2>
+  <p>Pick a beat &bull; watch the page party</p>
+  <div class="track-picker" id="trackPicker"></div>
+</div>
+
+<!-- Page content that bumps to the beat -->
+<div class="page-header">
+  <h1>Hip Hop HTML</h1>
+  <div class="subtitle">Where the DOM drops beats</div>
+</div>
+
+<div class="content" id="content">
+  <div class="section">
+    <h2>Top Tracks This Week</h2>
+    <ul>
+      <li>DJ Doctype &mdash; &ldquo;!DOCTYPE Funk&rdquo;</li>
+      <li>MC Markup &mdash; &ldquo;Semantic Streets&rdquo;</li>
+      <li>Lil&rsquo; &lt;div&gt; &mdash; &ldquo;Nested Too Deep&rdquo;</li>
+      <li>The Flex Boxx &mdash; &ldquo;Justify My Content&rdquo;</li>
+      <li>Young Viewport &mdash; &ldquo;Responsive (ft. Meta Tag)&rdquo;</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Hot New Albums</h2>
+    <p>
+      DJ Doctype returns with the fire follow-up to last year&rsquo;s
+      &ldquo;Render Tree Cypher.&rdquo; This time the beats are server-side
+      rendered with zero hydration latency. The bass hits harder than a
+      failed npm install and the hooks are catchier than useEffect on
+      an empty dependency array.
+    </p>
+  </div>
+
+  <div class="fake-ad">
+    &mdash; ad: Learn CSS Grid in 21 days (results not typical) &mdash;
+  </div>
+
+  <div class="section">
+    <h2>Interview: MC Markup</h2>
+    <p>
+      &ldquo;People say HTML ain&rsquo;t a real language. I say come
+      to my show and watch a thousand divs mosh pit across your viewport.
+      Every tag tells a story. Every attribute carries weight.
+      Accessibility isn&rsquo;t optional &mdash; it&rsquo;s the remix.&rdquo;
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Upcoming Shows</h2>
+    <ul>
+      <li>Feb 28 &mdash; The Flexbox Arena, Port 3000</li>
+      <li>Mar 05 &mdash; Club &lt;main&gt;, Localhost</li>
+      <li>Mar 12 &mdash; Grid Garden Amphitheater</li>
+      <li>Mar 19 &mdash; The Shadow DOM Lounge (invite only)</li>
+    </ul>
+  </div>
+
+  <div class="fake-ad">
+    &mdash; ad: &lt;marquee&gt; is back and it&rsquo;s not sorry &mdash;
+  </div>
+
+  <div class="section">
+    <h2>Gear Review</h2>
+    <p>
+      The new Variable Font 3000 turntable lets you crossfade between
+      weight 100 and 900 in real time. Pair it with the CSS Custom
+      Property mixer for infinite tonal range. Warning: may cause
+      involuntary head-nodding and spontaneous code refactoring.
+    </p>
+  </div>
+
+  <div class="credits">
+    H3: Hip Hop HTML &bull; All tracks synthesized in the browser &bull; No servers were harmed &bull; CyberViber.Ninja
+  </div>
+</div>
+
+<!-- Effect layers -->
+<canvas id="confetti"></canvas>
+<div id="patternOverlay"></div>
+<div class="scanlines"></div>
+
+<!-- Now playing bar -->
+<div class="now-playing hidden" id="nowPlaying">
+  <button class="np-btn" id="btnStop">&#9632; Stop</button>
+  <button class="np-btn" id="btnSwitch">&#9654; Switch</button>
+  <span class="np-track" id="npTrack">---</span>
+  <div class="np-viz" id="npViz"></div>
+</div>
+
+<script>
+// =====================================================
+// H3: HIP HOP HTML - Audio-reactive page party
+// Uses Web Audio API, CSS custom properties, variable
+// fonts, and canvas confetti - all vanilla JS
+// =====================================================
+
+const root = document.documentElement;
+const overlay = document.getElementById('startOverlay');
+const trackPicker = document.getElementById('trackPicker');
+const nowPlaying = document.getElementById('nowPlaying');
+const npTrack = document.getElementById('npTrack');
+const npViz = document.getElementById('npViz');
+const confettiCanvas = document.getElementById('confetti');
+const confettiCtx = confettiCanvas.getContext('2d');
+const patternOverlay = document.getElementById('patternOverlay');
+
+let audioCtx, analyser, gainNode;
+let freqData, timeData;
+let isPlaying = false;
+let currentTrack = null;
+let animId = null;
+let time = 0;
+let lastBeatTime = 0;
+let beatDetected = false;
+let confettiPieces = [];
+let patternTimer = null;
+
+// =====================================================
+// TRACK DEFINITIONS - procedural synth patterns
+// =====================================================
+const TRACKS = [
+  {
+    title: '!DOCTYPE Funk',
+    desc: 'Boom-bap classic \u2022 90 BPM',
+    bpm: 90,
+    key: 0,
+    style: 'boombap',
+    color: '#ff00ff'
+  },
+  {
+    title: 'Semantic Streets',
+    desc: 'Lo-fi chill hop \u2022 78 BPM',
+    bpm: 78,
+    key: 3,
+    style: 'lofi',
+    color: '#00ffff'
+  },
+  {
+    title: 'Nested Too Deep',
+    desc: 'Trap bangers \u2022 140 BPM',
+    bpm: 140,
+    key: 7,
+    style: 'trap',
+    color: '#ffff00'
+  },
+  {
+    title: 'Justify My Content',
+    desc: 'G-funk smooth \u2022 98 BPM',
+    bpm: 98,
+    key: 5,
+    style: 'gfunk',
+    color: '#00ff88'
+  },
+  {
+    title: 'Responsive Remix',
+    desc: 'Uptempo party \u2022 120 BPM',
+    bpm: 120,
+    key: 2,
+    style: 'party',
+    color: '#ff8800'
+  }
+];
+
+// Note frequencies (chromatic from C2)
+const NOTE_FREQS = [];
+for (let i = 0; i < 60; i++) {
+  NOTE_FREQS.push(65.41 * Math.pow(2, i / 12));
+}
+
+// Scale patterns (semitone offsets)
+const MINOR_PENT = [0, 3, 5, 7, 10]; // minor pentatonic - classic hip hop
+
+function getNote(root, scaleIdx, octave) {
+  const deg = MINOR_PENT[((scaleIdx % MINOR_PENT.length) + MINOR_PENT.length) % MINOR_PENT.length];
+  return NOTE_FREQS[root + deg + octave * 12];
+}
+
+// =====================================================
+// BUILD TRACK PICKER UI
+// =====================================================
+TRACKS.forEach((track, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'track-btn';
+  btn.innerHTML = `<span class="track-title">${track.title}</span><span class="track-desc">${track.desc}</span>`;
+  btn.addEventListener('click', () => startTrack(i));
+  trackPicker.appendChild(btn);
+});
+
+// Build mini viz bars
+for (let i = 0; i < 12; i++) {
+  const bar = document.createElement('div');
+  bar.className = 'np-viz-bar';
+  bar.style.height = '2px';
+  npViz.appendChild(bar);
+}
+
+// =====================================================
+// AUDIO ENGINE
+// =====================================================
+let nextBeatTime = 0;
+let beatIdx = 0;
+let schedulerTimer = null;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0.75;
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.35;
+  gainNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  timeData = new Uint8Array(analyser.fftSize);
+}
+
+function startTrack(idx) {
+  currentTrack = TRACKS[idx];
+  overlay.classList.add('hidden');
+  nowPlaying.classList.remove('hidden');
+  npTrack.textContent = `Now Playing: ${currentTrack.title}`;
+
+  if (!audioCtx) initAudio();
+  isPlaying = true;
+  beatIdx = 0;
+  nextBeatTime = audioCtx.currentTime + 0.05;
+  scheduleBeats();
+  if (!animId) animate();
+}
+
+function stopTrack() {
+  isPlaying = false;
+  if (schedulerTimer) clearTimeout(schedulerTimer);
+  nowPlaying.classList.add('hidden');
+  currentTrack = null;
+  // Reset CSS vars
+  root.style.setProperty('--bump', '1');
+  root.style.setProperty('--bass', '0');
+  root.style.setProperty('--mid', '0');
+  root.style.setProperty('--high', '0');
+  root.style.setProperty('--energy', '0');
+  root.style.setProperty('--beat', '0');
+}
+
+document.getElementById('btnStop').addEventListener('click', stopTrack);
+document.getElementById('btnSwitch').addEventListener('click', () => {
+  stopTrack();
+  overlay.classList.remove('hidden');
+});
+
+// =====================================================
+// BEAT SCHEDULER - different styles per track
+// =====================================================
+function scheduleBeats() {
+  if (!isPlaying || !currentTrack) return;
+  const T = currentTrack;
+  const beatLen = 60 / T.bpm;
+  const sub = beatLen / 4; // 16th note
+
+  while (nextBeatTime < audioCtx.currentTime + 0.2) {
+    const when = nextBeatTime;
+    const bar = Math.floor(beatIdx / 16);
+    const step = beatIdx % 16;
+
+    switch (T.style) {
+      case 'boombap': playBoombap(when, step, bar, T); break;
+      case 'lofi': playLofi(when, step, bar, T); break;
+      case 'trap': playTrap(when, step, bar, T); break;
+      case 'gfunk': playGfunk(when, step, bar, T); break;
+      case 'party': playParty(when, step, bar, T); break;
+    }
+
+    nextBeatTime += sub;
+    beatIdx++;
+  }
+
+  schedulerTimer = setTimeout(scheduleBeats, 50);
+}
+
+// --- BOOM BAP ---
+function playBoombap(when, step, bar, T) {
+  // Kick on 1 and 7
+  if (step === 0 || step === 6) {
+    playKick(when, 0.25);
+  }
+  // Snare on 4 and 12
+  if (step === 4 || step === 12) {
+    playSnare(when, 0.15);
+  }
+  // Hi-hat 8ths
+  if (step % 2 === 0) {
+    playHat(when, step % 4 === 0 ? 0.06 : 0.03);
+  }
+  // Bass line
+  if (step === 0 || step === 6 || step === 10) {
+    const n = [0, 0, 2, 0, 3, 0, 2, 1][bar % 8];
+    playBass(getNote(T.key, n, 1), when, 60 / T.bpm * 0.4, 0.18);
+  }
+  // Melody stabs
+  if (step === 0 || step === 3 || step === 8 || step === 11) {
+    const mel = [4, 3, 2, 0, 4, 3, 1, 2];
+    const n = mel[(bar * 4 + Math.floor(step / 4)) % mel.length];
+    playLead(getNote(T.key, n, 3), when, 60 / T.bpm * 0.2, 0.05, 'square');
+  }
+}
+
+// --- LO-FI ---
+function playLofi(when, step, bar, T) {
+  if (step === 0 || step === 10) playKick(when, 0.18);
+  if (step === 4 || step === 12) playSnare(when, 0.08);
+  if (step % 2 === 0) playHat(when, 0.025);
+  // Warm chords
+  if (step === 0) {
+    const chords = [[0,2,4],[3,5,0],[2,4,0],[1,3,5]];
+    const ch = chords[bar % chords.length];
+    ch.forEach((n, i) => {
+      playLead(getNote(T.key, n, 3), when, 60 / T.bpm * 3, 0.025, 'sine');
+    });
+  }
+  // Mellow bass
+  if (step === 0 || step === 8) {
+    const n = [0, 3, 2, 1][bar % 4];
+    playBass(getNote(T.key, n, 1), when, 60 / T.bpm * 0.8, 0.12);
+  }
+}
+
+// --- TRAP ---
+function playTrap(when, step, bar, T) {
+  if (step === 0 || step === 8) playKick(when, 0.3);
+  // Trap double/triple hats
+  const hatPattern = [1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,1];
+  if (hatPattern[step]) playHat(when, 0.04);
+  if (step === 4 || step === 12) playSnare(when, 0.2);
+  // 808 bass
+  if (step === 0 || step === 6 || step === 8 || step === 14) {
+    const n = [0, 0, 3, 0, 0, 2, 0, 1][bar % 8];
+    play808(getNote(T.key, n, 0), when, 60 / T.bpm * 0.5, 0.22);
+  }
+  // Synth lead
+  if (step % 4 === 0 && bar % 2 === 0) {
+    const mel = [4, 3, 4, 2];
+    playLead(getNote(T.key, mel[Math.floor(step / 4)], 4), when, 60 / T.bpm * 0.15, 0.04, 'square');
+  }
+}
+
+// --- G-FUNK ---
+function playGfunk(when, step, bar, T) {
+  if (step === 0 || step === 8) playKick(when, 0.2);
+  if (step === 4 || step === 12) playSnare(when, 0.12);
+  if (step % 2 === 0) playHat(when, 0.03);
+  // Whiny lead (signature g-funk)
+  if (step === 0 || step === 4 || step === 8 || step === 12) {
+    const mel = [4, 3, 2, 4, 3, 1, 0, 2];
+    const n = mel[(bar * 4 + Math.floor(step / 4)) % mel.length];
+    playLead(getNote(T.key, n, 4), when, 60 / T.bpm * 0.3, 0.04, 'sine');
+    playLead(getNote(T.key, n, 4) * 1.005, when, 60 / T.bpm * 0.3, 0.03, 'sine'); // detune chorus
+  }
+  // Smooth bass
+  if (step === 0 || step === 8) {
+    const n = [0, 3, 2, 0][bar % 4];
+    playBass(getNote(T.key, n, 1), when, 60 / T.bpm * 0.6, 0.15);
+  }
+}
+
+// --- PARTY ---
+function playParty(when, step, bar, T) {
+  // Four on the floor kick
+  if (step % 4 === 0) playKick(when, 0.25);
+  if (step === 4 || step === 12) playSnare(when, 0.15);
+  // Off-beat hats
+  if (step % 2 === 1) playHat(when, 0.04);
+  // Stab chords
+  if (step === 0 || step === 3 || step === 8 || step === 11) {
+    const ch = [[0,2,4],[2,4,0],[3,0,2]][bar % 3];
+    ch.forEach(n => {
+      playLead(getNote(T.key, n, 3), when, 60 / T.bpm * 0.12, 0.035, 'sawtooth');
+    });
+  }
+  // Bouncy bass
+  if (step === 0 || step === 4 || step === 8 || step === 12) {
+    const n = [0, 4, 3, 0, 2, 4, 3, 1];
+    playBass(getNote(T.key, n[(bar * 4 + Math.floor(step / 4)) % n.length], 1), when, 60 / T.bpm * 0.2, 0.18);
+  }
+}
+
+// =====================================================
+// SOUND GENERATORS
+// =====================================================
+function playKick(when, vol) {
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.frequency.setValueAtTime(160, when);
+  osc.frequency.exponentialRampToValueAtTime(35, when + 0.12);
+  env.gain.setValueAtTime(vol, when);
+  env.gain.exponentialRampToValueAtTime(0.001, when + 0.2);
+  osc.connect(env); env.connect(gainNode);
+  osc.start(when); osc.stop(when + 0.2);
+}
+
+function playSnare(when, vol) {
+  // Noise burst
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource(); src.buffer = buf;
+  const env = audioCtx.createGain();
+  env.gain.setValueAtTime(vol, when);
+  env.gain.exponentialRampToValueAtTime(0.001, when + 0.1);
+  const filt = audioCtx.createBiquadFilter();
+  filt.type = 'bandpass'; filt.frequency.value = 3000; filt.Q.value = 1;
+  src.connect(filt); filt.connect(env); env.connect(gainNode);
+  src.start(when); src.stop(when + 0.1);
+  // Body tone
+  const osc = audioCtx.createOscillator();
+  const oEnv = audioCtx.createGain();
+  osc.frequency.value = 200;
+  oEnv.gain.setValueAtTime(vol * 0.5, when);
+  oEnv.gain.exponentialRampToValueAtTime(0.001, when + 0.06);
+  osc.connect(oEnv); oEnv.connect(gainNode);
+  osc.start(when); osc.stop(when + 0.06);
+}
+
+function playHat(when, vol) {
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource(); src.buffer = buf;
+  const env = audioCtx.createGain();
+  env.gain.setValueAtTime(vol, when);
+  env.gain.exponentialRampToValueAtTime(0.001, when + 0.03);
+  const filt = audioCtx.createBiquadFilter();
+  filt.type = 'highpass'; filt.frequency.value = 9000;
+  src.connect(filt); filt.connect(env); env.connect(gainNode);
+  src.start(when); src.stop(when + 0.03);
+}
+
+function playBass(freq, when, dur, vol) {
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.value = freq;
+  env.gain.setValueAtTime(0, when);
+  env.gain.linearRampToValueAtTime(vol, when + 0.01);
+  env.gain.setValueAtTime(vol, when + dur * 0.5);
+  env.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  const filt = audioCtx.createBiquadFilter();
+  filt.type = 'lowpass'; filt.frequency.value = 400;
+  osc.connect(filt); filt.connect(env); env.connect(gainNode);
+  osc.start(when); osc.stop(when + dur);
+}
+
+function play808(freq, when, dur, vol) {
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, when);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.5, when + dur);
+  env.gain.setValueAtTime(vol, when);
+  env.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  // Distortion for grit
+  const dist = audioCtx.createWaveShaper();
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i / 128) - 1;
+    curve[i] = (Math.PI + 3) * x / (Math.PI + 3 * Math.abs(x));
+  }
+  dist.curve = curve;
+  osc.connect(dist); dist.connect(env); env.connect(gainNode);
+  osc.start(when); osc.stop(when + dur);
+}
+
+function playLead(freq, when, dur, vol, type) {
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  env.gain.setValueAtTime(0, when);
+  env.gain.linearRampToValueAtTime(vol, when + 0.005);
+  env.gain.setValueAtTime(vol * 0.7, when + dur * 0.3);
+  env.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  osc.connect(env); env.connect(gainNode);
+  osc.start(when); osc.stop(when + dur);
+}
+
+// =====================================================
+// CONFETTI
+// =====================================================
+function resizeConfetti() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeConfetti);
+resizeConfetti();
+
+function spawnConfetti(count) {
+  for (let i = 0; i < count; i++) {
+    confettiPieces.push({
+      x: Math.random() * confettiCanvas.width,
+      y: -10 - Math.random() * 40,
+      w: 4 + Math.random() * 6,
+      h: 3 + Math.random() * 4,
+      vx: (Math.random() - 0.5) * 4,
+      vy: 2 + Math.random() * 4,
+      rot: Math.random() * 360,
+      rotV: (Math.random() - 0.5) * 15,
+      hue: Math.random() * 360,
+      life: 1
+    });
+  }
+}
+
+function updateConfetti() {
+  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  for (let i = confettiPieces.length - 1; i >= 0; i--) {
+    const p = confettiPieces[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.rot += p.rotV;
+    p.life -= 0.008;
+    if (p.life <= 0 || p.y > confettiCanvas.height + 20) {
+      confettiPieces.splice(i, 1);
+      continue;
+    }
+    confettiCtx.save();
+    confettiCtx.translate(p.x, p.y);
+    confettiCtx.rotate(p.rot * Math.PI / 180);
+    confettiCtx.globalAlpha = p.life;
+    confettiCtx.fillStyle = `hsl(${p.hue}, 100%, 65%)`;
+    confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    confettiCtx.restore();
+  }
+}
+
+// =====================================================
+// PATTERN EFFECTS
+// =====================================================
+const PATTERNS = [
+  // Diagonal stripes
+  () => {
+    const hue = Math.random() * 360;
+    patternOverlay.style.background = `repeating-linear-gradient(
+      45deg,
+      hsla(${hue}, 100%, 60%, 0.08),
+      hsla(${hue}, 100%, 60%, 0.08) 10px,
+      transparent 10px, transparent 20px
+    )`;
+  },
+  // Radial burst
+  () => {
+    const hue = Math.random() * 360;
+    patternOverlay.style.background = `radial-gradient(
+      circle at 50% 50%,
+      hsla(${hue}, 100%, 70%, 0.12),
+      transparent 60%
+    )`;
+  },
+  // Horizontal scan
+  () => {
+    const hue = Math.random() * 360;
+    patternOverlay.style.background = `repeating-linear-gradient(
+      0deg,
+      hsla(${hue}, 100%, 50%, 0.06),
+      hsla(${hue}, 100%, 50%, 0.06) 4px,
+      transparent 4px, transparent 8px
+    )`;
+  },
+  // Diamond grid
+  () => {
+    const h1 = Math.random() * 360;
+    const h2 = (h1 + 120) % 360;
+    patternOverlay.style.background = `
+      repeating-linear-gradient(45deg, hsla(${h1},100%,60%,0.05) 0 5px, transparent 5px 15px),
+      repeating-linear-gradient(-45deg, hsla(${h2},100%,60%,0.05) 0 5px, transparent 5px 15px)
+    `;
+  },
+];
+
+function triggerPattern() {
+  const fn = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
+  fn();
+  patternOverlay.style.opacity = '1';
+  if (patternTimer) clearTimeout(patternTimer);
+  patternTimer = setTimeout(() => {
+    patternOverlay.style.opacity = '0';
+  }, 200);
+}
+
+// =====================================================
+// MAIN ANIMATION LOOP
+// =====================================================
+let prevBass = 0;
+let beatAccum = 0;
+let confettiCooldown = 0;
+
+function animate() {
+  animId = requestAnimationFrame(animate);
+  time += 0.016;
+
+  updateConfetti();
+
+  if (!analyser || !isPlaying) return;
+
+  analyser.getByteFrequencyData(freqData);
+  analyser.getByteTimeDomainData(timeData);
+
+  // Compute energy bands
+  const len = freqData.length;
+  let bass = 0, mid = 0, high = 0, total = 0;
+  for (let i = 0; i < len; i++) {
+    const v = freqData[i];
+    total += v;
+    if (i < len * 0.12) bass += v;
+    else if (i < len * 0.45) mid += v;
+    else high += v;
+  }
+  bass /= len * 0.12 * 255;
+  mid /= len * 0.33 * 255;
+  high /= len * 0.55 * 255;
+  total /= len * 255;
+
+  // Beat detection: sudden bass spike
+  const bassDelta = bass - prevBass;
+  prevBass = bass;
+  let beat = 0;
+  if (bassDelta > 0.15 && time - lastBeatTime > 0.2) {
+    beat = 1;
+    lastBeatTime = time;
+    beatDetected = true;
+    beatAccum++;
+
+    // Confetti on strong beats (every few beats)
+    if (confettiCooldown <= 0 && bass > 0.5) {
+      spawnConfetti(15 + Math.floor(bass * 25));
+      confettiCooldown = 3;
+    }
+
+    // Pattern effect on accented beats
+    if (beatAccum % 4 === 0) {
+      triggerPattern();
+    }
+  } else {
+    beat = Math.max(0, beat - 0.1);
+    beatDetected = false;
+  }
+  if (confettiCooldown > 0) confettiCooldown--;
+
+  // Hue shifts with tone/key
+  const dominantBin = freqData.indexOf(Math.max(...freqData));
+  const hue = (dominantBin / len * 360 + time * 15) % 360;
+
+  // Set CSS custom properties
+  root.style.setProperty('--bump', (1 + bass * 0.3).toFixed(3));
+  root.style.setProperty('--hue', hue.toFixed(1));
+  root.style.setProperty('--bass', bass.toFixed(3));
+  root.style.setProperty('--mid', mid.toFixed(3));
+  root.style.setProperty('--high', high.toFixed(3));
+  root.style.setProperty('--energy', total.toFixed(3));
+  root.style.setProperty('--beat', (beatDetected ? 1 : 0));
+  root.style.setProperty('--bg-hue', ((hue + 180) % 360).toFixed(1));
+
+  // Update mini viz bars
+  const vizBars = npViz.children;
+  const vizStep = Math.floor(len / vizBars.length);
+  for (let i = 0; i < vizBars.length; i++) {
+    const v = freqData[i * vizStep] / 255;
+    vizBars[i].style.height = (2 + v * 18) + 'px';
+    vizBars[i].style.background = `hsl(${(hue + i * 30) % 360}, 100%, 60%)`;
+  }
+}
+
+animate();
+</script>
+</body>
+</html>
