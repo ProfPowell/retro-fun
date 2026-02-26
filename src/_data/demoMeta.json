@@ -1,5 +1,16 @@
 [
   {
+    "slug": "h3",
+    "title": "H3: Hip Hop HTML",
+    "description": "Pick a beat, watch the page party — variable fonts bump to the bass, colors shift with tone, confetti flies",
+    "date": "2026-02-26",
+    "url": "/demos/h3/",
+    "preview": "preview-h3",
+    "tags": ["CSS", "Audio", "Type"],
+    "tagTypes": ["css", "audio", "type"],
+    "order": 1
+  },
+  {
     "slug": "rug-pull",
     "title": "Rug Pull",
     "description": "Launch shitcoins, lure normies onto the rug, mash SHILL, yank for profit — avoid the feds",

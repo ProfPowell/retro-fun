@@ -1,3 +1,35 @@
+/* H3: Hip Hop HTML preview */
+.preview-h3 {
+  background: #0a0510;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+}
+.preview-h3::before {
+  content: 'HIP HOP HTML';
+  font-family: monospace; font-size: 1.3rem; font-weight: bold;
+  color: #ff00ff;
+  text-shadow: 0 0 12px #ff00ff, 0 0 30px #ff00ff44;
+  animation: h3-bump 0.5s ease-in-out infinite alternate;
+}
+.preview-h3::after {
+  content: '\266b \266a \266b';
+  position: absolute; bottom: 12%; left: 50%;
+  transform: translateX(-50%);
+  font-size: 1rem;
+  color: #00ffff;
+  text-shadow: 0 0 8px #00ffff;
+  letter-spacing: 0.4em;
+  animation: h3-notes 1.5s ease-in-out infinite;
+}
+@keyframes h3-bump {
+  from { transform: scale(0.92); letter-spacing: 0.05em; }
+  to { transform: scale(1.08); letter-spacing: 0.15em; }
+}
+@keyframes h3-notes {
+  0%, 100% { opacity: 0.4; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+}
+
 /* Default post preview */
 .preview-post-default {
   background: #0a0a12;
