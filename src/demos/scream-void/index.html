@@ -150,7 +150,7 @@
     gap: 2rem;
     align-items: flex-end;
     margin: 1rem 0;
-    height: 180px;
+    height: 160px;
   }
   .meter-col {
     display: flex;
@@ -166,7 +166,7 @@
   }
   .meter-bar {
     width: 40px;
-    height: 150px;
+    height: 130px;
     background: #111;
     border: 1px solid #333;
     border-radius: 4px;
@@ -191,6 +191,49 @@
     transition: height 0.3s ease;
   }
 
+  /* ===== COPING BUTTONS ===== */
+  .coping-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0.8rem 0 0.3rem;
+    max-width: 500px;
+  }
+  .cope-btn {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.55rem, 1.6vw, 0.72rem);
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #444;
+    background: rgba(20, 20, 30, 0.7);
+    color: #aaa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+  .cope-btn:hover { border-color: #888; color: #fff; }
+  .cope-btn:active { transform: scale(0.95); }
+  .cope-btn.gummy { border-color: #44bb44; color: #44bb44; }
+  .cope-btn.gummy:hover { background: rgba(68, 187, 68, 0.15); box-shadow: 0 0 10px #44bb4422; }
+  .cope-btn.punch { border-color: #ff4444; color: #ff4444; }
+  .cope-btn.punch:hover { background: rgba(255, 68, 68, 0.15); box-shadow: 0 0 10px #ff444422; }
+  .cope-btn.beer { border-color: #ddaa33; color: #ddaa33; }
+  .cope-btn.beer:hover { background: rgba(221, 170, 51, 0.15); box-shadow: 0 0 10px #ddaa3322; }
+  .cope-btn.vodka { border-color: #88ccff; color: #88ccff; }
+  .cope-btn.vodka:hover { background: rgba(136, 204, 255, 0.15); box-shadow: 0 0 10px #88ccff22; }
+
+  .cope-label {
+    font-size: 0.5rem;
+    color: #555;
+    text-align: center;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+
   /* ===== SERENITY OVERLAY ===== */
   #serenity-overlay {
     position: fixed;
@@ -210,6 +253,10 @@
     letter-spacing: 0.15em;
     animation: breathe 4s ease-in-out infinite;
     z-index: 16;
+    text-align: center;
+    padding: 0 1rem;
+    max-width: 500px;
+    line-height: 1.6;
   }
 
   /* ===== GLITCH OVERLAY ===== */
@@ -250,6 +297,17 @@
     50% { transform: scale(1.2) rotate(3deg); opacity: 1; }
     100% { transform: scale(1) rotate(0deg); opacity: 1; }
   }
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-6px, 4px); }
+    40% { transform: translate(6px, -4px); }
+    60% { transform: translate(-4px, -6px); }
+    80% { transform: translate(4px, 6px); }
+  }
+  @keyframes cope-flash {
+    0% { opacity: 0.6; }
+    100% { opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -281,6 +339,13 @@
       </div>
     </div>
     <div class="scream-taunt" id="scream-taunt"></div>
+    <div class="cope-label">or try coping...</div>
+    <div class="coping-row">
+      <button class="cope-btn gummy" id="btn-gummy">&#x1F36C; Take a Gummy</button>
+      <button class="cope-btn punch" id="btn-punch">&#x1F44A; Punch Things</button>
+      <button class="cope-btn beer" id="btn-beer">&#x1F37A; Drink Beer</button>
+      <button class="cope-btn vodka" id="btn-vodka">&#x1F378; Drink Vodka</button>
+    </div>
   </div>
 </div>
 
@@ -288,7 +353,10 @@
   <div class="serenity-text" id="serenity-text">breathe...</div>
 </div>
 
-<div id="glitch-overlay" id="glitch-overlay"></div>
+<div id="glitch-overlay"></div>
+
+<!-- Flash overlay for coping effects -->
+<div id="cope-flash" style="position:fixed;inset:0;z-index:12;pointer-events:none;opacity:0;"></div>
 
 <script>
 // =====================================================================
@@ -311,12 +379,15 @@ let glitchStart = 0;
 let voidAngle = 0;
 let particles = [];
 let clouds = [];
-let rageQuotes = [];
 let lastTauntTime = 0;
 let currentTaunt = '';
 let analyser = null;
 let micStream = null;
 let dataArray = null;
+
+// ── Coping tracker ──
+let copingUsed = { gummy: 0, punch: 0, beer: 0, vodka: 0 };
+let copeCooldown = 0;
 
 // ── Resize ──
 function resize() {
@@ -379,6 +450,85 @@ const loudTaunts = [
   "Your vocal cords are filing a complaint. Ignore them.",
 ];
 
+// ── Coping taunts ──
+const gummyTaunts = [
+  "Oh we're going the edible route, are we? Classy stoner move.",
+  "One gummy? That's a microdose. Amateur hour.",
+  "The void doesn't judge... but your HR department might.",
+  "Take enough of those and you won't even NEED the void.",
+  "Is that organic? Free-range? Artisanal? Of course it is.",
+  "Ah yes, the millennial coping mechanism of choice.",
+  "You know those take 45 minutes to kick in, right? ...Right?",
+  "Your rage is melting. So is your ambition. Worth it? Maybe.",
+  "Cheech & Chong would be proud. Your dentist, less so.",
+  "Just vibing now. The void respects the vibe.",
+];
+
+const punchTaunts = [
+  "Violence ISN'T the answer. But it does feel good.",
+  "Careful, that's your coding hand.",
+  "The wall didn't do anything to you. Punch capitalism instead.",
+  "Your knuckles called. They want a raise.",
+  "POW! Take that, abstract concept of frustration!",
+  "Punching: the original anger management, since caveman times.",
+  "If only you could punch your backlog like that.",
+  "That's the energy. Channel it. Break... nothing expensive.",
+  "The void felt that one. Nice right hook.",
+];
+
+const beerTaunts = [
+  "Ah, the liquid courage approach. Classic.",
+  "One beer won't fix your problems. But two might. (They won't.)",
+  "The void pairs well with an IPA, apparently.",
+  "Craft beer doesn't count as a personality, by the way.",
+  "Your liver sighs but your rage meter thanks you.",
+  "Technically this is 'self-care.' Technically.",
+  "Nothing says 'I'm fine' like a beer at this hour.",
+  "Hops: nature's anti-rage medication. Citation needed.",
+];
+
+const vodkaTaunts = [
+  "Vodka? We've escalated to the hard stuff. The void approves.",
+  "Bold choice. Your morning self will have opinions about this.",
+  "Ah, the Russian approach to void management.",
+  "That's not coping, that's speedrunning liver damage.",
+  "The void is now slightly blurry. That's the vodka working.",
+  "One does not simply sip vodka. One COMMITS to vodka.",
+  "Your rage is dissolving. So are your brain cells. Win-win?",
+  "Vodka: because screaming alone wasn't dramatic enough.",
+  "Na zdorovye! Your rage meter AND your dignity: both dropping.",
+];
+
+// ── Guilt texts for serenity (when coping was used) ──
+const guiltTextsGummy = [
+  "...but was that gummy really necessary?",
+  "serenity... or just really, really high?",
+  "your couch called. it misses you already.",
+  "this peace brought to you by THC and bad decisions",
+  "calm now... munchies in T-minus 20 minutes",
+];
+const guiltTextsPunch = [
+  "...your hand hurts now, doesn't it?",
+  "peace through violence. humanity's oldest trick.",
+  "the drywall repair bill is going to ruin this calm",
+  "breathe... and ice those knuckles",
+  "inner peace, outer bruises",
+];
+const guiltTextsBeer = [
+  "is this calm... or just a buzz?",
+  "serenity, sponsored by hops and regret",
+  "your liver would like a word after this",
+  "calm... until the hangover hits",
+  "this isn't meditation, it's a Tuesday",
+];
+const guiltTextsVodka = [
+  "this isn't serenity, this is Tuesday in Moscow",
+  "calm... or just can't feel your face?",
+  "the void is spinning now. that's the vodka.",
+  "tomorrow's hangover enters the chat",
+  "peace through proof. 80 proof, specifically.",
+];
+
 const rageTexts = [
   "CUT OFF IN TRAFFIC",
   "LATE FOR WORK AGAIN",
@@ -412,6 +562,20 @@ const rageTexts = [
   "GAS PRICES THO",
 ];
 
+// ── Guilt rage quotes (appear during glitch when coping was used) ──
+const guiltRageTexts = [
+  "MAYBE YOU DRINK TOO MUCH",
+  "YOUR COPING MECHANISMS NEED COPING MECHANISMS",
+  "THIS ISN'T SELF-CARE, IT'S SELF-DESTRUCTION",
+  "YOUR THERAPIST IS GOING TO HEAR ABOUT THIS",
+  "PUNCHING THINGS DOESN'T FIX THINGS",
+  "THAT GUMMY WAS A CRY FOR HELP",
+  "YOU USED SUBSTANCES TO AVOID FEELINGS",
+  "THE VOID REMEMBERS WHAT YOU DID",
+  "MAYBE TRY YOGA NEXT TIME?",
+  "YOUR CHOICES HAVE CONSEQUENCES",
+];
+
 // ── Void particles ──
 function initParticles() {
   particles = [];
@@ -421,7 +585,7 @@ function initParticles() {
       dist: 60 + Math.random() * Math.min(W, H) * 0.4,
       speed: 0.003 + Math.random() * 0.008,
       size: 1 + Math.random() * 3,
-      hue: Math.random() * 60 + 260, // purple-blue range
+      hue: Math.random() * 60 + 260,
       drift: (Math.random() - 0.5) * 0.002,
       alpha: 0.3 + Math.random() * 0.7,
     });
@@ -449,11 +613,9 @@ function drawVoid(intensity) {
   const cy = H / 2;
   const maxR = Math.min(W, H) * 0.45;
 
-  // Background fade
   ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
   ctx.fillRect(0, 0, W, H);
 
-  // Void center - black hole
   const voidR = 30 + intensity * 20;
   const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, voidR * 3);
   grad.addColorStop(0, 'rgba(0,0,0,1)');
@@ -465,13 +627,11 @@ function drawVoid(intensity) {
   ctx.arc(cx, cy, voidR * 3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Inner void
   ctx.fillStyle = '#000';
   ctx.beginPath();
   ctx.arc(cx, cy, voidR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Event horizon glow
   const glowR = voidR + 5 + intensity * 8;
   const glow = ctx.createRadialGradient(cx, cy, voidR - 2, cx, cy, glowR);
   glow.addColorStop(0, `rgba(187, 68, 255, ${0.2 + intensity * 0.4})`);
@@ -482,29 +642,24 @@ function drawVoid(intensity) {
   ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Swirling particles
   for (const p of particles) {
     p.angle += p.speed + intensity * 0.005;
     p.dist -= (0.05 + intensity * 0.15);
     p.hue += p.drift * 100;
-
     if (p.dist < voidR) {
       p.dist = 60 + Math.random() * maxR;
       p.angle = Math.random() * Math.PI * 2;
       p.hue = Math.random() * 60 + 260;
     }
-
     const x = cx + Math.cos(p.angle) * p.dist;
     const y = cy + Math.sin(p.angle) * p.dist;
     const distFactor = Math.max(0, (p.dist - voidR) / maxR);
     const a = p.alpha * distFactor;
     const sz = p.size * (0.5 + intensity * 0.5);
-
     ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, ${a})`;
     ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
   }
 
-  // Spiral arms
   voidAngle += 0.01 + intensity * 0.02;
   for (let arm = 0; arm < 3; arm++) {
     const baseAngle = voidAngle + (arm * Math.PI * 2 / 3);
@@ -526,7 +681,6 @@ function drawVoid(intensity) {
 
 // ── Draw serenity ──
 function drawSerenity(t) {
-  // Sky gradient
   const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
   skyGrad.addColorStop(0, '#4488cc');
   skyGrad.addColorStop(0.5, '#88bbee');
@@ -535,7 +689,6 @@ function drawSerenity(t) {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // Sun
   const sunY = H * 0.2 + Math.sin(t * 0.5) * 10;
   const sunGrad = ctx.createRadialGradient(W * 0.7, sunY, 0, W * 0.7, sunY, 80);
   sunGrad.addColorStop(0, '#ffffcc');
@@ -550,12 +703,10 @@ function drawSerenity(t) {
   ctx.arc(W * 0.7, sunY, 30, 0, Math.PI * 2);
   ctx.fill();
 
-  // Clouds
   for (const cl of clouds) {
     cl.x += cl.speed;
     if (cl.x > W + cl.w) cl.x = -cl.w;
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    // Blocky cloud from rounded rects
     const cx2 = cl.x, cy2 = cl.y;
     ctx.beginPath();
     ctx.ellipse(cx2, cy2, cl.w * 0.5, cl.h * 0.4, 0, 0, Math.PI * 2);
@@ -568,7 +719,6 @@ function drawSerenity(t) {
     ctx.fill();
   }
 
-  // Rolling hills
   const grassY = H * 0.65;
   ctx.fillStyle = '#55aa33';
   ctx.beginPath();
@@ -580,7 +730,6 @@ function drawSerenity(t) {
   ctx.lineTo(W, H);
   ctx.fill();
 
-  // Grass details
   ctx.fillStyle = '#449922';
   ctx.beginPath();
   ctx.moveTo(0, H);
@@ -591,7 +740,6 @@ function drawSerenity(t) {
   ctx.lineTo(W, H);
   ctx.fill();
 
-  // Flowers / grass tufts
   for (let x = 20; x < W; x += 60) {
     const baseY = grassY + Math.sin(x * 0.005 + 1) * 30 + Math.sin(x * 0.012 + 3) * 15 - 5;
     const sway = Math.sin(t * 2 + x * 0.1) * 3;
@@ -604,10 +752,8 @@ function drawSerenity(t) {
 
 // ── Draw glitch ──
 function drawGlitch(t) {
-  // Distort serenity
   if (t < 2) {
     drawSerenity(t);
-    // Glitch bars
     const intensity = t / 2;
     const numBars = Math.floor(intensity * 15);
     for (let i = 0; i < numBars; i++) {
@@ -617,7 +763,6 @@ function drawGlitch(t) {
       const imgData = ctx.getImageData(0, Math.floor(y), W, Math.floor(h));
       ctx.putImageData(imgData, Math.floor(shift), Math.floor(y));
     }
-    // Chromatic aberration
     if (Math.random() < intensity * 0.5) {
       ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = `rgba(255,0,0,${intensity * 0.1})`;
@@ -627,11 +772,9 @@ function drawGlitch(t) {
       ctx.globalCompositeOperation = 'source-over';
     }
   } else {
-    // Heavy static + void creeping back
     const voidMix = Math.min(1, (t - 2) / 3);
     if (voidMix < 1) {
       drawSerenity(t);
-      // Heavy scanline static
       for (let y = 0; y < H; y += 2) {
         if (Math.random() < voidMix * 0.4) {
           ctx.fillStyle = `rgba(0,0,0,${0.3 + Math.random() * 0.5})`;
@@ -639,7 +782,6 @@ function drawGlitch(t) {
         }
       }
     }
-    // Void fading back in
     ctx.fillStyle = `rgba(0,0,0,${voidMix * 0.6})`;
     ctx.fillRect(0, 0, W, H);
     if (voidMix > 0.3) {
@@ -671,7 +813,68 @@ function getVolume() {
   analyser.getByteFrequencyData(dataArray);
   let sum = 0;
   for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-  return sum / dataArray.length / 255; // 0-1
+  return sum / dataArray.length / 255;
+}
+
+// ── Coping effects ──
+const copeFlash = document.getElementById('cope-flash');
+
+function flashScreen(color, duration) {
+  copeFlash.style.background = color;
+  copeFlash.style.opacity = '0.5';
+  copeFlash.style.animation = `cope-flash ${duration}ms ease forwards`;
+  setTimeout(() => {
+    copeFlash.style.animation = '';
+    copeFlash.style.opacity = '0';
+  }, duration);
+}
+
+function shakeScreen(duration) {
+  document.body.style.animation = `screen-shake 0.1s ease ${Math.ceil(duration / 100)}`;
+  setTimeout(() => { document.body.style.animation = ''; }, duration);
+}
+
+function doCope(type) {
+  if (phase !== 'scream') return;
+  const now = performance.now();
+  if (now - copeCooldown < 600) return; // prevent spam
+  copeCooldown = now;
+
+  copingUsed[type]++;
+
+  let reduction, taunts, color;
+  switch (type) {
+    case 'gummy':
+      reduction = 25;
+      taunts = gummyTaunts;
+      color = 'rgba(68, 187, 68, 0.4)';
+      flashScreen(color, 800);
+      break;
+    case 'punch':
+      reduction = 12;
+      taunts = punchTaunts;
+      color = 'rgba(255, 68, 68, 0.4)';
+      flashScreen(color, 300);
+      shakeScreen(400);
+      break;
+    case 'beer':
+      reduction = 15;
+      taunts = beerTaunts;
+      color = 'rgba(221, 170, 51, 0.3)';
+      flashScreen(color, 600);
+      break;
+    case 'vodka':
+      reduction = 20;
+      taunts = vodkaTaunts;
+      color = 'rgba(136, 204, 255, 0.3)';
+      flashScreen(color, 600);
+      break;
+  }
+
+  rage = Math.max(0, rage - reduction);
+  currentTaunt = taunts[Math.floor(Math.random() * taunts.length)];
+  tauntEl.textContent = currentTaunt;
+  lastTauntTime = (performance.now() - screamStart) / 1000;
 }
 
 // ── Phase management ──
@@ -689,7 +892,6 @@ const glitchOverlay = document.getElementById('glitch-overlay');
 const startBtn = document.getElementById('start-btn');
 
 // Cycle temptation texts
-let temptTimer = 0;
 function cycleTempt() {
   if (phase !== 'invite') return;
   temptEl.style.opacity = '0';
@@ -714,13 +916,51 @@ startBtn.addEventListener('click', async () => {
   lastTauntTime = 0;
   currentTaunt = '';
   tauntEl.textContent = '';
+  copingUsed = { gummy: 0, punch: 0, beer: 0, vodka: 0 };
 });
+
+// Coping buttons
+document.getElementById('btn-gummy').addEventListener('click', () => doCope('gummy'));
+document.getElementById('btn-punch').addEventListener('click', () => doCope('punch'));
+document.getElementById('btn-beer').addEventListener('click', () => doCope('beer'));
+document.getElementById('btn-vodka').addEventListener('click', () => doCope('vodka'));
 
 function formatTime(ms) {
   const s = Math.floor(ms / 1000);
   const m = Math.floor(s / 60);
   const ss = s % 60;
   return `${m}:${ss.toString().padStart(2, '0')}`;
+}
+
+function totalCopingUsed() {
+  return copingUsed.gummy + copingUsed.punch + copingUsed.beer + copingUsed.vodka;
+}
+
+function getSerenityTexts() {
+  const base = ['breathe...', 'peace...', 'silence...', 'calm...', 'all is well...'];
+  if (totalCopingUsed() === 0) return base;
+
+  // Mix in guilt based on what was used
+  const guilt = [];
+  if (copingUsed.gummy > 0) guilt.push(...guiltTextsGummy);
+  if (copingUsed.punch > 0) guilt.push(...guiltTextsPunch);
+  if (copingUsed.beer > 0) guilt.push(...guiltTextsBeer);
+  if (copingUsed.vodka > 0) guilt.push(...guiltTextsVodka);
+
+  // Alternate: calm, guilt, calm, guilt...
+  const mixed = [];
+  let gi = 0;
+  for (let i = 0; i < base.length; i++) {
+    mixed.push(base[i]);
+    if (gi < guilt.length) {
+      mixed.push(guilt[gi++]);
+    }
+  }
+  // Add remaining guilt
+  while (gi < guilt.length && mixed.length < 12) {
+    mixed.push(guilt[gi++]);
+  }
+  return mixed;
 }
 
 function startSerenity() {
@@ -730,20 +970,14 @@ function startSerenity() {
   serenityStart = performance.now();
   initClouds();
 
-  const serenityTexts = [
-    'breathe...',
-    'peace...',
-    'silence...',
-    'calm...',
-    'all is well...',
-  ];
+  const texts = getSerenityTexts();
   let stIdx = 0;
-  serenityTextEl.textContent = serenityTexts[0];
+  serenityTextEl.textContent = texts[0];
   const stInt = setInterval(() => {
     if (phase !== 'serenity') { clearInterval(stInt); return; }
     stIdx++;
-    serenityTextEl.textContent = serenityTexts[stIdx % serenityTexts.length];
-  }, 2500);
+    serenityTextEl.textContent = texts[stIdx % texts.length];
+  }, 2000);
 }
 
 function startGlitch() {
@@ -751,13 +985,17 @@ function startGlitch() {
   serenityOverlay.classList.remove('active');
   glitchOverlay.classList.add('active');
   glitchStart = performance.now();
-  rageQuotes = [];
   spawnRageQuotes();
 }
 
 function spawnRageQuotes() {
   if (phase !== 'glitch') return;
+
+  // Combine rage texts + guilt texts if coping was used
   const available = [...rageTexts];
+  if (totalCopingUsed() > 0) {
+    available.push(...guiltRageTexts);
+  }
   // Shuffle
   for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -765,7 +1003,7 @@ function spawnRageQuotes() {
   }
 
   let count = 0;
-  const maxQuotes = 20;
+  const maxQuotes = 22;
 
   function addQuote() {
     if (phase !== 'glitch' || count >= maxQuotes) return;
@@ -780,10 +1018,14 @@ function spawnRageQuotes() {
     el.style.top = (5 + Math.random() * 80) + '%';
     el.style.transform = `rotate(${(Math.random() - 0.5) * 30}deg)`;
 
-    const colors = ['#ff3333', '#ff6600', '#ffcc00', '#ff0066', '#ff4444', '#cc0000'];
+    // Guilt quotes in a different color
+    const isGuilt = guiltRageTexts.includes(text);
+    const colors = isGuilt
+      ? ['#ff88ff', '#cc66ff', '#ffaacc']
+      : ['#ff3333', '#ff6600', '#ffcc00', '#ff0066', '#ff4444', '#cc0000'];
     el.style.color = colors[Math.floor(Math.random() * colors.length)];
     el.style.textShadow = `0 0 10px ${el.style.color}66`;
-    el.style.animation = `glitch-in 0.3s ease forwards`;
+    el.style.animation = 'glitch-in 0.3s ease forwards';
     el.style.zIndex = 21 + count;
 
     glitchOverlay.appendChild(el);
@@ -802,7 +1044,6 @@ function endGlitch() {
   inviteEl.style.display = '';
   inviteEl.style.animation = 'fadeIn 1s ease';
   hudEl.classList.remove('active');
-  // Reset particles for fresh void
   initParticles();
 }
 
@@ -819,19 +1060,13 @@ function loop(now) {
     smoothVolume += (volume - smoothVolume) * 0.2;
 
     const elapsed = now - screamStart;
-
-    // Update timer
     timerEl.textContent = formatTime(elapsed);
-
-    // Update volume meter
     volumeFill.style.height = (smoothVolume * 100) + '%';
 
     // Drain rage based on volume
     if (smoothVolume > 0.15) {
-      // Louder = faster drain
       rage -= smoothVolume * 0.35;
     } else {
-      // Quiet: rage creeps back up slowly
       rage = Math.min(100, rage + 0.03);
     }
     rage = Math.max(0, rage);
@@ -852,7 +1087,7 @@ function loop(now) {
       statusEl.style.color = '#666';
     }
 
-    // Taunts
+    // Taunts (only if not recently set by coping)
     const tSec = elapsed / 1000;
     if (tSec - lastTauntTime > 3.5) {
       lastTauntTime = tSec;
@@ -866,10 +1101,8 @@ function loop(now) {
       tauntEl.textContent = currentTaunt;
     }
 
-    // Draw void with scream intensity
     drawVoid(0.1 + smoothVolume * 2);
 
-    // Rage depleted!
     if (rage <= 0) {
       startSerenity();
     }
