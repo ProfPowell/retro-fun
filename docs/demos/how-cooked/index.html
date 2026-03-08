@@ -275,8 +275,8 @@
     text-align: right;
     flex-shrink: 0;
   }
-  .meter-label.human { color: #00ccff; }
-  .meter-label.larry { color: #ff4444; }
+  .meter-label.is-human { color: #00ccff; }
+  .meter-label.is-larry { color: #ff4444; }
   .meter-track {
     flex: 1;
     height: 16px;
@@ -291,8 +291,8 @@
     border-radius: 2px;
     transition: width 0.8s ease;
   }
-  .meter-fill.human { background: #00ccff; }
-  .meter-fill.larry { background: #ff4444; }
+  .meter-fill.is-human { background: #00ccff; }
+  .meter-fill.is-larry { background: #ff4444; }
   .meter-pct {
     font-size: 0.55rem;
     width: 2.5rem;
@@ -336,14 +336,15 @@
     text-transform: uppercase;
     margin-bottom: 0.3rem;
   }
-  .compare-who.human { color: #00ccff; }
-  .compare-who.larry { color: #ff4444; }
+  .compare-who.is-human { color: #00ccff; }
+  .compare-who.is-larry { color: #ff4444; }
   .compare-val {
     font-size: clamp(0.75rem, 2vw, 0.95rem);
     font-weight: bold;
     padding: 0.3rem 0.6rem;
     border: 1px solid;
     border-radius: 4px;
+    min-width: 7rem;
   }
   .compare-vs {
     display: flex;
@@ -402,8 +403,8 @@
     text-align: right;
     flex-shrink: 0;
   }
-  .final-bar-label.human { color: #00ccff; }
-  .final-bar-label.larry { color: #ff4444; }
+  .final-bar-label.is-human { color: #00ccff; }
+  .final-bar-label.is-larry { color: #ff4444; }
   .final-bar-track {
     flex: 1;
     height: 20px;
@@ -418,8 +419,8 @@
     border-radius: 2px;
     transition: width 1.2s ease;
   }
-  .final-bar-fill.human { background: linear-gradient(90deg, #006688, #00ccff); }
-  .final-bar-fill.larry { background: linear-gradient(90deg, #882222, #ff4444); }
+  .final-bar-fill.is-human { background: linear-gradient(90deg, #006688, #00ccff); }
+  .final-bar-fill.is-larry { background: linear-gradient(90deg, #882222, #ff4444); }
   .final-bar-pct {
     position: absolute;
     right: 6px;
@@ -977,18 +978,16 @@ function getCookedLevel(pct) {
 
 // ── Dual meters HTML ──
 function dualMetersHTML(humanPct, larryPct) {
-  const hColor = humanPct < 30 ? '#00ccff' : humanPct < 60 ? '#00aadd' : '#0088bb';
-  const lColor = larryPct < 30 ? '#ff6644' : larryPct < 60 ? '#ff4433' : '#ff2222';
   return `
     <div class="dual-meters">
       <div class="meter-row">
-        <div class="meter-label human">You</div>
-        <div class="meter-track"><div class="meter-fill human" style="width: ${humanPct}%;"></div></div>
+        <div class="meter-label is-human">You</div>
+        <div class="meter-track"><div class="meter-fill is-human" style="width: ${humanPct}%;"></div></div>
         <div class="meter-pct">${humanPct}%</div>
       </div>
       <div class="meter-row">
-        <div class="meter-label larry">Larry</div>
-        <div class="meter-track"><div class="meter-fill larry" style="width: ${larryPct}%;"></div></div>
+        <div class="meter-label is-larry">Larry</div>
+        <div class="meter-track"><div class="meter-fill is-larry" style="width: ${larryPct}%;"></div></div>
         <div class="meter-pct">${larryPct}%</div>
       </div>
     </div>
@@ -1119,12 +1118,12 @@ function showVerdict(scenario, humanRating, larryRating) {
         <div class="emoji-big">${cookEmoji}</div>
         <div class="round-compare">
           <div class="compare-col">
-            <div class="compare-who human">Your Take</div>
+            <div class="compare-who is-human">Your Take</div>
             <div class="compare-val" style="color: ${humanColor}; border-color: ${humanColor}33;">${humanWord}</div>
           </div>
           <div class="compare-vs">vs</div>
           <div class="compare-col">
-            <div class="compare-who larry">Larry's Take</div>
+            <div class="compare-who is-larry">Larry's Take</div>
             <div class="compare-val" style="color: ${larryColor}; border-color: ${larryColor}33;">${larryWord}</div>
           </div>
         </div>
@@ -1184,16 +1183,16 @@ function showEndScreen() {
       <div class="final-compare">
         <div class="final-compare-title">Final Cookedness Comparison</div>
         <div class="final-bar-row">
-          <div class="final-bar-label human">Your Take</div>
+          <div class="final-bar-label is-human">Your Take</div>
           <div class="final-bar-track">
-            <div class="final-bar-fill human" id="human-final-bar" style="width: 0%;"></div>
+            <div class="final-bar-fill is-human" id="human-final-bar" style="width: 0%;"></div>
             <div class="final-bar-pct">${humanPct}%</div>
           </div>
         </div>
         <div class="final-bar-row">
-          <div class="final-bar-label larry">Larry's Take</div>
+          <div class="final-bar-label is-larry">Larry's Take</div>
           <div class="final-bar-track">
-            <div class="final-bar-fill larry" id="larry-final-bar" style="width: 0%;"></div>
+            <div class="final-bar-fill is-larry" id="larry-final-bar" style="width: 0%;"></div>
             <div class="final-bar-pct">${larryPct}%</div>
           </div>
         </div>
