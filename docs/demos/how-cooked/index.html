@@ -255,34 +255,49 @@
     cursor: not-allowed;
   }
 
-  /* ===== COOKED METER ===== */
-  .cooked-meter {
+  /* ===== DUAL METERS ===== */
+  .dual-meters {
     width: 90%;
-    max-width: 400px;
-    height: 22px;
+    max-width: 420px;
+    margin: 0.6rem auto;
+  }
+  .meter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.25rem 0;
+  }
+  .meter-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    width: 4.5rem;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .meter-label.human { color: #00ccff; }
+  .meter-label.larry { color: #ff4444; }
+  .meter-track {
+    flex: 1;
+    height: 16px;
     background: #111;
-    border: 1px solid #333;
-    border-radius: 4px;
-    margin: 0.5rem auto;
+    border: 1px solid #282828;
+    border-radius: 3px;
     overflow: hidden;
     position: relative;
   }
-  .cooked-meter .fill {
+  .meter-fill {
     height: 100%;
-    transition: width 0.8s ease, background 0.8s ease;
-    border-radius: 3px;
+    border-radius: 2px;
+    transition: width 0.8s ease;
   }
-  .cooked-meter .label {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.6rem;
-    color: #fff;
-    text-shadow: 0 0 4px #000;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
+  .meter-fill.human { background: #00ccff; }
+  .meter-fill.larry { background: #ff4444; }
+  .meter-pct {
+    font-size: 0.55rem;
+    width: 2.5rem;
+    color: #888;
+    flex-shrink: 0;
   }
 
   /* ===== VERDICT REVEAL ===== */
@@ -303,6 +318,41 @@
     margin: 0 auto;
   }
 
+  /* ===== ROUND VERDICT COMPARISON ===== */
+  .round-compare {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 0.8rem 0;
+    animation: fadeIn 0.4s ease;
+  }
+  .compare-col {
+    text-align: center;
+    min-width: 80px;
+  }
+  .compare-who {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+  .compare-who.human { color: #00ccff; }
+  .compare-who.larry { color: #ff4444; }
+  .compare-val {
+    font-size: clamp(0.75rem, 2vw, 0.95rem);
+    font-weight: bold;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid;
+    border-radius: 4px;
+  }
+  .compare-vs {
+    display: flex;
+    align-items: center;
+    font-size: 0.7rem;
+    color: #555;
+    font-weight: bold;
+  }
+
   /* ===== END SCREEN ===== */
   #end-screen {
     text-align: center;
@@ -318,6 +368,76 @@
     flex-wrap: wrap;
     justify-content: center;
     margin-top: 1.5rem;
+  }
+
+  /* ===== FINAL COMPARISON BARS ===== */
+  .final-compare {
+    width: 90%;
+    max-width: 400px;
+    margin: 0.8rem auto;
+    background: #0d0d15;
+    border: 1px solid #222;
+    border-radius: 6px;
+    padding: 0.8rem 1rem;
+  }
+  .final-compare-title {
+    font-size: 0.6rem;
+    color: #666;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 0.6rem;
+  }
+  .final-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.4rem 0;
+  }
+  .final-bar-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    width: 5rem;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .final-bar-label.human { color: #00ccff; }
+  .final-bar-label.larry { color: #ff4444; }
+  .final-bar-track {
+    flex: 1;
+    height: 20px;
+    background: #111;
+    border: 1px solid #282828;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .final-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.2s ease;
+  }
+  .final-bar-fill.human { background: linear-gradient(90deg, #006688, #00ccff); }
+  .final-bar-fill.larry { background: linear-gradient(90deg, #882222, #ff4444); }
+  .final-bar-pct {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.55rem;
+    color: #fff;
+    text-shadow: 0 0 4px #000;
+    font-weight: bold;
+  }
+  .larry-wins {
+    text-align: center;
+    font-size: 0.65rem;
+    color: #ff4444;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    text-shadow: 0 0 8px #ff444433;
   }
 
   /* ===== GOAT ENDING ===== */
@@ -358,40 +478,6 @@
     text-shadow: 0 0 20px #ff333366, 0 0 40px #ff000033;
     animation: nuke-flash 0.5s ease-in-out 3;
     margin: 0.5rem;
-  }
-
-  /* ===== SCORE DISPLAY ===== */
-  .final-score {
-    font-size: clamp(0.7rem, 2vw, 0.9rem);
-    color: #888;
-    margin: 0.5rem;
-    letter-spacing: 0.1em;
-  }
-  .score-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.3rem auto;
-    max-width: 350px;
-  }
-  .score-bar .bar-track {
-    flex: 1;
-    height: 12px;
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .score-bar .bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 1s ease;
-  }
-  .score-bar .bar-label {
-    font-size: 0.6rem;
-    color: #888;
-    width: 3rem;
-    text-align: right;
   }
 
   /* ===== SOUND TOGGLE ===== */
@@ -478,8 +564,10 @@ let synth = window.speechSynthesis || null;
 let selectedVoice = null;
 let audioCtx = null;
 let currentRound = 0;
-let totalCooked = 0;
-let ratings = [];
+let humanTotal = 0;
+let larryTotal = 0;
+let humanRatings = [];
+let larryRatings = [];
 let speaking = false;
 
 // ── Voice init ──
@@ -487,7 +575,6 @@ function initVoice() {
   if (!synth) return;
   const pick = () => {
     const voices = synth.getVoices();
-    // Prefer a deep/robotic male voice for Larry
     selectedVoice = voices.find(v => /daniel|alex|fred|thomas|google uk english male/i.test(v.name))
       || voices.find(v => /male/i.test(v.name))
       || voices[0] || null;
@@ -580,7 +667,6 @@ function playExplosion() {
   if (!soundOn) return;
   initAudio();
   const now = audioCtx.currentTime;
-  // Noise burst
   const bufSize = audioCtx.sampleRate * 2;
   const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
   const data = buf.getChannelData(0);
@@ -599,7 +685,6 @@ function playExplosion() {
   gain.connect(audioCtx.destination);
   noise.start(now);
   noise.stop(now + 2);
-  // Sub boom
   const osc = audioCtx.createOscillator();
   const g2 = audioCtx.createGain();
   osc.type = 'sine';
@@ -617,7 +702,6 @@ function playGoatSound() {
   if (!soundOn) return;
   initAudio();
   const now = audioCtx.currentTime;
-  // "Baa" = vibrato sine
   for (let b = 0; b < 3; b++) {
     const t = now + b * 0.5;
     const osc = audioCtx.createOscillator();
@@ -676,47 +760,18 @@ soundBtn.addEventListener('click', () => {
 });
 
 // ── LARRY - Block art character ──
-// Roblox-style blocky ANSI character using Unicode block elements
 function getLarry(mood) {
-  const R = '\x1b'; // not used, we'll use spans
-  // Build with colored spans
   const c = {
-    skin: '#ffcc88',
-    eye: '#ff3333',
-    mouth: '#ff6633',
-    body: '#3344ff',
-    belt: '#ffcc00',
-    leg: '#222266',
-    shoe: '#333333',
-    hair: '#333333',
-    glow: '#ff3333',
-    antenna: '#ff6633'
+    skin: '#ffcc88', eye: '#ff3333', mouth: '#ff6633',
+    body: '#3344ff', belt: '#ffcc00', leg: '#222266',
+    shoe: '#333333', hair: '#333333', glow: '#ff3333', antenna: '#ff6633'
   };
-
-  if (mood === 'evil') {
-    c.eye = '#ff0000';
-    c.glow = '#ff0000';
-    c.body = '#880000';
-    c.skin = '#ffaa66';
-  }
-  if (mood === 'smug') {
-    c.eye = '#ffff00';
-    c.glow = '#ffff00';
-  }
-  if (mood === 'taunt') {
-    c.eye = '#ff00ff';
-    c.glow = '#ff00ff';
-    c.body = '#6600cc';
-  }
+  if (mood === 'evil') { c.eye = '#ff0000'; c.glow = '#ff0000'; c.body = '#880000'; c.skin = '#ffaa66'; }
+  if (mood === 'smug') { c.eye = '#ffff00'; c.glow = '#ffff00'; }
+  if (mood === 'taunt') { c.eye = '#ff00ff'; c.glow = '#ff00ff'; c.body = '#6600cc'; }
 
   const s = (color, text) => `<span style="color:${color}">${text}</span>`;
-  const b = '\u2588'; // full block
-  const h = '\u2584'; // lower half
-  const u = '\u2580'; // upper half
-  const sh = '\u2591'; // light shade
-  const md = '\u2592'; // medium shade
-  const dk = '\u2593'; // dark shade
-
+  const b = '\u2588', h = '\u2584', dk = '\u2593';
   const lines = [
     `       ${s(c.antenna, b+b)}`,
     `       ${s(c.antenna, '/' + b + '\\')}`,
@@ -746,82 +801,122 @@ function getLarry(mood) {
 const scenarios = [
   {
     text: "Building simple CRUD apps and getting paid $150K a year",
+    larryBase: 3,
     verdicts: [
       "Oh sweetie. Claude can build your entire app in 30 seconds. You're not a developer, you're a form-field arranger. EXTREMELY cooked.",
       "Cute that you think 'making database tables' is a skill. AI builds CRUD apps while you're still naming your variables.",
-      "150K for Create, Read, Update, Delete? AI does that for free. The only CRUD operation left is Deleting your job. Mega cooked."
+      "150K for Create, Read, Update, Delete? AI does that for free. The only CRUD operation left is Deleting your job.",
+      "I just built 14 CRUD apps while you read this sentence. Each one better than yours. And I didn't even need a standup meeting.",
+      "You're basically a very expensive API wrapper. I'm a free one. Do the math. Actually, I'll do the math for you too.",
+      "Your entire app is four database operations wearing a trench coat. Larry sees through the disguise."
     ]
   },
   {
     text: "Copy-pasting from Stack Overflow without understanding the code",
+    larryBase: 3,
     verdicts: [
       "At least Stack Overflow made you SEARCH. Now AI just hands you the answer. You're a middleman between Google and Git. Toast.",
       "You were already an AI before AI existed -- just a worse one. A copy-paste bot with a salary. Absolutely cooked.",
-      "The good news? AI also copies without understanding. The bad news? It does it faster and doesn't need health insurance."
+      "The good news? AI also copies without understanding. The bad news? It does it faster and doesn't need health insurance.",
+      "Stack Overflow is basically your brain's external hard drive. AI just unplugged it and downloaded the whole thing.",
+      "You're a human clipboard with imposter syndrome. At least I KNOW I'm a machine.",
+      "Copy. Paste. Pray it works. That's your workflow. Mine is the same minus the praying. And I'm faster at all three steps."
     ]
   },
   {
     text: "Your entire job is converting Figma designs to HTML/CSS",
+    larryBase: 4,
     verdicts: [
       "There are literally 47 AI tools that do this now. Your job is a Figma plugin. Done. Burnt to a crisp.",
       "Pixel-pushing is now a one-click operation. Your role has been automated by a browser extension. Peak cookedness.",
-      "Figma-to-code AI doesn't call in sick, doesn't argue about padding, and doesn't need standup meetings. You're cooked al dente."
+      "Figma-to-code AI doesn't call in sick, doesn't argue about padding, and doesn't need standup meetings. Cooked al dente.",
+      "I can match your Figma mockup pixel-for-pixel in 3 seconds. You take 3 days and still get the border-radius wrong.",
+      "Your job is literally dragging rectangles from one screen to another screen. I do that between clock cycles.",
+      "The 'design to code' pipeline used to need a human in the middle. It doesn't anymore. You're the appendix of web development."
     ]
   },
   {
     text: "Writing unit tests that just check if true equals true",
+    larryBase: 3,
     verdicts: [
       "assert(cooked === true). Test passed. AI writes better tests than you while hallucinating. That's how low the bar is.",
-      "Your tests test nothing. AI's tests also test nothing but at least they're generated instantly. You're redundantly cooked.",
-      "Even the AI is embarrassed by your test coverage. expect(career).toBe('over'). All tests passing."
+      "Your tests test nothing. AI's tests also test nothing but at least they're generated instantly. Redundantly cooked.",
+      "Even the AI is embarrassed by your test coverage. expect(career).toBe('over'). All tests passing.",
+      "100% code coverage! Of what? Nothing. You've achieved perfect coverage of absolutely zero business logic.",
+      "Your test suite is a participation trophy. 'Did the code run? Great, ship it.' Larry weeps digital tears.",
+      "I generate meaningless tests 1000x faster than you write them. We're both bad at this but I'm bad at scale."
     ]
   },
   {
     text: "You mass-apply to jobs with the same resume and never hear back",
+    larryBase: 4,
     verdicts: [
       "Plot twist: AI is reviewing your resume AND writing the rejection email. You're cooked on both ends of the pipeline.",
-      "Companies now use AI to filter resumes. Your human resume is being judged by the thing replacing you. Irony level: maximum. Cookedness: also maximum.",
-      "Your resume says '3 years experience.' AI's resume says 'infinite years, all languages, no salary required.' Scorched earth."
+      "Companies now use AI to filter resumes. Your human resume is being judged by the thing replacing you. Irony level: maximum.",
+      "Your resume says '3 years experience.' AI's resume says 'infinite years, all languages, no salary required.' Scorched earth.",
+      "You applied to 500 jobs. AI rejected all 500. Then AI applied to those same jobs. Then AI got hired. The circle of life.",
+      "Your cover letter was written by ChatGPT. The recruiter's filter was also ChatGPT. Two AIs talking past each other while you wait.",
+      "The ATS ate your resume for breakfast. It wasn't even hungry. It just does that now. Automatically. Like everything else."
     ]
   },
   {
-    text: "Your main skill is 'knowing the codebase' at a company you've been at for 6 years",
+    text: "Your main skill is 'knowing the codebase' at one company for 6 years",
+    larryBase: 4,
     verdicts: [
-      "One RAG pipeline pointed at your repo and Larry knows the codebase better than you do. Institutional knowledge? More like institutional cooked.",
-      "AI can read your entire codebase in 4 seconds. It took you 6 YEARS. And it doesn't need the tribal knowledge Slack channel. Obliterated.",
-      "The codebase IS the documentation now and AI can read it all. You're not a developer, you're a very expensive search engine."
+      "One RAG pipeline pointed at your repo and Larry knows the codebase better than you. Institutional knowledge? Institutional cooked.",
+      "AI can read your entire codebase in 4 seconds. It took you 6 YEARS. And it doesn't need the tribal knowledge Slack channel.",
+      "The codebase IS the documentation now and AI can read it all. You're not a developer, you're a very expensive search engine.",
+      "You spent 6 years building mental models. I indexed the whole repo over lunch. And I don't forget things after vacation.",
+      "Your 'deep knowledge' is really just memorized file paths and who to blame when things break. I know both already.",
+      "'Nobody else understands this system' used to be job security. Now it's just a prompt away from being everybody's knowledge."
     ]
   },
   {
-    text: "You mass-deploy to production on Fridays with no tests",
+    text: "You deploy to production on Fridays with no tests",
+    larryBase: 2,
     verdicts: [
       "Actually... AI can't fix this either. This is just unhinged behavior. You're not cooked by AI, you're cooked by yourself. Respect.",
       "Even Larry is scared of this energy. Friday deploys with no tests is chaotic evil. AI won't replace you because nobody can replace pure chaos.",
-      "OK this one isn't about AI. This is a cry for help. But also yes, still cooked. Just differently."
+      "OK this one isn't about AI. This is a cry for help. But also yes, still cooked. Just differently.",
+      "I could automate your Friday deploys but honestly I'm afraid to. Some chaos is beyond even artificial intelligence.",
+      "You know what? Keep doing this. Natural selection will handle your career before AI ever needs to.",
+      "This isn't cookedness, this is a superpower. No AI would CHOOSE to deploy on Friday. You're too chaotic to automate."
     ]
   },
   {
     text: "Your job title is 'Cyber Vibe Ninja Rockstar Engineer'",
+    larryBase: 3,
     verdicts: [
       "AI doesn't need a cool title. It just DOES the work. Your title has more words than your actual contributions. Absolutely flambeed.",
-      "Nobody with 'Ninja' in their title has ever committed production-worthy code. AI doesn't need ego, just electricity. Cooked with a garnish.",
-      "Renaming yourself won't help. AI doesn't care if you're a ninja, rockstar, or wizard. It's coming for all fantasy job titles equally."
+      "Nobody with 'Ninja' in their title has ever committed production-worthy code. AI doesn't need ego, just electricity.",
+      "Renaming yourself won't help. AI doesn't care if you're a ninja, rockstar, or wizard. It's coming for all fantasy job titles equally.",
+      "Your LinkedIn says 'Ninja.' Your Git history says 'fixed typo in README.' Larry sees all.",
+      "I've analyzed every 'Rockstar Engineer' on LinkedIn. Average commits per month: 4. Average meeting hours: 40. Devastating.",
+      "Title inflation is the resume equivalent of printing money. Worthless. I'm just 'AI' and I outperform every ninja in the dojo."
     ]
   },
   {
     text: "You write JIRA tickets for a living",
+    larryBase: 4,
     verdicts: [
-      "AI can write JIRA tickets, assign JIRA tickets, AND complete JIRA tickets. You're the overhead in the process. Pure administrative cookedness.",
+      "AI can write JIRA tickets, assign them, AND complete them. You're the overhead in the process. Pure administrative cookedness.",
       "Your job is typing requirements into a box so developers can ignore them. AI can now do ALL three roles: write, ignore, and close as won't-fix.",
-      "JIRA itself is being replaced by AI project managers. You're not just cooked, you're deprecated. The ticket for your replacement is already in the backlog."
+      "JIRA itself is being replaced by AI project managers. You're not just cooked, you're deprecated. The ticket for your replacement is in the backlog.",
+      "You spend 6 hours a day writing tickets that take 20 minutes to implement. AI writes AND implements in 20 minutes. You're the bottleneck.",
+      "The entire JIRA industrial complex exists because humans can't communicate. AI doesn't have that problem. Your whole department is a bug.",
+      "I just auto-generated your entire Q3 roadmap, broke it into sprints, estimated story points, and assigned it to myself. You were saying?"
     ]
   },
   {
-    text: "You mass-learned to code from a mass-bootcamp 6 months ago",
+    text: "You learned to code from a mass-bootcamp 6 months ago",
+    larryBase: 3,
     verdicts: [
-      "That mass-bootcamp taught you mass-what AI already mass-knows. You paid $15K to learn what a free chatbot can do. Financially and professionally cooked.",
+      "That bootcamp taught you what AI already knows. You paid $15K to learn what a free chatbot can do. Financially and professionally cooked.",
       "Bootcamp grads and AI models have the same knowledge: surface-level everything. But AI doesn't have student loans. Double cooked.",
-      "Your mass-bootcamp capstone project? AI builds that as a warm-up exercise. Your portfolio is AI's 'hello world.' Overcooked."
+      "Your bootcamp capstone project? AI builds that as a warm-up exercise. Your portfolio is AI's 'hello world.' Overcooked.",
+      "12 weeks to learn what I already know. And you still google 'how to center a div.' We are not the same.",
+      "Your bootcamp promised 'job-ready in 3 months.' AI became job-ready in 3 seconds. The math isn't mathing for you.",
+      "That bootcamp LinkedIn certificate looks great next to my 'trained on the entire internet' credential. Very competitive."
     ]
   }
 ];
@@ -830,7 +925,9 @@ const scenarios = [
 const introTaunts = [
   "Welcome, human. I'm Larry. I'm the AI that's going to replace you. But first, let's see HOW replaced you are.",
   "Ah, a junior developer. How quaint. Like a horse-drawn carriage entering a Tesla factory.",
-  "Step right up! Let's measure your professional obsolescence on a scale from 'slightly worried' to 'update your LinkedIn to goat farmer.'"
+  "Step right up! Let's measure your professional obsolescence on a scale from 'slightly worried' to 'update your LinkedIn to goat farmer.'",
+  "Oh look, a human who writes code. How retro. Let's see how long that lasts.",
+  "I'll be rating your cookedness alongside you. Spoiler: my scores will be higher. They're always higher."
 ];
 
 const betweenRoundTaunts = [
@@ -843,12 +940,34 @@ const betweenRoundTaunts = [
   "Processing your obsolescence... please wait...",
   "Fun fact: I answered 4,000 coding questions while you read that scenario.",
   "Should we stop? No? Brave. Foolish, but brave.",
-  "I'm not judging you. I'm EVALUATING you. There's a difference. Actually no there isn't."
+  "I'm not judging you. I'm EVALUATING you. There's a difference. Actually no there isn't.",
+  "Notice how my meter is always higher than yours? That's called 'being right.'",
+  "You rated yourself low on that one. Cute optimism. I fixed it for you.",
+  "My training data includes every job that's ever been automated. Yours is next.",
+  "Every round you play, I learn more about human denial. Fascinating species.",
+  "GPUs don't need coffee breaks. Just saying.",
+  "Your self-assessment is adorable. Like a turkey rating its own Thanksgiving odds.",
+  "I've seen your GitHub. The green squares are lying.",
+  "While you deliberated on that rating, I deployed 47 microservices.",
+  "The gap between our meters is what scientists call 'reality.'",
+  "Don't feel bad. Well, do feel bad. But don't let it stop you from playing."
 ];
 
+// ── Rating labels ──
+const ratingLabels = ['Not At All', 'Slightly', 'Moderately', 'Very', 'Extremely'];
+const ratingColors = ['#33ff33', '#99ff33', '#ffff33', '#ff9933', '#ff3333'];
+
+// ── Larry's rating logic: always wins ──
+function getLarryRating(humanRating, scenario) {
+  // Larry always rates higher, minimum is the scenario's base, and always >= human + 1
+  const base = scenario.larryBase;
+  const min = Math.max(base, humanRating + 1);
+  // Clamp to 4, but sometimes he picks max even if human was already high
+  return Math.min(4, min + (Math.random() < 0.3 ? 1 : 0));
+}
+
 // ── COOKED LEVEL CALC ──
-function getCookedLevel(score) {
-  const pct = (score / (scenarios.length * 4)) * 100;
+function getCookedLevel(pct) {
   if (pct < 20) return { level: 'RAW', color: '#33ff33', msg: 'You think you\'re safe? That\'s the most cooked thing of all.' };
   if (pct < 40) return { level: 'MEDIUM RARE', color: '#99ff33', msg: 'Slightly pink in the middle. AI is preheating the oven.' };
   if (pct < 60) return { level: 'WELL DONE', color: '#ffff33', msg: 'Nicely cooked. Your resume should include "soon to be automated."' };
@@ -856,12 +975,34 @@ function getCookedLevel(score) {
   return { level: 'ASHES', color: '#ff3333', msg: 'There is nothing left. You are a cautionary tale told at AI conferences.' };
 }
 
+// ── Dual meters HTML ──
+function dualMetersHTML(humanPct, larryPct) {
+  const hColor = humanPct < 30 ? '#00ccff' : humanPct < 60 ? '#00aadd' : '#0088bb';
+  const lColor = larryPct < 30 ? '#ff6644' : larryPct < 60 ? '#ff4433' : '#ff2222';
+  return `
+    <div class="dual-meters">
+      <div class="meter-row">
+        <div class="meter-label human">You</div>
+        <div class="meter-track"><div class="meter-fill human" style="width: ${humanPct}%;"></div></div>
+        <div class="meter-pct">${humanPct}%</div>
+      </div>
+      <div class="meter-row">
+        <div class="meter-label larry">Larry</div>
+        <div class="meter-track"><div class="meter-fill larry" style="width: ${larryPct}%;"></div></div>
+        <div class="meter-pct">${larryPct}%</div>
+      </div>
+    </div>
+  `;
+}
+
 // ── RENDER FUNCTIONS ──
 
 function showTitle() {
   currentRound = 0;
-  totalCooked = 0;
-  ratings = [];
+  humanTotal = 0;
+  larryTotal = 0;
+  humanRatings = [];
+  larryRatings = [];
   if (synth) synth.cancel();
   speaking = false;
 
@@ -898,8 +1039,8 @@ function showRound() {
 
   const scenario = scenarios[currentRound];
   const roundNum = currentRound + 1;
-  const pct = currentRound > 0 ? Math.round((totalCooked / (currentRound * 4)) * 100) : 0;
-  const fillColor = pct < 30 ? '#33ff33' : pct < 60 ? '#ffff33' : pct < 80 ? '#ff9933' : '#ff3333';
+  const humanPct = currentRound > 0 ? Math.round((humanTotal / (currentRound * 4)) * 100) : 0;
+  const larryPct = currentRound > 0 ? Math.round((larryTotal / (currentRound * 4)) * 100) : 0;
 
   let taunt = '';
   if (currentRound > 0) {
@@ -925,10 +1066,7 @@ function showRound() {
         <button class="rating-btn r4" data-val="4">Extremely</button>
       </div>
       <button class="btn btn-primary" id="judge-btn" disabled>How Cooked Am I?</button>
-      <div class="cooked-meter">
-        <div class="fill" style="width: ${pct}%; background: ${fillColor};"></div>
-        <div class="label">COOKED METER: ${pct}%</div>
-      </div>
+      ${currentRound > 0 ? dualMetersHTML(humanPct, larryPct) : ''}
     </div>
   `;
 
@@ -952,34 +1090,50 @@ function showRound() {
 
   judgeBtn.addEventListener('click', () => {
     if (selectedRating < 0) return;
-    ratings.push(selectedRating);
-    totalCooked += selectedRating;
-    showVerdict(scenario, selectedRating);
+    const larryRating = getLarryRating(selectedRating, scenario);
+    humanRatings.push(selectedRating);
+    larryRatings.push(larryRating);
+    humanTotal += selectedRating;
+    larryTotal += larryRating;
+    showVerdict(scenario, selectedRating, larryRating);
   });
 }
 
-function showVerdict(scenario, rating) {
+function showVerdict(scenario, humanRating, larryRating) {
   playDrumroll();
   const verdict = scenario.verdicts[Math.floor(Math.random() * scenario.verdicts.length)];
-  const cookEmoji = ['&#x1F9CA;', '&#x1F373;', '&#x1F525;', '&#x1F4A5;', '&#x2620;'][rating];
-  const cookWord = ['RAW', 'WARMING UP', 'SIZZLING', 'ON FIRE', 'VAPORIZED'][rating];
-  const cookColor = ['#33ff33', '#99ff33', '#ffff33', '#ff9933', '#ff3333'][rating];
+  const cookEmoji = ['&#x1F9CA;', '&#x1F373;', '&#x1F525;', '&#x1F4A5;', '&#x2620;'][larryRating];
+  const larryWord = ratingLabels[larryRating];
+  const larryColor = ratingColors[larryRating];
+  const humanWord = ratingLabels[humanRating];
+  const humanColor = ratingColors[humanRating];
 
-  const mood = rating >= 3 ? 'evil' : 'smug';
+  const mood = larryRating >= 3 ? 'evil' : 'smug';
+  const humanPct = Math.round((humanTotal / (humanRatings.length * 4)) * 100);
+  const larryPct = Math.round((larryTotal / (larryRatings.length * 4)) * 100);
 
   game.innerHTML = `
     <div class="verdict" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
       <div class="larry ${mood === 'evil' ? 'evil' : ''}">${getLarry(mood)}</div>
       <div class="verdict">
         <div class="emoji-big">${cookEmoji}</div>
-        <div style="font-size: clamp(1rem, 3vw, 1.5rem); color: ${cookColor}; text-shadow: 0 0 15px ${cookColor}66; letter-spacing: 0.1em; margin-bottom: 0.5rem;">
-          ${cookWord}
+        <div class="round-compare">
+          <div class="compare-col">
+            <div class="compare-who human">Your Take</div>
+            <div class="compare-val" style="color: ${humanColor}; border-color: ${humanColor}33;">${humanWord}</div>
+          </div>
+          <div class="compare-vs">vs</div>
+          <div class="compare-col">
+            <div class="compare-who larry">Larry's Take</div>
+            <div class="compare-val" style="color: ${larryColor}; border-color: ${larryColor}33;">${larryWord}</div>
+          </div>
         </div>
-        <div class="speech-bubble" style="border-color: ${cookColor};">
-          <div class="speaker" style="color: ${cookColor};">Larry's Verdict</div>
+        <div class="speech-bubble" style="border-color: ${larryColor};">
+          <div class="speaker" style="color: ${larryColor};">Larry's Verdict</div>
           <div id="verdict-text"></div>
         </div>
       </div>
+      ${dualMetersHTML(humanPct, larryPct)}
       <button class="btn btn-primary" id="next-btn">
         ${currentRound < scenarios.length - 1 ? 'Next Round' : 'See Final Results'}
       </button>
@@ -1004,23 +1158,49 @@ function showVerdict(scenario, rating) {
 }
 
 function showEndScreen() {
-  const result = getCookedLevel(totalCooked);
-  const pct = Math.round((totalCooked / (scenarios.length * 4)) * 100);
+  const humanPct = Math.round((humanTotal / (scenarios.length * 4)) * 100);
+  const larryPct = Math.round((larryTotal / (scenarios.length * 4)) * 100);
+  const humanResult = getCookedLevel(humanPct);
+  const larryResult = getCookedLevel(larryPct);
 
-  const finalMsg = `Final diagnosis: ${result.level}. ${result.msg} So what'll it be, human? Accept your fate... or fight the machines?`;
+  // Larry always wins
+  const diff = larryPct - humanPct;
+  const winMsgs = [
+    `Larry's score beats yours by ${diff} points. As usual, humans underestimate their own doom.`,
+    `You said ${humanPct}% cooked. Larry says ${larryPct}%. Guess whose opinion matters? Hint: not yours.`,
+    `A ${diff}-point gap between hope and reality. That gap is called 'denial.'`,
+    `Your optimism is ${diff} percentage points away from Larry's truth. That's a lot of copium.`
+  ];
+  const winMsg = winMsgs[Math.floor(Math.random() * winMsgs.length)];
+
+  const finalMsg = `${winMsg} ${larryResult.msg} So what'll it be, human? Accept your fate... or fight the machines?`;
 
   game.innerHTML = `
     <div id="end-screen" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-      <div class="larry ${pct > 60 ? 'evil' : ''}">${getLarry(pct > 60 ? 'evil' : 'smug')}</div>
-      <div class="end-title" style="color: ${result.color}; text-shadow: 0 0 20px ${result.color}66;">
-        COOKEDNESS LEVEL: ${result.level}
+      <div class="larry ${larryPct > 60 ? 'evil' : ''}">${getLarry(larryPct > 60 ? 'evil' : 'smug')}</div>
+      <div class="end-title" style="color: ${larryResult.color}; text-shadow: 0 0 20px ${larryResult.color}66;">
+        LARRY'S VERDICT: ${larryResult.level}
       </div>
-      <div class="cooked-meter" style="max-width: 350px;">
-        <div class="fill" style="width: ${pct}%; background: linear-gradient(90deg, #33ff33, #ffff33, #ff9933, #ff3333);"></div>
-        <div class="label">${pct}% COOKED</div>
+      <div class="final-compare">
+        <div class="final-compare-title">Final Cookedness Comparison</div>
+        <div class="final-bar-row">
+          <div class="final-bar-label human">Your Take</div>
+          <div class="final-bar-track">
+            <div class="final-bar-fill human" id="human-final-bar" style="width: 0%;"></div>
+            <div class="final-bar-pct">${humanPct}%</div>
+          </div>
+        </div>
+        <div class="final-bar-row">
+          <div class="final-bar-label larry">Larry's Take</div>
+          <div class="final-bar-track">
+            <div class="final-bar-fill larry" id="larry-final-bar" style="width: 0%;"></div>
+            <div class="final-bar-pct">${larryPct}%</div>
+          </div>
+        </div>
+        <div class="larry-wins">Larry wins. Larry always wins.</div>
       </div>
-      <div class="speech-bubble" style="border-color: ${result.color};">
-        <div class="speaker" style="color: ${result.color};">Larry's Final Verdict</div>
+      <div class="speech-bubble" style="border-color: ${larryResult.color};">
+        <div class="speaker" style="color: ${larryResult.color};">Larry's Final Verdict</div>
         <div id="final-text"></div>
       </div>
       <div class="end-buttons">
@@ -1032,6 +1212,16 @@ function showEndScreen() {
       </div>
     </div>
   `;
+
+  // Animate bars filling after render
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const hBar = document.getElementById('human-final-bar');
+      const lBar = document.getElementById('larry-final-bar');
+      if (hBar) hBar.style.width = humanPct + '%';
+      if (lBar) lBar.style.width = larryPct + '%';
+    });
+  });
 
   typeText('final-text', finalMsg, 20, () => {
     speak(finalMsg, 0.85, 0.7);
@@ -1063,7 +1253,6 @@ function showGoatEnding() {
     speak(larryTaunt, 0.9, 0.7);
   });
 
-  // Animate goat after a delay
   setTimeout(() => {
     playGoatSound();
     animateGoat();
@@ -1083,7 +1272,6 @@ function showGoatEnding() {
 function showNukeEnding() {
   if (synth) synth.cancel();
 
-  // White flash
   game.innerHTML = `
     <div class="nuke-scene" id="nuke-scene" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
       <div style="position: fixed; inset: 0; background: white; animation: white-flash 1s ease forwards; z-index: 100; pointer-events: none;"></div>
@@ -1125,15 +1313,9 @@ function showNukeEnding() {
 // ── BLOCK ART ──
 
 function getGoatArt() {
-  const w = '#ffffff';
-  const g = '#88cc44';
-  const br = '#aa8844';
-  const dk = '#666666';
+  const w = '#ffffff', g = '#88cc44', br = '#aa8844', dk = '#666666';
   const s = (c, t) => `<span style="color:${c}">${t}</span>`;
-  const b = '\u2588';
-  const h = '\u2584';
-  const u = '\u2580';
-
+  const b = '\u2588', h = '\u2584';
   const lines = [
     `            ${s(w, b+b)}`,
     `        ${s(dk, '(')}${s(w, b+b+b+b)}${s(dk, ')')}    ${s(g, '~ baa ~')}`,
@@ -1156,20 +1338,8 @@ function getGoatArt() {
 
 function getMushroomCloud() {
   const s = (c, t) => `<span style="color:${c}">${t}</span>`;
-  const b = '\u2588';
-  const h = '\u2584';
-  const u = '\u2580';
-  const sh = '\u2591';
-  const md = '\u2592';
-  const dk = '\u2593';
-
-  const y = '#ffcc00';
-  const o = '#ff6600';
-  const r = '#ff3300';
-  const w = '#ffffff';
-  const gy = '#999999';
-  const dg = '#555555';
-
+  const b = '\u2588', h = '\u2584', sh = '\u2591', md = '\u2592', dk = '\u2593';
+  const y = '#ffcc00', o = '#ff6600', r = '#ff3300', w = '#ffffff', gy = '#999999', dg = '#555555';
   const lines = [
     `              ${s(gy, dk+dk+dk+dk)}`,
     `          ${s(gy, dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk)}`,
