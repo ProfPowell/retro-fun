@@ -308,6 +308,42 @@
     0% { opacity: 0.6; }
     100% { opacity: 0; }
   }
+
+  /* ===== PUNCH RAGE VIGNETTE ===== */
+  #rage-vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 11;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(200,0,0,0.7) 100%);
+    transition: opacity 0.1s;
+  }
+  #rage-vignette.active {
+    opacity: 1;
+    animation: rage-fade 1.2s ease forwards;
+  }
+  @keyframes rage-fade {
+    0% { opacity: 0.9; }
+    30% { opacity: 0.7; }
+    100% { opacity: 0; }
+  }
+
+  /* ===== BUBBLES ===== */
+  .bubble {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 11;
+    opacity: 0.6;
+    border: 1px solid rgba(255,255,255,0.3);
+    animation: bubble-rise linear forwards;
+  }
+  @keyframes bubble-rise {
+    0% { transform: translateY(0) translateX(0); opacity: 0.6; }
+    50% { opacity: 0.5; }
+    100% { transform: translateY(-110vh) translateX(var(--drift)); opacity: 0; }
+  }
 </style>
 </head>
 <body>
@@ -357,6 +393,8 @@
 
 <!-- Flash overlay for coping effects -->
 <div id="cope-flash" style="position:fixed;inset:0;z-index:12;pointer-events:none;opacity:0;"></div>
+<div id="rage-vignette"></div>
+<div id="bubble-container" style="position:fixed;inset:0;z-index:11;pointer-events:none;overflow:hidden;"></div>
 
 <script>
 // =====================================================================
@@ -818,6 +856,84 @@ function getVolume() {
 
 // ── Coping effects ──
 const copeFlash = document.getElementById('cope-flash');
+const rageVignette = document.getElementById('rage-vignette');
+const bubbleContainer = document.getElementById('bubble-container');
+
+// Persistent filter state — stacks across multiple uses
+let gummyIntensity = 0;
+let drunkIntensity = 0;
+let filterDecayTimer = null;
+
+function applyCanvasFilters() {
+  const filters = [];
+  if (gummyIntensity > 0) {
+    filters.push(`hue-rotate(${gummyIntensity * 60}deg)`);
+    filters.push(`blur(${gummyIntensity * 2}px)`);
+    filters.push(`saturate(${1 + gummyIntensity * 1.5})`);
+  }
+  if (drunkIntensity > 0) {
+    filters.push(`blur(${drunkIntensity * 3}px)`);
+    filters.push(`brightness(${1 + drunkIntensity * 0.2})`);
+  }
+  canvas.style.filter = filters.length ? filters.join(' ') : '';
+
+  // Wavy wobble for gummy
+  if (gummyIntensity > 0.1) {
+    const t = performance.now() / 1000;
+    const skewX = Math.sin(t * 2) * gummyIntensity * 3;
+    const skewY = Math.cos(t * 1.5) * gummyIntensity * 2;
+    canvas.style.transform = `skew(${skewX}deg, ${skewY}deg)`;
+  } else if (drunkIntensity > 0.1) {
+    // Drunk sway
+    const t = performance.now() / 1000;
+    const sway = Math.sin(t * 1.2) * drunkIntensity * 5;
+    canvas.style.transform = `translateX(${sway}px) rotate(${sway * 0.2}deg)`;
+  } else {
+    canvas.style.transform = '';
+  }
+}
+
+function startFilterDecay() {
+  if (filterDecayTimer) return;
+  filterDecayTimer = setInterval(() => {
+    let active = false;
+    if (gummyIntensity > 0) {
+      gummyIntensity = Math.max(0, gummyIntensity - 0.008);
+      active = true;
+    }
+    if (drunkIntensity > 0) {
+      drunkIntensity = Math.max(0, drunkIntensity - 0.006);
+      active = true;
+    }
+    applyCanvasFilters();
+    if (!active) {
+      clearInterval(filterDecayTimer);
+      filterDecayTimer = null;
+      canvas.style.filter = '';
+      canvas.style.transform = '';
+    }
+  }, 30);
+}
+
+function spawnBubbles(count, color, sizeRange) {
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'bubble';
+    const size = sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]);
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.left = (10 + Math.random() * 80) + '%';
+    el.style.bottom = (-size) + 'px';
+    el.style.background = color;
+    el.style.setProperty('--drift', ((Math.random() - 0.5) * 80) + 'px');
+    el.style.animationDuration = (2.5 + Math.random() * 3) + 's';
+    el.style.animationDelay = (Math.random() * 1.5) + 's';
+    bubbleContainer.appendChild(el);
+    // Clean up after animation
+    const dur = parseFloat(el.style.animationDuration) + parseFloat(el.style.animationDelay);
+    setTimeout(() => el.remove(), dur * 1000 + 100);
+  }
+}
 
 function flashScreen(color, duration) {
   copeFlash.style.background = color;
@@ -829,45 +945,57 @@ function flashScreen(color, duration) {
   }, duration);
 }
 
-function shakeScreen(duration) {
-  document.body.style.animation = `screen-shake 0.1s ease ${Math.ceil(duration / 100)}`;
-  setTimeout(() => { document.body.style.animation = ''; }, duration);
+function punchRage() {
+  // Doom-style red vignette
+  rageVignette.classList.remove('active');
+  void rageVignette.offsetWidth; // reflow to restart animation
+  rageVignette.classList.add('active');
+  setTimeout(() => rageVignette.classList.remove('active'), 1200);
+  // Heavy shake
+  document.body.style.animation = `screen-shake 0.08s ease 6`;
+  setTimeout(() => { document.body.style.animation = ''; }, 500);
 }
 
 function doCope(type) {
   if (phase !== 'scream') return;
   const now = performance.now();
-  if (now - copeCooldown < 600) return; // prevent spam
+  if (now - copeCooldown < 600) return;
   copeCooldown = now;
 
   copingUsed[type]++;
 
-  let reduction, taunts, color;
+  let reduction, taunts;
   switch (type) {
     case 'gummy':
       reduction = 25;
       taunts = gummyTaunts;
-      color = 'rgba(68, 187, 68, 0.4)';
-      flashScreen(color, 800);
+      gummyIntensity = Math.min(1.5, gummyIntensity + 0.4);
+      applyCanvasFilters();
+      startFilterDecay();
+      flashScreen('rgba(68, 187, 68, 0.25)', 600);
       break;
     case 'punch':
       reduction = 12;
       taunts = punchTaunts;
-      color = 'rgba(255, 68, 68, 0.4)';
-      flashScreen(color, 300);
-      shakeScreen(400);
+      punchRage();
       break;
     case 'beer':
       reduction = 15;
       taunts = beerTaunts;
-      color = 'rgba(221, 170, 51, 0.3)';
-      flashScreen(color, 600);
+      drunkIntensity = Math.min(1.5, drunkIntensity + 0.25);
+      applyCanvasFilters();
+      startFilterDecay();
+      spawnBubbles(8, 'rgba(221, 187, 68, 0.35)', [8, 20]);
+      flashScreen('rgba(221, 170, 51, 0.15)', 400);
       break;
     case 'vodka':
       reduction = 20;
       taunts = vodkaTaunts;
-      color = 'rgba(136, 204, 255, 0.3)';
-      flashScreen(color, 600);
+      drunkIntensity = Math.min(1.5, drunkIntensity + 0.45);
+      applyCanvasFilters();
+      startFilterDecay();
+      spawnBubbles(15, 'rgba(170, 210, 255, 0.35)', [6, 25]);
+      flashScreen('rgba(136, 204, 255, 0.15)', 400);
       break;
   }
 
@@ -876,7 +1004,6 @@ function doCope(type) {
   tauntEl.textContent = currentTaunt;
   lastTauntTime = (performance.now() - screamStart) / 1000;
 
-  // If rage depleted via coping, trigger serenity after a brief flash delay
   if (rage <= 0) {
     setTimeout(() => { if (phase === 'scream') startSerenity(); }, 500);
   }
@@ -974,6 +1101,12 @@ function startSerenity() {
   serenityOverlay.classList.add('active');
   serenityStart = performance.now();
   initClouds();
+  // Clear coping visual effects
+  gummyIntensity = 0;
+  drunkIntensity = 0;
+  canvas.style.filter = '';
+  canvas.style.transform = '';
+  bubbleContainer.innerHTML = '';
 
   const texts = getSerenityTexts();
   let stIdx = 0;
@@ -1050,6 +1183,9 @@ function endGlitch() {
   inviteEl.style.animation = 'fadeIn 1s ease';
   hudEl.classList.remove('active');
   initParticles();
+  canvas.style.filter = '';
+  canvas.style.transform = '';
+  bubbleContainer.innerHTML = '';
 }
 
 // ── Main loop ──
