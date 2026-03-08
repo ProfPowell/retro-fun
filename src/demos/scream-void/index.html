@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<title>Scream Into the Void // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  canvas {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0, 0, 0, 0.1) 2px, rgba(0, 0, 0, 0.1) 4px
+    );
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  .back {
+    position: fixed; top: 0.8rem; right: 0.8rem;
+    font-family: 'Courier New', monospace; font-size: 0.85rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 9999;
+    padding: 0.4rem 0.6rem;
+  }
+  .back:hover { color: #00ffff; }
+
+  /* ===== UI OVERLAY ===== */
+  #ui {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #ui > * { pointer-events: auto; }
+
+  /* ===== INVITE SCREEN ===== */
+  #invite {
+    text-align: center;
+    animation: fadeIn 1s ease;
+  }
+  #invite h1 {
+    font-size: clamp(1.8rem, 6vw, 3.5rem);
+    color: #bb44ff;
+    text-shadow: 0 0 30px #bb44ff66, 0 0 60px #8800cc33;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+  .tempt-text {
+    font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+    color: #9966cc;
+    text-shadow: 0 0 10px #9966cc44;
+    min-height: 2em;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+    transition: opacity 0.4s;
+  }
+  .btn-scream {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+    padding: 1rem 2.5rem;
+    border: 2px solid #bb44ff;
+    background: transparent;
+    color: #bb44ff;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: all 0.3s;
+    -webkit-tap-highlight-color: transparent;
+    animation: scream-pulse 2s ease-in-out infinite;
+  }
+  .btn-scream:hover {
+    background: #bb44ff;
+    color: #000;
+    box-shadow: 0 0 40px #bb44ff66;
+  }
+
+  /* ===== SCREAM HUD ===== */
+  #scream-hud {
+    display: none;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.5s ease;
+  }
+  #scream-hud.active { display: flex; }
+
+  .scream-status {
+    font-size: clamp(0.7rem, 2vw, 0.9rem);
+    color: #bb44ff;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px #bb44ff44;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    padding: 0 1rem;
+  }
+
+  .scream-timer {
+    font-size: clamp(2rem, 8vw, 4rem);
+    color: #fff;
+    text-shadow: 0 0 15px #ffffff44;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .scream-taunt {
+    font-size: clamp(0.75rem, 2.2vw, 1rem);
+    color: #ff6644;
+    text-shadow: 0 0 8px #ff664433;
+    min-height: 1.5em;
+    text-align: center;
+    padding: 0 1rem;
+    transition: opacity 0.3s;
+    max-width: 500px;
+  }
+
+  /* ===== METERS ===== */
+  .meters {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-end;
+    margin: 1rem 0;
+    height: 180px;
+  }
+  .meter-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .meter-title {
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #888;
+  }
+  .meter-bar {
+    width: 40px;
+    height: 150px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .meter-bar-fill {
+    width: 100%;
+    border-radius: 3px;
+    transition: height 0.1s ease;
+  }
+  .volume-fill {
+    background: linear-gradient(0deg, #bb44ff, #ff44aa);
+    box-shadow: 0 0 10px #bb44ff44;
+  }
+  .rage-fill {
+    background: linear-gradient(0deg, #ff4444, #ff8800);
+    box-shadow: 0 0 10px #ff444444;
+    transition: height 0.3s ease;
+  }
+
+  /* ===== SERENITY OVERLAY ===== */
+  #serenity-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #serenity-overlay.active { display: flex; }
+
+  .serenity-text {
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    color: #fff;
+    text-shadow: 0 0 20px #ffffff66;
+    letter-spacing: 0.15em;
+    animation: breathe 4s ease-in-out infinite;
+    z-index: 16;
+  }
+
+  /* ===== GLITCH OVERLAY ===== */
+  #glitch-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    overflow: hidden;
+  }
+  #glitch-overlay.active { display: block; }
+
+  .rage-quote {
+    position: absolute;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scream-pulse {
+    0%, 100% { box-shadow: 0 0 10px #bb44ff22; }
+    50% { box-shadow: 0 0 30px #bb44ff44, 0 0 60px #bb44ff22; }
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.03); }
+  }
+  @keyframes glitch-in {
+    0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+    50% { transform: scale(1.2) rotate(3deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <div id="invite">
+    <h1>SCREAM INTO THE VOID</h1>
+    <div class="tempt-text" id="tempt-text"></div>
+    <button class="btn-scream" id="start-btn">Start Screaming</button>
+  </div>
+
+  <div id="scream-hud">
+    <div class="scream-status" id="scream-status">SCREAMING IN PROGRESS</div>
+    <div class="scream-timer" id="scream-timer">0:00</div>
+    <div class="meters">
+      <div class="meter-col">
+        <div class="meter-title">Volume</div>
+        <div class="meter-bar">
+          <div class="meter-bar-fill volume-fill" id="volume-fill"></div>
+        </div>
+      </div>
+      <div class="meter-col">
+        <div class="meter-title">Rage</div>
+        <div class="meter-bar">
+          <div class="meter-bar-fill rage-fill" id="rage-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="scream-taunt" id="scream-taunt"></div>
+  </div>
+</div>
+
+<div id="serenity-overlay">
+  <div class="serenity-text" id="serenity-text">breathe...</div>
+</div>
+
+<div id="glitch-overlay" id="glitch-overlay"></div>
+
+<script>
+// =====================================================================
+// SCREAM INTO THE VOID — Therapeutic digital screaming
+// =====================================================================
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+// ── State ──
+let phase = 'invite'; // invite | scream | serenity | glitch
+let time = 0;
+let screamStart = 0;
+let volume = 0;
+let smoothVolume = 0;
+let rage = 100;
+let serenityStart = 0;
+let glitchStart = 0;
+let voidAngle = 0;
+let particles = [];
+let clouds = [];
+let rageQuotes = [];
+let lastTauntTime = 0;
+let currentTaunt = '';
+let analyser = null;
+let micStream = null;
+let dataArray = null;
+
+// ── Resize ──
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Temptation texts ──
+const tempts = [
+  "Come on... you feel it...",
+  "Just let loose...",
+  "You know you want to...",
+  "The void is listening...",
+  "Nobody's judging you here...",
+  "Let it all out...",
+  "The void doesn't care about your deadlines...",
+  "Your inbox can wait...",
+  "Scream like nobody's watching...",
+  "The void has heard worse...",
+  "Your therapist would approve...",
+  "It's cheaper than therapy...",
+  "The void accepts all screams equally...",
+  "Go ahead. The void's got all day...",
+];
+let temptIdx = 0;
+
+// ── Scream taunts (when too quiet) ──
+const quietTaunts = [
+  "That's it? My grandmother screams louder at bingo.",
+  "I've heard louder whispers.",
+  "The void can barely hear you. LOUDER.",
+  "Come on, you call that a scream?",
+  "My microphone is yawning.",
+  "A gentle breeze has more intensity.",
+  "Scream like your code just broke in production.",
+  "Pretend you just saw your cloud bill.",
+  "Imagine someone just force-pushed to main.",
+  "Your scream energy is at 'passive-aggressive email' level.",
+  "The void is disappointed in your effort.",
+  "Scream like you just got a 2% raise after inflation.",
+  "That sound wouldn't scare a houseplant.",
+  "Even the void is falling asleep.",
+  "Channel your inner 'WiFi just died during a demo.'",
+];
+
+const loudTaunts = [
+  "YES. Feed the void.",
+  "Now we're talking! Or... screaming!",
+  "THE VOID HEARS YOU.",
+  "Beautiful. Pure, unfiltered rage.",
+  "Your neighbors are concerned. Keep going.",
+  "That's the spirit! Let it ALL out!",
+  "The void is pleased with your offering.",
+  "MAGNIFICENT. The void trembles.",
+  "Your rage meter is dropping. You're doing it!",
+  "The void hasn't been fed this well in ages.",
+  "Primal. Raw. Perfect.",
+  "Your vocal cords are filing a complaint. Ignore them.",
+];
+
+const rageTexts = [
+  "CUT OFF IN TRAFFIC",
+  "LATE FOR WORK AGAIN",
+  "AI TAKES YOUR JOB",
+  "THE ORANGE MAN WON'T SHUT UP",
+  "REPLY ALL TO 500 PEOPLE",
+  "MEETING THAT COULD'VE BEEN AN EMAIL",
+  "YOUR PR HAS 47 COMMENTS",
+  "PROD IS DOWN AGAIN",
+  "STUDENT LOANS FOREVER",
+  "READ RECEIPTS: SEEN",
+  "YOUR EX GOT PROMOTED",
+  "RENT WENT UP AGAIN",
+  "JAVASCRIPT FRAMEWORK #4,891",
+  "INFLUENCER LIFE ADVICE",
+  "RAGE BAIT WORKED ON YOU",
+  "ALGORITHM KNOWS YOU'RE MAD",
+  "BREAKING NEWS: EVERYTHING IS BAD",
+  "THEY CANCELLED YOUR FAVORITE SHOW",
+  "MERCURY IS IN RETROGRADE AGAIN",
+  "YOUR PACKAGE IS 'OUT FOR DELIVERY'",
+  "UNDEFINED IS NOT A FUNCTION",
+  "WORKS ON MY MACHINE",
+  "STACK OVERFLOW IS DOWN",
+  "YOUR BOSS JUST PINGED YOU",
+  "HOT TAKE FROM SOMEONE WHO'S WRONG",
+  "RECRUITER: 'EXCITING OPPORTUNITY'",
+  "WiFi DROPS DURING ZOOM CALL",
+  "PRINTER SAYS: PC LOAD LETTER",
+  "THEY ATE YOUR LUNCH FROM THE FRIDGE",
+  "GAS PRICES THO",
+];
+
+// ── Void particles ──
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < 200; i++) {
+    particles.push({
+      angle: Math.random() * Math.PI * 2,
+      dist: 60 + Math.random() * Math.min(W, H) * 0.4,
+      speed: 0.003 + Math.random() * 0.008,
+      size: 1 + Math.random() * 3,
+      hue: Math.random() * 60 + 260, // purple-blue range
+      drift: (Math.random() - 0.5) * 0.002,
+      alpha: 0.3 + Math.random() * 0.7,
+    });
+  }
+}
+initParticles();
+
+// ── Serenity clouds ──
+function initClouds() {
+  clouds = [];
+  for (let i = 0; i < 8; i++) {
+    clouds.push({
+      x: Math.random() * W,
+      y: H * 0.1 + Math.random() * H * 0.35,
+      w: 80 + Math.random() * 160,
+      h: 30 + Math.random() * 40,
+      speed: 0.2 + Math.random() * 0.5,
+    });
+  }
+}
+
+// ── Draw void ──
+function drawVoid(intensity) {
+  const cx = W / 2;
+  const cy = H / 2;
+  const maxR = Math.min(W, H) * 0.45;
+
+  // Background fade
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Void center - black hole
+  const voidR = 30 + intensity * 20;
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, voidR * 3);
+  grad.addColorStop(0, 'rgba(0,0,0,1)');
+  grad.addColorStop(0.3, 'rgba(10,0,20,0.95)');
+  grad.addColorStop(0.7, 'rgba(20,0,40,0.3)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, voidR * 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner void
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(cx, cy, voidR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Event horizon glow
+  const glowR = voidR + 5 + intensity * 8;
+  const glow = ctx.createRadialGradient(cx, cy, voidR - 2, cx, cy, glowR);
+  glow.addColorStop(0, `rgba(187, 68, 255, ${0.2 + intensity * 0.4})`);
+  glow.addColorStop(0.5, `rgba(136, 0, 204, ${0.1 + intensity * 0.2})`);
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Swirling particles
+  for (const p of particles) {
+    p.angle += p.speed + intensity * 0.005;
+    p.dist -= (0.05 + intensity * 0.15);
+    p.hue += p.drift * 100;
+
+    if (p.dist < voidR) {
+      p.dist = 60 + Math.random() * maxR;
+      p.angle = Math.random() * Math.PI * 2;
+      p.hue = Math.random() * 60 + 260;
+    }
+
+    const x = cx + Math.cos(p.angle) * p.dist;
+    const y = cy + Math.sin(p.angle) * p.dist;
+    const distFactor = Math.max(0, (p.dist - voidR) / maxR);
+    const a = p.alpha * distFactor;
+    const sz = p.size * (0.5 + intensity * 0.5);
+
+    ctx.fillStyle = `hsla(${p.hue}, 80%, 60%, ${a})`;
+    ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+  }
+
+  // Spiral arms
+  voidAngle += 0.01 + intensity * 0.02;
+  for (let arm = 0; arm < 3; arm++) {
+    const baseAngle = voidAngle + (arm * Math.PI * 2 / 3);
+    ctx.beginPath();
+    for (let i = 0; i < 80; i++) {
+      const t = i / 80;
+      const a = baseAngle + t * Math.PI * 2;
+      const r = voidR + t * maxR * 0.8;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = `hsla(${280 + arm * 20}, 70%, 50%, ${0.08 + intensity * 0.06})`;
+    ctx.lineWidth = 2 + intensity * 2;
+    ctx.stroke();
+  }
+}
+
+// ── Draw serenity ──
+function drawSerenity(t) {
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, '#4488cc');
+  skyGrad.addColorStop(0.5, '#88bbee');
+  skyGrad.addColorStop(0.7, '#aaddff');
+  skyGrad.addColorStop(1, '#66aa44');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Sun
+  const sunY = H * 0.2 + Math.sin(t * 0.5) * 10;
+  const sunGrad = ctx.createRadialGradient(W * 0.7, sunY, 0, W * 0.7, sunY, 80);
+  sunGrad.addColorStop(0, '#ffffcc');
+  sunGrad.addColorStop(0.3, '#ffee88');
+  sunGrad.addColorStop(1, 'rgba(255,238,136,0)');
+  ctx.fillStyle = sunGrad;
+  ctx.beginPath();
+  ctx.arc(W * 0.7, sunY, 80, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffee88';
+  ctx.beginPath();
+  ctx.arc(W * 0.7, sunY, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Clouds
+  for (const cl of clouds) {
+    cl.x += cl.speed;
+    if (cl.x > W + cl.w) cl.x = -cl.w;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    // Blocky cloud from rounded rects
+    const cx2 = cl.x, cy2 = cl.y;
+    ctx.beginPath();
+    ctx.ellipse(cx2, cy2, cl.w * 0.5, cl.h * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx2 - cl.w * 0.25, cy2 + cl.h * 0.1, cl.w * 0.3, cl.h * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx2 + cl.w * 0.25, cy2 + cl.h * 0.05, cl.w * 0.35, cl.h * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Rolling hills
+  const grassY = H * 0.65;
+  ctx.fillStyle = '#55aa33';
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (let x = 0; x <= W; x += 4) {
+    const y = grassY + Math.sin(x * 0.005 + 1) * 30 + Math.sin(x * 0.012 + 3) * 15;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H);
+  ctx.fill();
+
+  // Grass details
+  ctx.fillStyle = '#449922';
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (let x = 0; x <= W; x += 4) {
+    const y = grassY + 40 + Math.sin(x * 0.008 + 2) * 20 + Math.sin(x * 0.018) * 10;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H);
+  ctx.fill();
+
+  // Flowers / grass tufts
+  for (let x = 20; x < W; x += 60) {
+    const baseY = grassY + Math.sin(x * 0.005 + 1) * 30 + Math.sin(x * 0.012 + 3) * 15 - 5;
+    const sway = Math.sin(t * 2 + x * 0.1) * 3;
+    ctx.fillStyle = ['#ffdd44', '#ff6688', '#ffffff', '#ff88cc', '#ffaa44'][(x * 7) % 5];
+    ctx.fillRect(x + sway - 2, baseY - 6, 5, 5);
+    ctx.fillStyle = '#338811';
+    ctx.fillRect(x + 1, baseY - 2, 2, 8);
+  }
+}
+
+// ── Draw glitch ──
+function drawGlitch(t) {
+  // Distort serenity
+  if (t < 2) {
+    drawSerenity(t);
+    // Glitch bars
+    const intensity = t / 2;
+    const numBars = Math.floor(intensity * 15);
+    for (let i = 0; i < numBars; i++) {
+      const y = Math.random() * H;
+      const h = 2 + Math.random() * 8;
+      const shift = (Math.random() - 0.5) * intensity * 60;
+      const imgData = ctx.getImageData(0, Math.floor(y), W, Math.floor(h));
+      ctx.putImageData(imgData, Math.floor(shift), Math.floor(y));
+    }
+    // Chromatic aberration
+    if (Math.random() < intensity * 0.5) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = `rgba(255,0,0,${intensity * 0.1})`;
+      ctx.fillRect(Math.random() * 10, 0, W, H);
+      ctx.fillStyle = `rgba(0,0,255,${intensity * 0.1})`;
+      ctx.fillRect(-Math.random() * 10, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  } else {
+    // Heavy static + void creeping back
+    const voidMix = Math.min(1, (t - 2) / 3);
+    if (voidMix < 1) {
+      drawSerenity(t);
+      // Heavy scanline static
+      for (let y = 0; y < H; y += 2) {
+        if (Math.random() < voidMix * 0.4) {
+          ctx.fillStyle = `rgba(0,0,0,${0.3 + Math.random() * 0.5})`;
+          ctx.fillRect(0, y, W, 2);
+        }
+      }
+    }
+    // Void fading back in
+    ctx.fillStyle = `rgba(0,0,0,${voidMix * 0.6})`;
+    ctx.fillRect(0, 0, W, H);
+    if (voidMix > 0.3) {
+      drawVoid((voidMix - 0.3) * 0.5);
+    }
+  }
+}
+
+// ── Mic setup ──
+async function setupMic() {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.6;
+    source.connect(analyser);
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    return true;
+  } catch (e) {
+    alert('Microphone access is needed to scream into the void! Please allow mic access and try again.');
+    return false;
+  }
+}
+
+function getVolume() {
+  if (!analyser || !dataArray) return 0;
+  analyser.getByteFrequencyData(dataArray);
+  let sum = 0;
+  for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+  return sum / dataArray.length / 255; // 0-1
+}
+
+// ── Phase management ──
+const inviteEl = document.getElementById('invite');
+const hudEl = document.getElementById('scream-hud');
+const temptEl = document.getElementById('tempt-text');
+const timerEl = document.getElementById('scream-timer');
+const volumeFill = document.getElementById('volume-fill');
+const rageFill = document.getElementById('rage-fill');
+const tauntEl = document.getElementById('scream-taunt');
+const statusEl = document.getElementById('scream-status');
+const serenityOverlay = document.getElementById('serenity-overlay');
+const serenityTextEl = document.getElementById('serenity-text');
+const glitchOverlay = document.getElementById('glitch-overlay');
+const startBtn = document.getElementById('start-btn');
+
+// Cycle temptation texts
+let temptTimer = 0;
+function cycleTempt() {
+  if (phase !== 'invite') return;
+  temptEl.style.opacity = '0';
+  setTimeout(() => {
+    temptEl.textContent = tempts[temptIdx % tempts.length];
+    temptEl.style.opacity = '1';
+    temptIdx++;
+  }, 400);
+}
+cycleTempt();
+setInterval(cycleTempt, 3000);
+
+// Start button
+startBtn.addEventListener('click', async () => {
+  const ok = await setupMic();
+  if (!ok) return;
+  phase = 'scream';
+  inviteEl.style.display = 'none';
+  hudEl.classList.add('active');
+  screamStart = performance.now();
+  rage = 100;
+  lastTauntTime = 0;
+  currentTaunt = '';
+  tauntEl.textContent = '';
+});
+
+function formatTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${m}:${ss.toString().padStart(2, '0')}`;
+}
+
+function startSerenity() {
+  phase = 'serenity';
+  hudEl.classList.remove('active');
+  serenityOverlay.classList.add('active');
+  serenityStart = performance.now();
+  initClouds();
+
+  const serenityTexts = [
+    'breathe...',
+    'peace...',
+    'silence...',
+    'calm...',
+    'all is well...',
+  ];
+  let stIdx = 0;
+  serenityTextEl.textContent = serenityTexts[0];
+  const stInt = setInterval(() => {
+    if (phase !== 'serenity') { clearInterval(stInt); return; }
+    stIdx++;
+    serenityTextEl.textContent = serenityTexts[stIdx % serenityTexts.length];
+  }, 2500);
+}
+
+function startGlitch() {
+  phase = 'glitch';
+  serenityOverlay.classList.remove('active');
+  glitchOverlay.classList.add('active');
+  glitchStart = performance.now();
+  rageQuotes = [];
+  spawnRageQuotes();
+}
+
+function spawnRageQuotes() {
+  if (phase !== 'glitch') return;
+  const available = [...rageTexts];
+  // Shuffle
+  for (let i = available.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [available[i], available[j]] = [available[j], available[i]];
+  }
+
+  let count = 0;
+  const maxQuotes = 20;
+
+  function addQuote() {
+    if (phase !== 'glitch' || count >= maxQuotes) return;
+    const text = available[count % available.length];
+    const el = document.createElement('div');
+    el.className = 'rage-quote';
+    el.textContent = text;
+
+    const size = 0.7 + Math.random() * 1.8;
+    el.style.fontSize = `clamp(${size * 0.6}rem, ${size * 2.5}vw, ${size * 1.2}rem)`;
+    el.style.left = (5 + Math.random() * 80) + '%';
+    el.style.top = (5 + Math.random() * 80) + '%';
+    el.style.transform = `rotate(${(Math.random() - 0.5) * 30}deg)`;
+
+    const colors = ['#ff3333', '#ff6600', '#ffcc00', '#ff0066', '#ff4444', '#cc0000'];
+    el.style.color = colors[Math.floor(Math.random() * colors.length)];
+    el.style.textShadow = `0 0 10px ${el.style.color}66`;
+    el.style.animation = `glitch-in 0.3s ease forwards`;
+    el.style.zIndex = 21 + count;
+
+    glitchOverlay.appendChild(el);
+    count++;
+    if (count < maxQuotes) {
+      setTimeout(addQuote, 150 + Math.random() * 300);
+    }
+  }
+  addQuote();
+}
+
+function endGlitch() {
+  phase = 'invite';
+  glitchOverlay.classList.remove('active');
+  glitchOverlay.innerHTML = '';
+  inviteEl.style.display = '';
+  inviteEl.style.animation = 'fadeIn 1s ease';
+  hudEl.classList.remove('active');
+  // Reset particles for fresh void
+  initParticles();
+}
+
+// ── Main loop ──
+function loop(now) {
+  time = now / 1000;
+
+  if (phase === 'invite') {
+    drawVoid(0.1 + Math.sin(time * 0.5) * 0.05);
+  }
+
+  else if (phase === 'scream') {
+    volume = getVolume();
+    smoothVolume += (volume - smoothVolume) * 0.2;
+
+    const elapsed = now - screamStart;
+
+    // Update timer
+    timerEl.textContent = formatTime(elapsed);
+
+    // Update volume meter
+    volumeFill.style.height = (smoothVolume * 100) + '%';
+
+    // Drain rage based on volume
+    if (smoothVolume > 0.15) {
+      // Louder = faster drain
+      rage -= smoothVolume * 0.35;
+    } else {
+      // Quiet: rage creeps back up slowly
+      rage = Math.min(100, rage + 0.03);
+    }
+    rage = Math.max(0, rage);
+    rageFill.style.height = rage + '%';
+
+    // Status text
+    if (smoothVolume > 0.5) {
+      statusEl.textContent = 'THE VOID TREMBLES';
+      statusEl.style.color = '#ff44aa';
+    } else if (smoothVolume > 0.25) {
+      statusEl.textContent = 'SCREAMING IN PROGRESS';
+      statusEl.style.color = '#bb44ff';
+    } else if (smoothVolume > 0.1) {
+      statusEl.textContent = 'THE VOID IS LISTENING...';
+      statusEl.style.color = '#9966cc';
+    } else {
+      statusEl.textContent = 'THE VOID WAITS...';
+      statusEl.style.color = '#666';
+    }
+
+    // Taunts
+    const tSec = elapsed / 1000;
+    if (tSec - lastTauntTime > 3.5) {
+      lastTauntTime = tSec;
+      if (smoothVolume < 0.12) {
+        currentTaunt = quietTaunts[Math.floor(Math.random() * quietTaunts.length)];
+      } else if (smoothVolume > 0.25) {
+        currentTaunt = loudTaunts[Math.floor(Math.random() * loudTaunts.length)];
+      } else {
+        currentTaunt = '';
+      }
+      tauntEl.textContent = currentTaunt;
+    }
+
+    // Draw void with scream intensity
+    drawVoid(0.1 + smoothVolume * 2);
+
+    // Rage depleted!
+    if (rage <= 0) {
+      startSerenity();
+    }
+  }
+
+  else if (phase === 'serenity') {
+    const t = (now - serenityStart) / 1000;
+    drawSerenity(t);
+    if (t > 10) {
+      startGlitch();
+    }
+  }
+
+  else if (phase === 'glitch') {
+    const t = (now - glitchStart) / 1000;
+    drawGlitch(t);
+    if (t > 6) {
+      endGlitch();
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>

@@ -1,5 +1,16 @@
 [
   {
+    "slug": "scream-void",
+    "title": "Scream Into the Void",
+    "description": "Use your mic to scream your rage away — drain the meter, find serenity, then watch it all fall apart",
+    "date": "2026-03-08",
+    "url": "/demos/scream-void/",
+    "preview": "preview-screamvoid",
+    "tags": ["Audio", "Canvas", "Satire"],
+    "tagTypes": ["audio", "canvas", ""],
+    "order": 1
+  },
+  {
     "slug": "how-cooked",
     "title": "How Cooked Are You?",
     "description": "AI game show where Larry the Bot rates how cooked your dev career is — then you choose your fate",

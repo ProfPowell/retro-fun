@@ -754,6 +754,45 @@
   50% { text-shadow: 0 0 25px #ff6633, 0 0 50px #ff330088; transform: scale(1.05); }
 }
 
+/* Scream Into the Void */
+.preview-screamvoid {
+  background: radial-gradient(ellipse at center, #0a0010 0%, #000 70%);
+  overflow: hidden;
+}
+.preview-screamvoid::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 60px; height: 60px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #000 30%, transparent 70%);
+  box-shadow: 0 0 30px #bb44ff88, 0 0 60px #bb44ff44, 0 0 90px #88006622;
+  animation: void-pulse 2s ease-in-out infinite;
+}
+.preview-screamvoid::after {
+  content: 'SCREAM';
+  position: absolute;
+  bottom: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #bb44ff;
+  text-shadow: 0 0 8px #bb44ff;
+  letter-spacing: 0.2em;
+  animation: void-text-pulse 2s ease-in-out infinite;
+}
+@keyframes void-pulse {
+  0%, 100% { box-shadow: 0 0 30px #bb44ff88, 0 0 60px #bb44ff44; transform: translate(-50%, -50%) scale(1); }
+  50% { box-shadow: 0 0 50px #bb44ffaa, 0 0 80px #bb44ff66, 0 0 110px #88006644; transform: translate(-50%, -50%) scale(1.15); }
+}
+@keyframes void-text-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 @keyframes eq-bounce {
   to { transform: scaleY(1.5); }
 }
