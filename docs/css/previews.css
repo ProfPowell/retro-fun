@@ -1,3 +1,35 @@
+/* H3: Hip Hop HTML preview */
+.preview-h3 {
+  background: #0a0510;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+}
+.preview-h3::before {
+  content: 'HIP HOP HTML';
+  font-family: monospace; font-size: 1.3rem; font-weight: bold;
+  color: #ff00ff;
+  text-shadow: 0 0 12px #ff00ff, 0 0 30px #ff00ff44;
+  animation: h3-bump 0.5s ease-in-out infinite alternate;
+}
+.preview-h3::after {
+  content: '\266b \266a \266b';
+  position: absolute; bottom: 12%; left: 50%;
+  transform: translateX(-50%);
+  font-size: 1rem;
+  color: #00ffff;
+  text-shadow: 0 0 8px #00ffff;
+  letter-spacing: 0.4em;
+  animation: h3-notes 1.5s ease-in-out infinite;
+}
+@keyframes h3-bump {
+  from { transform: scale(0.92); letter-spacing: 0.05em; }
+  to { transform: scale(1.08); letter-spacing: 0.15em; }
+}
+@keyframes h3-notes {
+  0%, 100% { opacity: 0.4; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+}
+
 /* Default post preview */
 .preview-post-default {
   background: #0a0a12;
@@ -685,6 +717,43 @@
 @keyframes blink-cursor {
   50% { opacity: 0; }
 }
+/* How Cooked Are You? */
+.preview-howcooked {
+  background: linear-gradient(135deg, #0a0a1a 0%, #1a0a0a 100%);
+  overflow: hidden;
+}
+.preview-howcooked::before {
+  content: '\1F525 COOKED?';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ff6633;
+  text-shadow: 0 0 15px #ff6633, 0 0 30px #ff330066;
+  letter-spacing: 0.15em;
+  animation: howcooked-pulse 1.5s ease-in-out infinite;
+}
+.preview-howcooked::after {
+  content: '\2588\2588\2588\2588';
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #3344ff;
+  text-shadow: 0 0 6px #3344ff;
+  letter-spacing: 0.05em;
+}
+@keyframes howcooked-pulse {
+  0%, 100% { text-shadow: 0 0 15px #ff6633, 0 0 30px #ff330066; transform: scale(1); }
+  50% { text-shadow: 0 0 25px #ff6633, 0 0 50px #ff330088; transform: scale(1.05); }
+}
+
 @keyframes eq-bounce {
   to { transform: scaleY(1.5); }
 }

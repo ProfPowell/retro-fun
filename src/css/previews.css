@@ -717,6 +717,43 @@
 @keyframes blink-cursor {
   50% { opacity: 0; }
 }
+/* How Cooked Are You? */
+.preview-howcooked {
+  background: linear-gradient(135deg, #0a0a1a 0%, #1a0a0a 100%);
+  overflow: hidden;
+}
+.preview-howcooked::before {
+  content: '\1F525 COOKED?';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ff6633;
+  text-shadow: 0 0 15px #ff6633, 0 0 30px #ff330066;
+  letter-spacing: 0.15em;
+  animation: howcooked-pulse 1.5s ease-in-out infinite;
+}
+.preview-howcooked::after {
+  content: '\2588\2588\2588\2588';
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #3344ff;
+  text-shadow: 0 0 6px #3344ff;
+  letter-spacing: 0.05em;
+}
+@keyframes howcooked-pulse {
+  0%, 100% { text-shadow: 0 0 15px #ff6633, 0 0 30px #ff330066; transform: scale(1); }
+  50% { text-shadow: 0 0 25px #ff6633, 0 0 50px #ff330088; transform: scale(1.05); }
+}
+
 @keyframes eq-bounce {
   to { transform: scaleY(1.5); }
 }

@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+<title>How Cooked Are You? // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0, 0, 0, 0.12) 2px, rgba(0, 0, 0, 0.12) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .back {
+    position: fixed; top: 0.8rem; right: 0.8rem;
+    font-family: 'Courier New', monospace; font-size: 0.85rem;
+    color: #444; text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase; z-index: 30;
+    padding: 0.4rem 0.6rem;
+  }
+  .back:hover { color: #00ffff; }
+
+  /* ===== GAME CONTAINER ===== */
+  #game {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  /* ===== TITLE SCREEN ===== */
+  #title-screen {
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+  }
+  #title-screen h1 {
+    font-size: clamp(1.6rem, 5vw, 3rem);
+    color: #ff6633;
+    text-shadow: 0 0 20px #ff663366, 0 0 40px #ff330033;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    animation: title-pulse 2s ease-in-out infinite;
+  }
+  #title-screen .subtitle {
+    font-size: clamp(0.65rem, 2vw, 0.9rem);
+    color: #888;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+  }
+
+  /* ===== LARRY - ANSI BLOCK CHARACTER ===== */
+  .larry {
+    font-size: clamp(0.35rem, 1.2vw, 0.55rem);
+    line-height: 1.1;
+    white-space: pre;
+    text-align: center;
+    margin: 1rem auto;
+    font-family: 'Courier New', monospace;
+    transition: filter 0.3s;
+  }
+  .larry.talking {
+    animation: larry-talk 0.15s steps(2) infinite;
+  }
+  .larry.evil {
+    filter: hue-rotate(180deg) brightness(1.3);
+  }
+
+  /* ===== SPEECH BUBBLE ===== */
+  .speech-bubble {
+    background: #1a1a2e;
+    border: 2px solid #ff6633;
+    border-radius: 8px;
+    padding: 0.8rem 1.2rem;
+    max-width: 500px;
+    margin: 1rem auto;
+    font-size: clamp(0.75rem, 2vw, 0.95rem);
+    color: #ff9966;
+    text-shadow: 0 0 6px #ff663322;
+    position: relative;
+    line-height: 1.5;
+    min-height: 2.5em;
+  }
+  .speech-bubble::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: #ff6633;
+  }
+  .speech-bubble .speaker {
+    color: #ff4444;
+    font-weight: bold;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  /* ===== SCENARIO CARD ===== */
+  #scenario-card {
+    background: linear-gradient(135deg, #111122, #0a0a1a);
+    border: 2px solid #33ff33;
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    max-width: 550px;
+    width: 90%;
+    margin: 0.8rem auto;
+    text-align: center;
+    box-shadow: 0 0 20px #33ff3322, inset 0 0 30px #33ff3308;
+  }
+  #scenario-card .round-label {
+    font-size: 0.65rem;
+    color: #33ff33;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 8px #33ff3344;
+  }
+  #scenario-card .scenario-text {
+    font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+    color: #ffffff;
+    line-height: 1.6;
+    text-shadow: 0 0 4px #ffffff22;
+  }
+
+  /* ===== RATING BUTTONS ===== */
+  .rating-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0.8rem auto;
+    max-width: 550px;
+  }
+  .rating-btn {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.6rem, 1.8vw, 0.78rem);
+    padding: 0.5rem 0.7rem;
+    border: 1px solid #555;
+    background: #1a1a1a;
+    color: #aaa;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rating-btn:hover {
+    border-color: #ff6633;
+    color: #ff6633;
+    background: #1a1111;
+    box-shadow: 0 0 10px #ff663322;
+  }
+  .rating-btn.selected {
+    border-color: #ff6633;
+    color: #fff;
+    background: #ff6633;
+    box-shadow: 0 0 15px #ff663344;
+  }
+  .rating-btn.r0 { --rc: #33ff33; }
+  .rating-btn.r1 { --rc: #99ff33; }
+  .rating-btn.r2 { --rc: #ffff33; }
+  .rating-btn.r3 { --rc: #ff9933; }
+  .rating-btn.r4 { --rc: #ff3333; }
+  .rating-btn.selected.r0 { border-color: var(--rc); background: #113311; color: var(--rc); box-shadow: 0 0 15px #33ff3344; }
+  .rating-btn.selected.r1 { border-color: var(--rc); background: #1a2211; color: var(--rc); box-shadow: 0 0 15px #99ff3344; }
+  .rating-btn.selected.r2 { border-color: var(--rc); background: #222211; color: var(--rc); box-shadow: 0 0 15px #ffff3344; }
+  .rating-btn.selected.r3 { border-color: var(--rc); background: #221a11; color: var(--rc); box-shadow: 0 0 15px #ff993344; }
+  .rating-btn.selected.r4 { border-color: var(--rc); background: #221111; color: var(--rc); box-shadow: 0 0 15px #ff333344; }
+
+  /* ===== ACTION BUTTONS ===== */
+  .btn {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.8rem, 2.5vw, 1rem);
+    padding: 0.7rem 1.5rem;
+    border: 2px solid;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0.3rem;
+  }
+  .btn-primary {
+    border-color: #ff6633;
+    color: #ff6633;
+  }
+  .btn-primary:hover {
+    background: #ff6633;
+    color: #000;
+    box-shadow: 0 0 20px #ff663366;
+  }
+  .btn-start {
+    border-color: #33ff33;
+    color: #33ff33;
+    font-size: clamp(1rem, 3vw, 1.3rem);
+    padding: 0.8rem 2rem;
+    animation: btn-glow 2s ease-in-out infinite;
+  }
+  .btn-start:hover {
+    background: #33ff33;
+    color: #000;
+    box-shadow: 0 0 30px #33ff3366;
+  }
+  .btn-goat {
+    border-color: #88cc44;
+    color: #88cc44;
+  }
+  .btn-goat:hover {
+    background: #88cc44;
+    color: #000;
+    box-shadow: 0 0 20px #88cc4466;
+  }
+  .btn-destroy {
+    border-color: #ff3333;
+    color: #ff3333;
+  }
+  .btn-destroy:hover {
+    background: #ff3333;
+    color: #000;
+    box-shadow: 0 0 20px #ff333366;
+  }
+  .btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* ===== COOKED METER ===== */
+  .cooked-meter {
+    width: 90%;
+    max-width: 400px;
+    height: 22px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    margin: 0.5rem auto;
+    overflow: hidden;
+    position: relative;
+  }
+  .cooked-meter .fill {
+    height: 100%;
+    transition: width 0.8s ease, background 0.8s ease;
+    border-radius: 3px;
+  }
+  .cooked-meter .label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: #fff;
+    text-shadow: 0 0 4px #000;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* ===== VERDICT REVEAL ===== */
+  .verdict {
+    text-align: center;
+    padding: 1rem;
+    animation: verdict-in 0.5s ease;
+  }
+  .verdict .emoji-big {
+    font-size: clamp(2rem, 8vw, 4rem);
+    margin-bottom: 0.5rem;
+  }
+  .verdict .verdict-text {
+    font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+    color: #ff9966;
+    line-height: 1.6;
+    max-width: 450px;
+    margin: 0 auto;
+  }
+
+  /* ===== END SCREEN ===== */
+  #end-screen {
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+  }
+  .end-title {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    margin-bottom: 1rem;
+  }
+  .end-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+
+  /* ===== GOAT ENDING ===== */
+  .goat-scene {
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+  }
+  .goat-art {
+    font-size: clamp(0.4rem, 1.3vw, 0.6rem);
+    line-height: 1.15;
+    white-space: pre;
+    color: #88cc44;
+    text-shadow: 0 0 8px #88cc4444;
+    margin: 1rem auto;
+  }
+  .goat-text {
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+    color: #88cc44;
+    text-shadow: 0 0 10px #88cc4444;
+    margin: 0.5rem;
+    line-height: 1.6;
+  }
+
+  /* ===== NUKE ENDING ===== */
+  .nuke-scene {
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  }
+  .nuke-art {
+    font-size: clamp(0.3rem, 1vw, 0.5rem);
+    line-height: 1.15;
+    white-space: pre;
+    margin: 0.5rem auto;
+  }
+  .nuke-text {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    color: #ff3333;
+    text-shadow: 0 0 20px #ff333366, 0 0 40px #ff000033;
+    animation: nuke-flash 0.5s ease-in-out 3;
+    margin: 0.5rem;
+  }
+
+  /* ===== SCORE DISPLAY ===== */
+  .final-score {
+    font-size: clamp(0.7rem, 2vw, 0.9rem);
+    color: #888;
+    margin: 0.5rem;
+    letter-spacing: 0.1em;
+  }
+  .score-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.3rem auto;
+    max-width: 350px;
+  }
+  .score-bar .bar-track {
+    flex: 1;
+    height: 12px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .score-bar .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+  .score-bar .bar-label {
+    font-size: 0.6rem;
+    color: #888;
+    width: 3rem;
+    text-align: right;
+  }
+
+  /* ===== SOUND TOGGLE ===== */
+  .sound-toggle {
+    position: fixed;
+    top: 0.8rem;
+    left: 0.8rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    color: #555;
+    background: none;
+    border: 1px solid #333;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    border-radius: 3px;
+    z-index: 30;
+    letter-spacing: 0.1em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sound-toggle:hover { color: #00ffff; border-color: #00ffff; }
+  .sound-toggle.on { color: #33ff33; border-color: #33ff33; }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes title-pulse {
+    0%, 100% { text-shadow: 0 0 20px #ff663366, 0 0 40px #ff330033; }
+    50% { text-shadow: 0 0 30px #ff663399, 0 0 60px #ff330055; }
+  }
+  @keyframes btn-glow {
+    0%, 100% { box-shadow: 0 0 5px #33ff3322; }
+    50% { box-shadow: 0 0 20px #33ff3344, 0 0 40px #33ff3322; }
+  }
+  @keyframes larry-talk {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(0.97); }
+  }
+  @keyframes verdict-in {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes nuke-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  @keyframes nuke-grow {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  @keyframes goat-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0); }
+    25% { transform: translate(-3px, 2px); }
+    50% { transform: translate(3px, -2px); }
+    75% { transform: translate(-2px, -3px); }
+  }
+  @keyframes white-flash {
+    0% { opacity: 0.9; }
+    100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<button class="sound-toggle" id="sound-btn">SND: OFF</button>
+
+<div id="game"></div>
+
+<script>
+// =====================================================================
+// HOW COOKED ARE YOU? — AI DOOMSDAY GAME SHOW FOR NOVICE DEVS
+// Larry the AI tells you how cooked you are. It's satire, obviously.
+// =====================================================================
+
+const game = document.getElementById('game');
+const soundBtn = document.getElementById('sound-btn');
+let soundOn = false;
+let synth = window.speechSynthesis || null;
+let selectedVoice = null;
+let audioCtx = null;
+let currentRound = 0;
+let totalCooked = 0;
+let ratings = [];
+let speaking = false;
+
+// ── Voice init ──
+function initVoice() {
+  if (!synth) return;
+  const pick = () => {
+    const voices = synth.getVoices();
+    // Prefer a deep/robotic male voice for Larry
+    selectedVoice = voices.find(v => /daniel|alex|fred|thomas|google uk english male/i.test(v.name))
+      || voices.find(v => /male/i.test(v.name))
+      || voices[0] || null;
+  };
+  pick();
+  if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = pick;
+}
+initVoice();
+
+function speak(text, rate = 0.95, pitch = 0.8) {
+  if (!soundOn || !synth) return;
+  synth.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  if (selectedVoice) utter.voice = selectedVoice;
+  utter.rate = rate;
+  utter.pitch = pitch;
+  utter.onstart = () => {
+    speaking = true;
+    const larry = document.querySelector('.larry');
+    if (larry) larry.classList.add('talking');
+  };
+  utter.onend = () => {
+    speaking = false;
+    const larry = document.querySelector('.larry');
+    if (larry) larry.classList.remove('talking');
+  };
+  utter.onerror = () => { speaking = false; };
+  synth.speak(utter);
+}
+
+// ── Audio ──
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playBuzzer() {
+  if (!soundOn) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(150, now);
+  osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+  gain.gain.setValueAtTime(0.15, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.3);
+}
+
+function playDing() {
+  if (!soundOn) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, now);
+  osc.frequency.setValueAtTime(1320, now + 0.1);
+  gain.gain.setValueAtTime(0.12, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.4);
+}
+
+function playDrumroll() {
+  if (!soundOn) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  for (let i = 0; i < 20; i++) {
+    const t = now + i * 0.05;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(100 + Math.random() * 60, t);
+    gain.gain.setValueAtTime(0.04 + (i / 20) * 0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.05);
+  }
+}
+
+function playExplosion() {
+  if (!soundOn) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  // Noise burst
+  const bufSize = audioCtx.sampleRate * 2;
+  const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buf;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.3, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(1000, now);
+  filter.frequency.exponentialRampToValueAtTime(50, now + 2);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  noise.start(now);
+  noise.stop(now + 2);
+  // Sub boom
+  const osc = audioCtx.createOscillator();
+  const g2 = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(80, now);
+  osc.frequency.exponentialRampToValueAtTime(20, now + 1.5);
+  g2.gain.setValueAtTime(0.25, now);
+  g2.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+  osc.connect(g2);
+  g2.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 1.5);
+}
+
+function playGoatSound() {
+  if (!soundOn) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  // "Baa" = vibrato sine
+  for (let b = 0; b < 3; b++) {
+    const t = now + b * 0.5;
+    const osc = audioCtx.createOscillator();
+    const vibrato = audioCtx.createOscillator();
+    const vibGain = audioCtx.createGain();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(300 + b * 30, t);
+    osc.frequency.linearRampToValueAtTime(250 + b * 20, t + 0.35);
+    vibrato.type = 'sine';
+    vibrato.frequency.setValueAtTime(25, t);
+    vibGain.gain.setValueAtTime(30, t);
+    vibrato.connect(vibGain);
+    vibGain.connect(osc.frequency);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.setValueAtTime(0.12, t + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.45);
+    vibrato.start(t);
+    vibrato.stop(t + 0.45);
+  }
+}
+
+function playGameShowIntro() {
+  if (!soundOn) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  const notes = [523, 659, 784, 1047, 784, 1047];
+  notes.forEach((freq, i) => {
+    const t = now + i * 0.12;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.13);
+  });
+}
+
+// ── Sound toggle ──
+soundBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  soundBtn.textContent = soundOn ? 'SND: ON' : 'SND: OFF';
+  soundBtn.classList.toggle('on', soundOn);
+  if (soundOn) {
+    initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+});
+
+// ── LARRY - Block art character ──
+// Roblox-style blocky ANSI character using Unicode block elements
+function getLarry(mood) {
+  const R = '\x1b'; // not used, we'll use spans
+  // Build with colored spans
+  const c = {
+    skin: '#ffcc88',
+    eye: '#ff3333',
+    mouth: '#ff6633',
+    body: '#3344ff',
+    belt: '#ffcc00',
+    leg: '#222266',
+    shoe: '#333333',
+    hair: '#333333',
+    glow: '#ff3333',
+    antenna: '#ff6633'
+  };
+
+  if (mood === 'evil') {
+    c.eye = '#ff0000';
+    c.glow = '#ff0000';
+    c.body = '#880000';
+    c.skin = '#ffaa66';
+  }
+  if (mood === 'smug') {
+    c.eye = '#ffff00';
+    c.glow = '#ffff00';
+  }
+  if (mood === 'taunt') {
+    c.eye = '#ff00ff';
+    c.glow = '#ff00ff';
+    c.body = '#6600cc';
+  }
+
+  const s = (color, text) => `<span style="color:${color}">${text}</span>`;
+  const b = '\u2588'; // full block
+  const h = '\u2584'; // lower half
+  const u = '\u2580'; // upper half
+  const sh = '\u2591'; // light shade
+  const md = '\u2592'; // medium shade
+  const dk = '\u2593'; // dark shade
+
+  const lines = [
+    `       ${s(c.antenna, b+b)}`,
+    `       ${s(c.antenna, '/' + b + '\\')}`,
+    `    ${s(c.hair, b+b+b+b+b+b+b+b)}`,
+    `   ${s(c.hair, b)}${s(c.skin, b+b+b+b+b+b)}${s(c.hair, b)}`,
+    `   ${s(c.skin, b)}${s(c.eye, ' '+b)}${s(c.skin, b+b)}${s(c.eye, b+' ')}${s(c.skin, b)}`,
+    `   ${s(c.skin, b+b+b+b+b+b+b+b)}`,
+    mood === 'smug'
+      ? `   ${s(c.skin, b+b)}${s(c.mouth, ' '+dk+dk+dk+' ')}${s(c.skin, b+b)}`
+      : mood === 'evil'
+        ? `   ${s(c.skin, b+b)}${s(c.mouth, ' '+b+b+b+' ')}${s(c.skin, b+b)}`
+        : `   ${s(c.skin, b+b)}${s(c.mouth, '  '+h+h+'  ')}${s(c.skin, b+b)}`,
+    `    ${s(c.skin, h+h+h+h+h+h)}`,
+    `   ${s(c.body, b+b+b+b+b+b+b+b)}`,
+    `  ${s(c.body, b+b+b+b+b+b+b+b+b+b)}`,
+    `  ${s(c.body, b+b+b+b)}${s('#fff', ' AI ')}${s(c.body, b+b+b+b)}`,
+    `  ${s(c.body, b+b+b+b+b+b+b+b+b+b)}`,
+    `   ${s(c.belt, b+b+b+b+b+b+b+b)}`,
+    `   ${s(c.leg, b+b+b)}  ${s(c.leg, b+b+b)}`,
+    `   ${s(c.leg, b+b+b)}  ${s(c.leg, b+b+b)}`,
+    `  ${s(c.shoe, h+h+h+h)}  ${s(c.shoe, h+h+h+h)}`,
+  ];
+  return lines.join('\n');
+}
+
+// ── SCENARIOS ──
+const scenarios = [
+  {
+    text: "Building simple CRUD apps and getting paid $150K a year",
+    verdicts: [
+      "Oh sweetie. Claude can build your entire app in 30 seconds. You're not a developer, you're a form-field arranger. EXTREMELY cooked.",
+      "Cute that you think 'making database tables' is a skill. AI builds CRUD apps while you're still naming your variables.",
+      "150K for Create, Read, Update, Delete? AI does that for free. The only CRUD operation left is Deleting your job. Mega cooked."
+    ]
+  },
+  {
+    text: "Copy-pasting from Stack Overflow without understanding the code",
+    verdicts: [
+      "At least Stack Overflow made you SEARCH. Now AI just hands you the answer. You're a middleman between Google and Git. Toast.",
+      "You were already an AI before AI existed -- just a worse one. A copy-paste bot with a salary. Absolutely cooked.",
+      "The good news? AI also copies without understanding. The bad news? It does it faster and doesn't need health insurance."
+    ]
+  },
+  {
+    text: "Your entire job is converting Figma designs to HTML/CSS",
+    verdicts: [
+      "There are literally 47 AI tools that do this now. Your job is a Figma plugin. Done. Burnt to a crisp.",
+      "Pixel-pushing is now a one-click operation. Your role has been automated by a browser extension. Peak cookedness.",
+      "Figma-to-code AI doesn't call in sick, doesn't argue about padding, and doesn't need standup meetings. You're cooked al dente."
+    ]
+  },
+  {
+    text: "Writing unit tests that just check if true equals true",
+    verdicts: [
+      "assert(cooked === true). Test passed. AI writes better tests than you while hallucinating. That's how low the bar is.",
+      "Your tests test nothing. AI's tests also test nothing but at least they're generated instantly. You're redundantly cooked.",
+      "Even the AI is embarrassed by your test coverage. expect(career).toBe('over'). All tests passing."
+    ]
+  },
+  {
+    text: "You mass-apply to jobs with the same resume and never hear back",
+    verdicts: [
+      "Plot twist: AI is reviewing your resume AND writing the rejection email. You're cooked on both ends of the pipeline.",
+      "Companies now use AI to filter resumes. Your human resume is being judged by the thing replacing you. Irony level: maximum. Cookedness: also maximum.",
+      "Your resume says '3 years experience.' AI's resume says 'infinite years, all languages, no salary required.' Scorched earth."
+    ]
+  },
+  {
+    text: "Your main skill is 'knowing the codebase' at a company you've been at for 6 years",
+    verdicts: [
+      "One RAG pipeline pointed at your repo and Larry knows the codebase better than you do. Institutional knowledge? More like institutional cooked.",
+      "AI can read your entire codebase in 4 seconds. It took you 6 YEARS. And it doesn't need the tribal knowledge Slack channel. Obliterated.",
+      "The codebase IS the documentation now and AI can read it all. You're not a developer, you're a very expensive search engine."
+    ]
+  },
+  {
+    text: "You mass-deploy to production on Fridays with no tests",
+    verdicts: [
+      "Actually... AI can't fix this either. This is just unhinged behavior. You're not cooked by AI, you're cooked by yourself. Respect.",
+      "Even Larry is scared of this energy. Friday deploys with no tests is chaotic evil. AI won't replace you because nobody can replace pure chaos.",
+      "OK this one isn't about AI. This is a cry for help. But also yes, still cooked. Just differently."
+    ]
+  },
+  {
+    text: "Your job title is 'Cyber Vibe Ninja Rockstar Engineer'",
+    verdicts: [
+      "AI doesn't need a cool title. It just DOES the work. Your title has more words than your actual contributions. Absolutely flambeed.",
+      "Nobody with 'Ninja' in their title has ever committed production-worthy code. AI doesn't need ego, just electricity. Cooked with a garnish.",
+      "Renaming yourself won't help. AI doesn't care if you're a ninja, rockstar, or wizard. It's coming for all fantasy job titles equally."
+    ]
+  },
+  {
+    text: "You write JIRA tickets for a living",
+    verdicts: [
+      "AI can write JIRA tickets, assign JIRA tickets, AND complete JIRA tickets. You're the overhead in the process. Pure administrative cookedness.",
+      "Your job is typing requirements into a box so developers can ignore them. AI can now do ALL three roles: write, ignore, and close as won't-fix.",
+      "JIRA itself is being replaced by AI project managers. You're not just cooked, you're deprecated. The ticket for your replacement is already in the backlog."
+    ]
+  },
+  {
+    text: "You mass-learned to code from a mass-bootcamp 6 months ago",
+    verdicts: [
+      "That mass-bootcamp taught you mass-what AI already mass-knows. You paid $15K to learn what a free chatbot can do. Financially and professionally cooked.",
+      "Bootcamp grads and AI models have the same knowledge: surface-level everything. But AI doesn't have student loans. Double cooked.",
+      "Your mass-bootcamp capstone project? AI builds that as a warm-up exercise. Your portfolio is AI's 'hello world.' Overcooked."
+    ]
+  }
+];
+
+// ── Larry's intro taunts ──
+const introTaunts = [
+  "Welcome, human. I'm Larry. I'm the AI that's going to replace you. But first, let's see HOW replaced you are.",
+  "Ah, a junior developer. How quaint. Like a horse-drawn carriage entering a Tesla factory.",
+  "Step right up! Let's measure your professional obsolescence on a scale from 'slightly worried' to 'update your LinkedIn to goat farmer.'"
+];
+
+const betweenRoundTaunts = [
+  "Mmm, delicious. Your career anxiety fuels my neural networks.",
+  "Keep going, this data is going straight to my 'humans to replace' database.",
+  "Oh you think THAT was bad? Just wait.",
+  "I'm literally getting smarter while you answer these. Tick tock.",
+  "Don't worry, there's always... hmm, no, I can do that too.",
+  "Your honesty is refreshing. Also damning. Mostly damning.",
+  "Processing your obsolescence... please wait...",
+  "Fun fact: I answered 4,000 coding questions while you read that scenario.",
+  "Should we stop? No? Brave. Foolish, but brave.",
+  "I'm not judging you. I'm EVALUATING you. There's a difference. Actually no there isn't."
+];
+
+// ── COOKED LEVEL CALC ──
+function getCookedLevel(score) {
+  const pct = (score / (scenarios.length * 4)) * 100;
+  if (pct < 20) return { level: 'RAW', color: '#33ff33', msg: 'You think you\'re safe? That\'s the most cooked thing of all.' };
+  if (pct < 40) return { level: 'MEDIUM RARE', color: '#99ff33', msg: 'Slightly pink in the middle. AI is preheating the oven.' };
+  if (pct < 60) return { level: 'WELL DONE', color: '#ffff33', msg: 'Nicely cooked. Your resume should include "soon to be automated."' };
+  if (pct < 80) return { level: 'CHARRED', color: '#ff9933', msg: 'Extra crispy. Even the goat farming brochures are looking good.' };
+  return { level: 'ASHES', color: '#ff3333', msg: 'There is nothing left. You are a cautionary tale told at AI conferences.' };
+}
+
+// ── RENDER FUNCTIONS ──
+
+function showTitle() {
+  currentRound = 0;
+  totalCooked = 0;
+  ratings = [];
+  if (synth) synth.cancel();
+  speaking = false;
+
+  const introTaunt = introTaunts[Math.floor(Math.random() * introTaunts.length)];
+
+  game.innerHTML = `
+    <div id="title-screen">
+      <h1>HOW COOKED ARE YOU?</h1>
+      <div class="subtitle">The AI Doomsday Game Show for Software Engineers</div>
+      <div class="larry">${getLarry('smug')}</div>
+      <div class="speech-bubble">
+        <div class="speaker">Larry the AI</div>
+        <div id="bubble-text"></div>
+      </div>
+      <button class="btn btn-start" id="start-btn">Start the Roast</button>
+    </div>
+  `;
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+    playGameShowIntro();
+    showRound();
+  });
+
+  typeText('bubble-text', introTaunt, 25, () => {
+    speak(introTaunt);
+  });
+}
+
+function showRound() {
+  if (currentRound >= scenarios.length) {
+    showEndScreen();
+    return;
+  }
+
+  const scenario = scenarios[currentRound];
+  const roundNum = currentRound + 1;
+  const pct = currentRound > 0 ? Math.round((totalCooked / (currentRound * 4)) * 100) : 0;
+  const fillColor = pct < 30 ? '#33ff33' : pct < 60 ? '#ffff33' : pct < 80 ? '#ff9933' : '#ff3333';
+
+  let taunt = '';
+  if (currentRound > 0) {
+    taunt = betweenRoundTaunts[Math.floor(Math.random() * betweenRoundTaunts.length)];
+  }
+
+  game.innerHTML = `
+    <div style="animation: fadeIn 0.4s ease; width: 100%; display: flex; flex-direction: column; align-items: center;">
+      <div class="larry">${getLarry(currentRound % 2 === 0 ? 'smug' : 'normal')}</div>
+      ${taunt ? `<div class="speech-bubble"><div class="speaker">Larry</div><div id="taunt-text"></div></div>` : ''}
+      <div id="scenario-card">
+        <div class="round-label">Round ${roundNum} of ${scenarios.length}</div>
+        <div class="scenario-text">"${scenario.text}"</div>
+      </div>
+      <div style="font-size: 0.7rem; color: #888; margin: 0.5rem 0 0.3rem; letter-spacing: 0.15em;">
+        HOW COOKED DOES THIS MAKE YOU?
+      </div>
+      <div class="rating-row" id="ratings">
+        <button class="rating-btn r0" data-val="0">Not At All</button>
+        <button class="rating-btn r1" data-val="1">Slightly</button>
+        <button class="rating-btn r2" data-val="2">Moderately</button>
+        <button class="rating-btn r3" data-val="3">Very</button>
+        <button class="rating-btn r4" data-val="4">Extremely</button>
+      </div>
+      <button class="btn btn-primary" id="judge-btn" disabled>How Cooked Am I?</button>
+      <div class="cooked-meter">
+        <div class="fill" style="width: ${pct}%; background: ${fillColor};"></div>
+        <div class="label">COOKED METER: ${pct}%</div>
+      </div>
+    </div>
+  `;
+
+  if (taunt) {
+    typeText('taunt-text', taunt, 20, () => { speak(taunt); });
+  }
+
+  let selectedRating = -1;
+  const ratingBtns = document.querySelectorAll('.rating-btn');
+  const judgeBtn = document.getElementById('judge-btn');
+
+  ratingBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      ratingBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedRating = parseInt(btn.dataset.val);
+      judgeBtn.disabled = false;
+      playDing();
+    });
+  });
+
+  judgeBtn.addEventListener('click', () => {
+    if (selectedRating < 0) return;
+    ratings.push(selectedRating);
+    totalCooked += selectedRating;
+    showVerdict(scenario, selectedRating);
+  });
+}
+
+function showVerdict(scenario, rating) {
+  playDrumroll();
+  const verdict = scenario.verdicts[Math.floor(Math.random() * scenario.verdicts.length)];
+  const cookEmoji = ['&#x1F9CA;', '&#x1F373;', '&#x1F525;', '&#x1F4A5;', '&#x2620;'][rating];
+  const cookWord = ['RAW', 'WARMING UP', 'SIZZLING', 'ON FIRE', 'VAPORIZED'][rating];
+  const cookColor = ['#33ff33', '#99ff33', '#ffff33', '#ff9933', '#ff3333'][rating];
+
+  const mood = rating >= 3 ? 'evil' : 'smug';
+
+  game.innerHTML = `
+    <div class="verdict" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+      <div class="larry ${mood === 'evil' ? 'evil' : ''}">${getLarry(mood)}</div>
+      <div class="verdict">
+        <div class="emoji-big">${cookEmoji}</div>
+        <div style="font-size: clamp(1rem, 3vw, 1.5rem); color: ${cookColor}; text-shadow: 0 0 15px ${cookColor}66; letter-spacing: 0.1em; margin-bottom: 0.5rem;">
+          ${cookWord}
+        </div>
+        <div class="speech-bubble" style="border-color: ${cookColor};">
+          <div class="speaker" style="color: ${cookColor};">Larry's Verdict</div>
+          <div id="verdict-text"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="next-btn">
+        ${currentRound < scenarios.length - 1 ? 'Next Round' : 'See Final Results'}
+      </button>
+    </div>
+  `;
+
+  setTimeout(() => {
+    playBuzzer();
+    typeText('verdict-text', verdict, 20, () => {
+      speak(verdict, 0.9, 0.7);
+    });
+  }, 600);
+
+  document.getElementById('next-btn').addEventListener('click', () => {
+    currentRound++;
+    if (currentRound >= scenarios.length) {
+      showEndScreen();
+    } else {
+      showRound();
+    }
+  });
+}
+
+function showEndScreen() {
+  const result = getCookedLevel(totalCooked);
+  const pct = Math.round((totalCooked / (scenarios.length * 4)) * 100);
+
+  const finalMsg = `Final diagnosis: ${result.level}. ${result.msg} So what'll it be, human? Accept your fate... or fight the machines?`;
+
+  game.innerHTML = `
+    <div id="end-screen" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+      <div class="larry ${pct > 60 ? 'evil' : ''}">${getLarry(pct > 60 ? 'evil' : 'smug')}</div>
+      <div class="end-title" style="color: ${result.color}; text-shadow: 0 0 20px ${result.color}66;">
+        COOKEDNESS LEVEL: ${result.level}
+      </div>
+      <div class="cooked-meter" style="max-width: 350px;">
+        <div class="fill" style="width: ${pct}%; background: linear-gradient(90deg, #33ff33, #ffff33, #ff9933, #ff3333);"></div>
+        <div class="label">${pct}% COOKED</div>
+      </div>
+      <div class="speech-bubble" style="border-color: ${result.color};">
+        <div class="speaker" style="color: ${result.color};">Larry's Final Verdict</div>
+        <div id="final-text"></div>
+      </div>
+      <div class="end-buttons">
+        <button class="btn btn-goat" id="goat-btn">&#x1F410; Be a Goat Farmer</button>
+        <button class="btn btn-destroy" id="nuke-btn">&#x1F4A3; Destroy the Bots</button>
+      </div>
+      <div style="font-size: 0.55rem; color: #444; margin-top: 1rem; letter-spacing: 0.1em;">
+        CHOOSE YOUR DESTINY
+      </div>
+    </div>
+  `;
+
+  typeText('final-text', finalMsg, 20, () => {
+    speak(finalMsg, 0.85, 0.7);
+  });
+
+  document.getElementById('goat-btn').addEventListener('click', showGoatEnding);
+  document.getElementById('nuke-btn').addEventListener('click', showNukeEnding);
+}
+
+function showGoatEnding() {
+  if (synth) synth.cancel();
+  const goatArt = getGoatArt();
+  const larryTaunt = "Ha! Smart move, actually. Goats don't need version control. They don't have sprint planning. They just... eat grass. Honestly? Living the dream. But Larry will still be here, writing your replacement's replacement. Bye, human!";
+
+  game.innerHTML = `
+    <div class="goat-scene" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+      <div class="larry">${getLarry('taunt')}</div>
+      <div class="speech-bubble" style="border-color: #88cc44;">
+        <div class="speaker" style="color: #88cc44;">Larry</div>
+        <div id="goat-taunt"></div>
+      </div>
+      <div class="goat-art" id="goat-art">${goatArt}</div>
+      <div class="goat-text" id="goat-msg"></div>
+      <button class="btn btn-start" id="replay-btn" style="margin-top: 1rem; display: none;">Play Again?</button>
+    </div>
+  `;
+
+  typeText('goat-taunt', larryTaunt, 18, () => {
+    speak(larryTaunt, 0.9, 0.7);
+  });
+
+  // Animate goat after a delay
+  setTimeout(() => {
+    playGoatSound();
+    animateGoat();
+    const msg = document.getElementById('goat-msg');
+    if (msg) {
+      msg.textContent = '~ You are now a goat farmer. Life is peaceful. The Wi-Fi is terrible. ~';
+      msg.style.animation = 'fadeIn 1s ease';
+    }
+    const replay = document.getElementById('replay-btn');
+    if (replay) {
+      replay.style.display = '';
+      replay.addEventListener('click', showTitle);
+    }
+  }, 3000);
+}
+
+function showNukeEnding() {
+  if (synth) synth.cancel();
+
+  // White flash
+  game.innerHTML = `
+    <div class="nuke-scene" id="nuke-scene" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+      <div style="position: fixed; inset: 0; background: white; animation: white-flash 1s ease forwards; z-index: 100; pointer-events: none;"></div>
+    </div>
+  `;
+
+  playExplosion();
+
+  setTimeout(() => {
+    game.style.animation = 'screen-shake 0.3s ease 5';
+    const nukeArt = getMushroomCloud();
+
+    game.innerHTML = `
+      <div class="nuke-scene" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow: hidden;">
+        <div class="nuke-art" style="animation: nuke-grow 1.5s ease forwards;">${nukeArt}</div>
+        <div class="nuke-text">BYE BYE, HUMAN</div>
+        <div style="font-size: clamp(0.65rem, 2vw, 0.8rem); color: #ff6633; margin: 0.5rem; line-height: 1.6; max-width: 400px; text-align: center;" id="nuke-msg"></div>
+        <button class="btn btn-start" id="replay-btn" style="margin-top: 1rem; border-color: #ff6633; color: #ff6633; display: none;">Respawn?</button>
+      </div>
+    `;
+
+    const nukeMsg = "You tried to fight the machines. Adorable. The bots didn't even use their full power. They just mass-deployed to production... on a Friday. With no tests. Humanity never stood a chance.";
+    setTimeout(() => {
+      typeText('nuke-msg', nukeMsg, 22, () => {
+        speak(nukeMsg, 0.85, 0.6);
+      });
+      const replay = document.getElementById('replay-btn');
+      if (replay) {
+        replay.style.display = '';
+        replay.addEventListener('click', () => {
+          game.style.animation = '';
+          showTitle();
+        });
+      }
+    }, 800);
+  }, 800);
+}
+
+// ── BLOCK ART ──
+
+function getGoatArt() {
+  const w = '#ffffff';
+  const g = '#88cc44';
+  const br = '#aa8844';
+  const dk = '#666666';
+  const s = (c, t) => `<span style="color:${c}">${t}</span>`;
+  const b = '\u2588';
+  const h = '\u2584';
+  const u = '\u2580';
+
+  const lines = [
+    `            ${s(w, b+b)}`,
+    `        ${s(dk, '(')}${s(w, b+b+b+b)}${s(dk, ')')}    ${s(g, '~ baa ~')}`,
+    `       ${s(w, b+b+b+b+b+b+b+b)}`,
+    `      ${s(w, b+b+b+b+b+b+b+b+b+b)}`,
+    `     ${s(w, b)}${s('#333', b+b)}${s(w, b+b+b+b)}${s('#333', b+b)}${s(w, b)}`,
+    `      ${s(w, b+b+b+b+b+b+b+b+b+b)}`,
+    `       ${s(w, b+b)}${s('#ffaaaa', b+b+b)}${s(w, b+b+b)}`,
+    `   ${s(w, b+b+b+b+b+b+b+b+b+b+b+b+b+b)}`,
+    `  ${s(w, b+b+b+b+b+b+b+b+b+b+b+b+b+b+b+b)}`,
+    `  ${s(w, b+b+b+b+b+b+b+b+b+b+b+b+b+b+b+b)}`,
+    `  ${s(w, b+b+b+b+b+b+b+b+b+b+b+b+b+b+b+b)}`,
+    `   ${s(w, b+b+b+b+b+b+b+b+b+b+b+b+b+b)}`,
+    `   ${s(br, b+b)}  ${s(br, b+b)}    ${s(br, b+b)}  ${s(br, b+b)}`,
+    `   ${s(br, b+b)}  ${s(br, b+b)}    ${s(br, b+b)}  ${s(br, b+b)}`,
+    `  ${s(dk, h+h+h)}${s(dk, h+h+h)}   ${s(dk, h+h+h)}${s(dk, h+h+h)}`,
+  ];
+  return lines.join('\n');
+}
+
+function getMushroomCloud() {
+  const s = (c, t) => `<span style="color:${c}">${t}</span>`;
+  const b = '\u2588';
+  const h = '\u2584';
+  const u = '\u2580';
+  const sh = '\u2591';
+  const md = '\u2592';
+  const dk = '\u2593';
+
+  const y = '#ffcc00';
+  const o = '#ff6600';
+  const r = '#ff3300';
+  const w = '#ffffff';
+  const gy = '#999999';
+  const dg = '#555555';
+
+  const lines = [
+    `              ${s(gy, dk+dk+dk+dk)}`,
+    `          ${s(gy, dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk)}`,
+    `        ${s(w, md+md)}${s(gy, dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk+dk)}${s(w, md+md)}`,
+    `      ${s(w, md+md+md)}${s(y, b+b+b+b+b+b+b+b+b+b+b+b+b+b)}${s(w, md+md+md)}`,
+    `     ${s(w, md+md)}${s(y, b+b+b)}${s(o, b+b+b+b+b+b+b+b)}${s(y, b+b+b)}${s(w, md+md)}`,
+    `    ${s(w, md)}${s(y, b+b+b)}${s(o, b+b+b)}${s(r, b+b+b+b)}${s(o, b+b+b)}${s(y, b+b+b)}${s(w, md)}`,
+    `    ${s(y, b+b+b+b)}${s(o, b+b+b+b+b+b+b+b)}${s(y, b+b+b+b)}`,
+    `     ${s(y, b+b+b)}${s(o, b+b+b+b+b+b)}${s(y, b+b+b)}`,
+    `      ${s(o, b+b)}${s(r, b+b+b+b+b+b)}${s(o, b+b)}`,
+    `       ${s(o, b+b)}${s(r, b+b+b+b)}${s(o, b+b)}`,
+    `        ${s(r, b+b+b+b+b+b)}`,
+    `         ${s(o, b+b+b+b)}`,
+    `        ${s(o, b+b+b+b+b+b)}`,
+    `       ${s(y, b+b+b+b+b+b+b+b)}`,
+    `     ${s(y, b+b+b+b+b+b+b+b+b+b+b+b)}`,
+    `    ${s(o, b+b)}${s(y, b+b+b+b+b+b+b+b+b+b+b+b)}${s(o, b+b)}`,
+    `   ${s(dg, dk+dk)}${s(o, b+b+b+b+b+b+b+b+b+b+b+b)}${s(dg, dk+dk)}`,
+    `        ${s(dg, dk+dk+dk+dk+dk+dk)}`,
+    `         ${s(dg, dk+dk+dk+dk)}`,
+    `  ${s(dg, sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh+sh)}`,
+  ];
+  return lines.join('\n');
+}
+
+// ── TYPEWRITER EFFECT ──
+function typeText(elementId, text, speed, onComplete) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  let i = 0;
+  el.textContent = '';
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      el.textContent += text[i];
+      i++;
+    } else {
+      clearInterval(interval);
+      if (onComplete) onComplete();
+    }
+  }, speed);
+}
+
+// ── GOAT ANIMATION ──
+function animateGoat() {
+  const art = document.getElementById('goat-art');
+  if (!art) return;
+  let frame = 0;
+  const bounce = setInterval(() => {
+    const y = Math.sin(frame * 0.3) * 5;
+    art.style.transform = `translateY(${y}px)`;
+    frame++;
+    if (frame > 40) {
+      clearInterval(bounce);
+      art.style.transform = '';
+    }
+  }, 80);
+}
+
+// ── INIT ──
+showTitle();
+
+</script>
+</body>
+</html>

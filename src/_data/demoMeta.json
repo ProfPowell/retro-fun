@@ -1,5 +1,16 @@
 [
   {
+    "slug": "how-cooked",
+    "title": "How Cooked Are You?",
+    "description": "AI game show where Larry the Bot rates how cooked your dev career is — then you choose your fate",
+    "date": "2026-03-07",
+    "url": "/demos/how-cooked/",
+    "preview": "preview-howcooked",
+    "tags": ["Audio", "Satire", "Game"],
+    "tagTypes": ["audio", "", "game"],
+    "order": 1
+  },
+  {
     "slug": "h3",
     "title": "H3: Hip Hop HTML",
     "description": "Pick a beat, watch the page party — variable fonts bump to the bass, colors shift with tone, confetti flies",
