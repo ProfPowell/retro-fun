@@ -875,6 +875,11 @@ function doCope(type) {
   currentTaunt = taunts[Math.floor(Math.random() * taunts.length)];
   tauntEl.textContent = currentTaunt;
   lastTauntTime = (performance.now() - screamStart) / 1000;
+
+  // If rage depleted via coping, trigger serenity after a brief flash delay
+  if (rage <= 0) {
+    setTimeout(() => { if (phase === 'scream') startSerenity(); }, 500);
+  }
 }
 
 // ── Phase management ──
@@ -1066,7 +1071,8 @@ function loop(now) {
     // Drain rage based on volume
     if (smoothVolume > 0.15) {
       rage -= smoothVolume * 0.35;
-    } else {
+    } else if (rage > 0.5) {
+      // Only creep back up if not already near zero (prevents undoing coping)
       rage = Math.min(100, rage + 0.03);
     }
     rage = Math.max(0, rage);
