@@ -112,9 +112,12 @@
   .section {
     margin-bottom: 2rem;
     padding: 1.5rem;
-    border: 1px solid hsl(var(--hue), 40%, calc(15% + var(--energy) * 10%));
-    background: hsla(var(--hue), 20%, 8%, calc(0.5 + var(--bass) * 0.3));
-    transition: border-color 0.2s, background 0.2s;
+    border: 1px solid hsl(var(--hue), 60%, calc(20% + var(--energy) * 15%));
+    background: hsla(var(--hue), 25%, 8%, calc(0.6 + var(--bass) * 0.3));
+    box-shadow:
+      0 0 calc(2px + var(--beat) * 20px) hsla(var(--hue), 100%, 50%, calc(var(--energy) * 0.4)),
+      inset 0 0 calc(var(--beat) * 30px) hsla(var(--hue), 100%, 50%, 0.03);
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.15s;
   }
 
   .section h2 {
@@ -126,6 +129,9 @@
     color: hsl(calc(var(--hue) + 60), 90%, calc(55% + var(--energy) * 20%));
     text-shadow: 0 0 calc(var(--beat) * 20px) hsl(calc(var(--hue) + 60), 100%, 60%);
     transform: translateX(calc(var(--beat) * 3px));
+    text-decoration: underline wavy;
+    text-decoration-color: hsla(calc(var(--hue) + 60), 100%, 60%, 0.35);
+    text-underline-offset: 0.25em;
   }
 
   .section p, .section li {
@@ -144,31 +150,53 @@
     content: '\25b6 ';
     color: hsl(var(--hue), 100%, 60%);
     font-size: 0.6em;
+    text-shadow: 0 0 calc(var(--beat) * 8px) hsl(var(--hue), 100%, 60%);
   }
   .section li {
     margin-bottom: 0.4rem;
+    transition: text-shadow 0.2s;
+  }
+  .section li:hover {
+    text-shadow: 0 0 10px hsl(var(--hue), 100%, 60%);
   }
 
   .fake-ad {
-    text-align: center;
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     letter-spacing: 0.3em;
     text-transform: uppercase;
-    padding: 1rem;
-    border: 1px dashed hsl(var(--hue), 50%, 25%);
-    color: hsl(calc(var(--hue) + 90), 60%, 50%);
+    padding: 0.6rem 0;
+    border-top: 1px solid hsl(var(--hue), 60%, 30%);
+    border-bottom: 1px solid hsl(var(--hue), 60%, 30%);
+    color: hsl(calc(var(--hue) + 90), 80%, 60%);
     font-variation-settings: "wght" calc(300 + var(--high) * 700);
     transform: scale(calc(1 + var(--beat) * 0.04));
+    background: linear-gradient(90deg, transparent, hsla(var(--hue), 100%, 50%, 0.06), transparent);
+    overflow: hidden;
   }
 
   .credits {
-    text-align: center;
-    font-size: 0.55rem;
-    letter-spacing: 0.2em;
-    color: #333;
-    padding: 2rem 0;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    padding: 1.5rem 0;
     text-transform: uppercase;
     font-variation-settings: "wght" calc(300 + var(--energy) * 200);
+    overflow: hidden;
+    border-top: 1px solid #222;
+    color: hsl(calc(var(--hue) + 180), 60%, 50%);
+  }
+
+  /* ===== MARQUEE TICKER ===== */
+  .marquee-ticker {
+    font-family: 'Courier New', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.5rem 0;
+    color: hsl(calc(var(--hue) + 90), 100%, 65%);
+    background: rgba(255,0,255,0.04);
+    border-bottom: 1px solid rgba(255,0,255,0.15);
+    overflow: hidden;
+    text-shadow: 0 0 8px currentColor;
   }
 
   /* ===== CONFETTI CANVAS ===== */
@@ -387,6 +415,10 @@
   <div class="subtitle">Where the DOM drops beats</div>
 </div>
 
+<div class="marquee-ticker">
+  <marquee scrollamount="3">NOW SPINNING &#9670; DJ Doctype &#9670; MC Markup &#9670; Lil' &lt;div&gt; &#9670; The Flex Boxx &#9670; Young Viewport &#9670; LIVE FROM PORT 3000 &#9670; ALL TAGS WELCOME &#9670; FRONT-END FOREVER &#9670; SEMANTIC OR DIE &#9670;</marquee>
+</div>
+
 <div class="content" id="content">
   <div class="section">
     <h2>Top Tracks This Week</h2>
@@ -411,7 +443,7 @@
   </div>
 
   <div class="fake-ad">
-    &mdash; ad: Learn CSS Grid in 21 days (results not typical) &mdash;
+    <marquee scrollamount="2">&mdash; ad: Learn CSS Grid in 21 days (results not typical) &mdash; Responsive guaranteed or your viewport back &mdash;</marquee>
   </div>
 
   <div class="section">
@@ -435,7 +467,7 @@
   </div>
 
   <div class="fake-ad">
-    &mdash; ad: &lt;marquee&gt; is back and it&rsquo;s not sorry &mdash;
+    <marquee scrollamount="2" direction="right">&mdash; ad: &lt;marquee&gt; is back and it&rsquo;s not sorry &mdash; Now with more scrollamount &mdash;</marquee>
   </div>
 
   <div class="section">
@@ -449,7 +481,7 @@
   </div>
 
   <div class="credits">
-    H3: Hip Hop HTML &bull; All tracks synthesized in the browser &bull; No servers were harmed &bull; CyberViber.Ninja
+    <marquee scrollamount="1">H3: Hip Hop HTML &bull; All tracks synthesized in the browser &bull; No servers were harmed &bull; CyberViber.Ninja &bull; Est. 2026 &bull; &lt;marquee&gt; is NOT deprecated in our hearts &bull; Semantic or die &bull;</marquee>
   </div>
 </div>
 
