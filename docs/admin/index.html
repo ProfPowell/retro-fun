@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Post Editor — Cyber Viber Ninja</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Recursive:wght@300..800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #ccc;
+    font-family: 'Recursive', 'Courier New', monospace;
+    min-height: 100vh;
+  }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.8rem 1.5rem;
+    border-bottom: 1px solid #1a1a1a;
+    background: #08080c;
+  }
+  .topbar-title {
+    font-size: 0.75rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #00ffff;
+    text-shadow: 0 0 10px #00ffff33;
+    flex: 1;
+  }
+  .topbar a {
+    font-size: 0.6rem; color: #444;
+    text-decoration: none; letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .topbar a:hover { color: #00ffff; }
+
+  /* ===== LAYOUT ===== */
+  .editor-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: calc(100vh - 42px);
+  }
+  @media (max-width: 900px) {
+    .editor-layout {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+
+  /* ===== LEFT PANEL: FORM ===== */
+  .edit-panel {
+    display: flex; flex-direction: column;
+    border-right: 1px solid #1a1a1a;
+    overflow-y: auto;
+  }
+  @media (max-width: 900px) {
+    .edit-panel { border-right: none; border-bottom: 1px solid #1a1a1a; }
+  }
+
+  .fields {
+    padding: 1.2rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.8rem;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .field label {
+    font-size: 0.6rem; color: #555;
+    letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .field input, .field textarea {
+    background: #111; border: 1px solid #222; color: #ddd;
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
+    padding: 0.5rem 0.7rem; transition: border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus {
+    outline: none; border-color: #00ffff;
+  }
+  .field-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;
+  }
+  .slug-hint {
+    font-size: 0.55rem; color: #333;
+    letter-spacing: 0.1em;
+  }
+  .slug-hint span { color: #00ffff; }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex; gap: 0.3rem; padding: 0.5rem 1.5rem;
+    border-bottom: 1px solid #1a1a1a;
+    flex-wrap: wrap;
+  }
+  .tb-btn {
+    background: #151518; border: 1px solid #222; color: #888;
+    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    padding: 0.3rem 0.5rem; cursor: pointer;
+    letter-spacing: 0.05em; transition: all 0.15s;
+  }
+  .tb-btn:hover { border-color: #00ffff; color: #00ffff; }
+  .tb-sep { width: 1px; background: #222; margin: 0 0.2rem; }
+
+  /* Body editor */
+  .body-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    min-height: 300px;
+  }
+  #postBody {
+    flex: 1; resize: none;
+    background: #0d0d12; border: none; color: #ddd;
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
+    line-height: 1.7; padding: 1rem 1.5rem;
+  }
+  #postBody:focus { outline: none; }
+
+  /* ===== RIGHT PANEL: PREVIEW ===== */
+  .preview-panel {
+    overflow-y: auto;
+    background: #0a0a0f;
+  }
+  .preview-label {
+    font-size: 0.6rem; color: #333;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 0.8rem 1.5rem;
+    border-bottom: 1px solid #1a1a1a;
+    position: sticky; top: 0;
+    background: #0a0a0f;
+    z-index: 1;
+  }
+
+  /* Mirror post.css styles for preview */
+  .preview-content {
+    max-width: 720px; padding: 1.5rem;
+    font-size: 0.85rem; line-height: 1.8; color: #ccc;
+  }
+  .preview-content .pv-date {
+    font-size: 0.65rem; color: #444;
+    letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .preview-content .pv-title {
+    font-size: 1.5rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #00ffff;
+    text-shadow: 0 0 15px #00ffff33;
+    margin: 0.5rem 0 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #222;
+  }
+  .preview-content h2 {
+    font-size: 1.1rem; color: #00ffff;
+    text-shadow: 0 0 10px #00ffff33;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin: 2rem 0 1rem;
+  }
+  .preview-content h3 {
+    font-size: 0.95rem; color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff33;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin: 1.5rem 0 0.75rem;
+  }
+  .preview-content p { margin-bottom: 1rem; }
+  .preview-content a {
+    color: #33ff33; text-decoration: none;
+    border-bottom: 1px solid #33ff3344;
+  }
+  .preview-content code {
+    background: #1a1a1a; color: #33ff33;
+    padding: 0.15rem 0.4rem; font-size: 0.8rem;
+    border: 1px solid #222;
+  }
+  .preview-content pre {
+    background: #0a0a0a; border: 1px solid #222;
+    padding: 1rem; overflow-x: auto; margin: 1.5rem 0;
+  }
+  .preview-content pre code {
+    background: none; border: none; padding: 0;
+    color: #33ff33; text-shadow: 0 0 6px #33ff3322;
+    font-size: 0.8rem; line-height: 1.6;
+  }
+  .preview-content blockquote {
+    border-left: 3px solid #00ffff;
+    padding: 0.5rem 1rem; margin: 1.5rem 0;
+    color: #999; background: #111;
+  }
+  .preview-content ul, .preview-content ol {
+    margin: 1rem 0 1rem 1.5rem;
+  }
+  .preview-content li { margin-bottom: 0.4rem; }
+  .preview-content img {
+    max-width: 100%; border: 1px solid #222; margin: 1.5rem 0;
+  }
+  .preview-content hr {
+    border: none; border-top: 1px solid #222; margin: 2rem 0;
+  }
+  .preview-empty {
+    color: #333; font-size: 0.75rem;
+    letter-spacing: 0.1em; padding: 2rem 1.5rem;
+  }
+
+  /* ===== ACTION BAR ===== */
+  .action-bar {
+    display: flex; gap: 0.6rem; padding: 0.8rem 1.5rem;
+    border-top: 1px solid #1a1a1a;
+    background: #08080c;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    background: #151518; border: 1px solid #333; color: #aaa;
+    font-family: 'Courier New', monospace; font-size: 0.7rem;
+    padding: 0.5rem 1rem; cursor: pointer;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .action-btn:hover {
+    border-color: #00ffff; color: #00ffff;
+  }
+  .action-btn.primary {
+    background: linear-gradient(135deg, #00ffff22, #ff00ff22);
+    border-color: #00ffff;
+    color: #00ffff;
+  }
+  .action-btn.primary:hover {
+    box-shadow: 0 0 15px #00ffff33;
+  }
+  .action-msg {
+    font-size: 0.6rem; color: #33ff33;
+    letter-spacing: 0.1em; align-self: center;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .action-msg.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">Post Editor</div>
+  <a href="/">Back to site</a>
+  <a href="/posts/">View posts</a>
+</div>
+
+<div class="editor-layout">
+  <!-- LEFT: Editor -->
+  <div class="edit-panel">
+    <div class="fields">
+      <div class="field">
+        <label for="postTitle">Title</label>
+        <input type="text" id="postTitle" placeholder="My New Post">
+      </div>
+      <div class="slug-hint">Slug: <span id="slugPreview">---</span></div>
+      <div class="field">
+        <label for="postDesc">Description</label>
+        <input type="text" id="postDesc" placeholder="A short summary for the card preview">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="postDate">Date</label>
+          <input type="date" id="postDate">
+        </div>
+        <div class="field">
+          <label for="postImage">Image URL (optional)</label>
+          <input type="text" id="postImage" placeholder="/img/my-image.png">
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="tb-btn" data-insert="heading" title="Heading">H2</button>
+      <button class="tb-btn" data-insert="h3" title="Subheading">H3</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" data-insert="bold" title="Bold">B</button>
+      <button class="tb-btn" data-insert="italic" title="Italic"><em>I</em></button>
+      <button class="tb-btn" data-insert="code" title="Inline code">&lt;/&gt;</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" data-insert="link" title="Link">Link</button>
+      <button class="tb-btn" data-insert="image" title="Image">Img</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" data-insert="ul" title="Bullet list">List</button>
+      <button class="tb-btn" data-insert="quote" title="Blockquote">&gt;</button>
+      <button class="tb-btn" data-insert="codeblock" title="Code block">Pre</button>
+      <button class="tb-btn" data-insert="hr" title="Horizontal rule">---</button>
+    </div>
+
+    <div class="body-wrap">
+      <textarea id="postBody" placeholder="Write your post in Markdown..."></textarea>
+    </div>
+
+    <div class="action-bar">
+      <button class="action-btn primary" id="btnDownload">Download .md</button>
+      <button class="action-btn" id="btnCopy">Copy to clipboard</button>
+      <button class="action-btn" id="btnClear">Clear</button>
+      <button class="action-btn" id="btnLoadDraft">Load draft</button>
+      <span class="action-msg" id="actionMsg"></span>
+    </div>
+  </div>
+
+  <!-- RIGHT: Preview -->
+  <div class="preview-panel">
+    <div class="preview-label">Preview</div>
+    <div class="preview-content" id="preview">
+      <div class="preview-empty">Start typing to see a preview...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const titleEl = document.getElementById('postTitle');
+const descEl = document.getElementById('postDesc');
+const dateEl = document.getElementById('postDate');
+const imageEl = document.getElementById('postImage');
+const bodyEl = document.getElementById('postBody');
+const slugEl = document.getElementById('slugPreview');
+const previewEl = document.getElementById('preview');
+const msgEl = document.getElementById('actionMsg');
+
+// Default date to today
+dateEl.value = new Date().toISOString().slice(0, 10);
+
+// =====================================================
+// SLUG GENERATION
+// =====================================================
+function toSlug(str) {
+  return str.toLowerCase().trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+titleEl.addEventListener('input', () => {
+  const s = toSlug(titleEl.value);
+  slugEl.textContent = s || '---';
+  updatePreview();
+  saveDraft();
+});
+
+// =====================================================
+// MARKDOWN → HTML (simple renderer)
+// =====================================================
+function md(text) {
+  if (!text.trim()) return '';
+
+  // Normalize line endings
+  text = text.replace(/\r\n/g, '\n');
+
+  let html = '';
+  const lines = text.split('\n');
+  let i = 0;
+  let inList = false;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Code block
+    if (line.startsWith('```')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      i++;
+      let code = '';
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        code += esc(lines[i]) + '\n';
+        i++;
+      }
+      i++; // skip closing ```
+      html += `<pre><code>${code.trimEnd()}</code></pre>`;
+      continue;
+    }
+
+    // Heading
+    if (/^#{1,3}\s/.test(line)) {
+      if (inList) { html += '</ul>'; inList = false; }
+      const level = line.match(/^(#+)/)[1].length;
+      const text = inline(line.replace(/^#+\s*/, ''));
+      html += `<h${level}>${text}</h${level}>`;
+      i++; continue;
+    }
+
+    // Horizontal rule
+    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += '<hr>';
+      i++; continue;
+    }
+
+    // Blockquote
+    if (line.startsWith('> ')) {
+      if (inList) { html += '</ul>'; inList = false; }
+      let q = '';
+      while (i < lines.length && lines[i].startsWith('> ')) {
+        q += inline(lines[i].replace(/^>\s?/, '')) + ' ';
+        i++;
+      }
+      html += `<blockquote><p>${q.trim()}</p></blockquote>`;
+      continue;
+    }
+
+    // Unordered list
+    if (/^[-*]\s/.test(line)) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${inline(line.replace(/^[-*]\s/, ''))}</li>`;
+      i++; continue;
+    }
+
+    // Close list if we hit a non-list line
+    if (inList && !/^[-*]\s/.test(line)) {
+      html += '</ul>'; inList = false;
+    }
+
+    // Blank line
+    if (line.trim() === '') { i++; continue; }
+
+    // Paragraph: gather consecutive non-blank non-special lines
+    let para = '';
+    while (i < lines.length && lines[i].trim() !== '' &&
+           !/^#{1,3}\s/.test(lines[i]) && !lines[i].startsWith('```') &&
+           !lines[i].startsWith('> ') && !/^[-*]\s/.test(lines[i]) &&
+           !/^(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[i])) {
+      para += (para ? ' ' : '') + lines[i];
+      i++;
+    }
+    html += `<p>${inline(para)}</p>`;
+  }
+
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function inline(text) {
+  // Images (before links)
+  text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+  // Links
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  // Bold+italic
+  text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  // Bold
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Inline code
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  return text;
+}
+
+// =====================================================
+// PREVIEW
+// =====================================================
+function updatePreview() {
+  const title = titleEl.value.trim();
+  const date = dateEl.value;
+  const body = bodyEl.value;
+
+  if (!title && !body) {
+    previewEl.innerHTML = '<div class="preview-empty">Start typing to see a preview...</div>';
+    return;
+  }
+
+  let html = '';
+  if (date) {
+    const d = new Date(date + 'T12:00:00');
+    html += `<div class="pv-date">${d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>`;
+  }
+  if (title) html += `<div class="pv-title">${esc(title)}</div>`;
+  html += md(body);
+  previewEl.innerHTML = html;
+}
+
+descEl.addEventListener('input', saveDraft);
+dateEl.addEventListener('input', () => { updatePreview(); saveDraft(); });
+imageEl.addEventListener('input', saveDraft);
+bodyEl.addEventListener('input', () => { updatePreview(); saveDraft(); });
+
+// =====================================================
+// FILE GENERATION
+// =====================================================
+function generateFile() {
+  const title = titleEl.value.trim();
+  const desc = descEl.value.trim();
+  const date = dateEl.value;
+  const image = imageEl.value.trim();
+  const body = bodyEl.value;
+
+  let fm = '---\n';
+  fm += `title: "${title.replace(/"/g, '\\"')}"\n`;
+  if (desc) fm += `description: "${desc.replace(/"/g, '\\"')}"\n`;
+  if (date) fm += `date: ${date}\n`;
+  if (image) fm += `image: ${image}\n`;
+  fm += '---\n\n';
+  fm += body;
+  if (!body.endsWith('\n')) fm += '\n';
+  return fm;
+}
+
+function getFilename() {
+  const slug = toSlug(titleEl.value);
+  return slug ? `${slug}.md` : 'post.md';
+}
+
+// =====================================================
+// TOOLBAR BUTTONS
+// =====================================================
+document.querySelectorAll('.tb-btn[data-insert]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.insert;
+    const start = bodyEl.selectionStart;
+    const end = bodyEl.selectionEnd;
+    const sel = bodyEl.value.substring(start, end);
+    let before = '', after = '', cursor;
+
+    switch (action) {
+      case 'heading':
+        before = '## '; after = ''; break;
+      case 'h3':
+        before = '### '; after = ''; break;
+      case 'bold':
+        before = '**'; after = '**'; break;
+      case 'italic':
+        before = '*'; after = '*'; break;
+      case 'code':
+        before = '`'; after = '`'; break;
+      case 'link':
+        before = '['; after = '](url)'; break;
+      case 'image':
+        before = '!['; after = '](/img/)'; break;
+      case 'ul':
+        before = '- '; after = ''; break;
+      case 'quote':
+        before = '> '; after = ''; break;
+      case 'codeblock':
+        before = '```\n'; after = '\n```'; break;
+      case 'hr':
+        before = '\n---\n'; after = ''; break;
+    }
+
+    const replacement = before + (sel || '') + after;
+    bodyEl.setRangeText(replacement, start, end, 'end');
+    bodyEl.focus();
+    updatePreview();
+    saveDraft();
+  });
+});
+
+// =====================================================
+// ACTIONS
+// =====================================================
+function flash(msg) {
+  msgEl.textContent = msg;
+  msgEl.classList.add('show');
+  setTimeout(() => msgEl.classList.remove('show'), 2000);
+}
+
+// Download
+document.getElementById('btnDownload').addEventListener('click', () => {
+  const content = generateFile();
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = getFilename();
+  a.click();
+  URL.revokeObjectURL(a.href);
+  flash('Downloaded ' + getFilename());
+});
+
+// Copy
+document.getElementById('btnCopy').addEventListener('click', () => {
+  navigator.clipboard.writeText(generateFile()).then(() => {
+    flash('Copied to clipboard');
+  });
+});
+
+// Clear
+document.getElementById('btnClear').addEventListener('click', () => {
+  if (!titleEl.value && !bodyEl.value) return;
+  if (!confirm('Clear all fields?')) return;
+  titleEl.value = '';
+  descEl.value = '';
+  dateEl.value = new Date().toISOString().slice(0, 10);
+  imageEl.value = '';
+  bodyEl.value = '';
+  slugEl.textContent = '---';
+  updatePreview();
+  sessionStorage.removeItem('post-draft');
+  flash('Cleared');
+});
+
+// =====================================================
+// DRAFT AUTOSAVE (sessionStorage)
+// =====================================================
+function saveDraft() {
+  const draft = {
+    title: titleEl.value,
+    desc: descEl.value,
+    date: dateEl.value,
+    image: imageEl.value,
+    body: bodyEl.value
+  };
+  sessionStorage.setItem('post-draft', JSON.stringify(draft));
+}
+
+function loadDraft() {
+  const raw = sessionStorage.getItem('post-draft');
+  if (!raw) return false;
+  try {
+    const d = JSON.parse(raw);
+    titleEl.value = d.title || '';
+    descEl.value = d.desc || '';
+    dateEl.value = d.date || new Date().toISOString().slice(0, 10);
+    imageEl.value = d.image || '';
+    bodyEl.value = d.body || '';
+    slugEl.textContent = toSlug(d.title) || '---';
+    updatePreview();
+    return true;
+  } catch (e) { return false; }
+}
+
+// Auto-load draft on page load
+if (loadDraft()) {
+  flash('Draft restored');
+}
+
+// Manual load button
+document.getElementById('btnLoadDraft').addEventListener('click', () => {
+  if (loadDraft()) flash('Draft loaded');
+  else flash('No draft saved');
+});
+</script>
+</body>
+</html>
