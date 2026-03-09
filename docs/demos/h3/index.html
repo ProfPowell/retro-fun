@@ -216,6 +216,122 @@
     transition: height 0.08s;
   }
 
+  /* ===== FREESTYLE MODE ===== */
+  .fs-divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, #333, transparent);
+    margin: 0.6rem 0;
+  }
+  .track-btn.freestyle {
+    border-color: #00ffff; color: #00ffff; text-align: center;
+  }
+  .track-btn.freestyle:hover {
+    background: rgba(0,255,255,0.08);
+    text-shadow: 0 0 15px #00ffff;
+  }
+  .freestyle-panel {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(5,5,10,0.97);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 1.5rem; gap: 1rem; overflow-y: auto;
+  }
+  .freestyle-panel.hidden { display: none; }
+  .freestyle-panel h2 {
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: #00ffff;
+    text-shadow: 0 0 20px #00ffff44;
+  }
+  .freestyle-panel > p {
+    font-size: 0.65rem; color: #555; letter-spacing: 0.15em; text-align: center;
+  }
+  .fs-samples {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+  }
+  .fs-sample-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #333; color: #888;
+    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    padding: 0.4rem 0.8rem; cursor: pointer;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .fs-sample-btn:hover, .fs-sample-btn.active {
+    border-color: #00ffff; color: #00ffff;
+  }
+  .fs-textarea {
+    width: 90%; max-width: 600px;
+    background: rgba(0,0,0,0.6); border: 1px solid #333;
+    color: #0f0; font-family: 'Courier New', monospace;
+    font-size: 0.7rem; padding: 0.8rem;
+    resize: vertical; min-height: 150px; max-height: 300px;
+    line-height: 1.5;
+  }
+  .fs-textarea:focus { outline: none; border-color: #00ffff; }
+  .fs-controls {
+    display: flex; gap: 0.8rem; align-items: center;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .fs-beat-select, .fs-speed-select {
+    background: rgba(0,0,0,0.6); border: 1px solid #333;
+    color: #aaa; font-family: 'Courier New', monospace;
+    font-size: 0.65rem; padding: 0.5rem; cursor: pointer;
+  }
+  .fs-drop-btn {
+    background: linear-gradient(135deg, #ff00ff, #00ffff);
+    border: none; color: #000; font-family: 'Courier New', monospace;
+    font-size: 0.8rem; font-weight: bold; padding: 0.7rem 1.5rem;
+    cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .fs-drop-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255,0,255,0.5), 0 0 40px rgba(0,255,255,0.3);
+  }
+  .fs-back-btn {
+    background: none; border: none; color: #444;
+    font-family: 'Courier New', monospace; font-size: 0.6rem;
+    cursor: pointer; letter-spacing: 0.1em;
+  }
+  .fs-back-btn:hover { color: #888; }
+
+  /* ===== CODE DISPLAY ===== */
+  .code-display {
+    max-width: 800px; margin: 0 auto;
+    padding: 2rem 1.5rem 8rem;
+    font-family: 'Courier New', monospace;
+    font-size: clamp(0.6rem, 1.4vw, 0.85rem);
+    line-height: 1.6;
+  }
+  .code-display.hidden { display: none; }
+  .code-line {
+    padding: 2px 8px; white-space: pre;
+    border-left: 2px solid transparent;
+    transition: all 0.15s; color: #445;
+  }
+  .code-line.active {
+    color: #ccc; border-left-color: #00ffff;
+    background: rgba(0,255,255,0.04);
+    text-shadow: 0 0 8px rgba(0,255,255,0.3);
+  }
+  .code-line.played { color: #334; }
+  .line-num {
+    display: inline-block; width: 3ch;
+    color: #333; margin-right: 1ch;
+    text-align: right; user-select: none;
+  }
+  .code-line.active .line-num { color: #00ffff; }
+  .code-tag { transition: all 0.1s; }
+  .code-tag.lit {
+    color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff66;
+    animation: tag-flash 0.3s ease-out;
+  }
+  @keyframes tag-flash {
+    0% { background: rgba(255,0,255,0.3); }
+    100% { background: transparent; }
+  }
+
   /* ===== SCANLINES ===== */
   .scanlines {
     position: fixed; inset: 0; pointer-events: none; z-index: 35;
@@ -234,6 +350,35 @@
   <h2>H3: Hip Hop HTML</h2>
   <p>Pick a beat &bull; watch the page party</p>
   <div class="track-picker" id="trackPicker"></div>
+</div>
+
+<!-- Freestyle panel -->
+<div class="freestyle-panel hidden" id="freestylePanel">
+  <h2>&#9835; Freestyle</h2>
+  <p>Paste HTML or pick a sample &bull; choose a backing beat &bull; drop those beats</p>
+  <div class="fs-samples">
+    <button class="fs-sample-btn active" data-sample="classic">Classic Page</button>
+    <button class="fs-sample-btn" data-sample="divsoup">Div Soup</button>
+    <button class="fs-sample-btn" data-sample="table">Table Layout</button>
+    <button class="fs-sample-btn" data-sample="form">Form Flow</button>
+  </div>
+  <textarea id="fsTextarea" class="fs-textarea" rows="12" spellcheck="false"></textarea>
+  <div class="fs-controls">
+    <select id="fsBeatSelect" class="fs-beat-select">
+      <option value="0">!DOCTYPE Funk (90 BPM)</option>
+      <option value="1">Semantic Streets (78 BPM)</option>
+      <option value="2">Nested Too Deep (140 BPM)</option>
+      <option value="3">Justify My Content (98 BPM)</option>
+      <option value="4">Responsive Remix (120 BPM)</option>
+    </select>
+    <select id="fsSpeedSelect" class="fs-speed-select">
+      <option value="2">Chill (slow)</option>
+      <option value="1" selected>Normal</option>
+      <option value="0.5">Hyped (fast)</option>
+    </select>
+    <button id="fsDropBtn" class="fs-drop-btn">Drop Those HTML Beats</button>
+  </div>
+  <button id="fsBackBtn" class="fs-back-btn">&larr; Back to tracks</button>
 </div>
 
 <!-- Page content that bumps to the beat -->
@@ -308,6 +453,9 @@
   </div>
 </div>
 
+<!-- Freestyle code display -->
+<div class="code-display hidden" id="codeDisplay"></div>
+
 <!-- Effect layers -->
 <canvas id="confetti"></canvas>
 <div id="patternOverlay"></div>
@@ -348,6 +496,7 @@ let lastBeatTime = 0;
 let beatDetected = false;
 let confettiPieces = [];
 let patternTimer = null;
+let freestyleMode = false;
 
 // =====================================================
 // TRACK DEFINITIONS - procedural synth patterns
@@ -397,7 +546,7 @@ const TRACKS = [
 
 // Note frequencies (chromatic from C2)
 const NOTE_FREQS = [];
-for (let i = 0; i < 60; i++) {
+for (let i = 0; i < 84; i++) {
   NOTE_FREQS.push(65.41 * Math.pow(2, i / 12));
 }
 
@@ -406,8 +555,10 @@ const MINOR_PENT = [0, 3, 5, 7, 10]; // minor pentatonic - classic hip hop
 
 function getNote(root, scaleIdx, octave) {
   const deg = MINOR_PENT[((scaleIdx % MINOR_PENT.length) + MINOR_PENT.length) % MINOR_PENT.length];
-  return NOTE_FREQS[root + deg + octave * 12];
+  const idx = Math.min(root + deg + octave * 12, NOTE_FREQS.length - 1);
+  return NOTE_FREQS[idx];
 }
+
 
 // =====================================================
 // BUILD TRACK PICKER UI
@@ -419,6 +570,19 @@ TRACKS.forEach((track, i) => {
   btn.addEventListener('click', () => startTrack(i));
   trackPicker.appendChild(btn);
 });
+
+// Freestyle button in track picker
+const fsDivider = document.createElement('div');
+fsDivider.className = 'fs-divider';
+trackPicker.appendChild(fsDivider);
+const fsBtn = document.createElement('button');
+fsBtn.className = 'track-btn freestyle';
+fsBtn.innerHTML = '<span class="track-title">\u266b Freestyle</span><span class="track-desc">Paste HTML \u2022 Watch tags light up \u2022 Drop those beats</span>';
+fsBtn.addEventListener('click', () => {
+  overlay.classList.add('hidden');
+  document.getElementById('freestylePanel').classList.remove('hidden');
+});
+trackPicker.appendChild(fsBtn);
 
 // Build mini viz bars
 for (let i = 0; i < 12; i++) {
@@ -467,16 +631,19 @@ function stopTrack() {
   if (schedulerTimer) clearTimeout(schedulerTimer);
   nowPlaying.classList.add('hidden');
   currentTrack = null;
-  // Reset CSS vars
   root.style.setProperty('--bump', '1');
   root.style.setProperty('--bass', '0');
   root.style.setProperty('--mid', '0');
   root.style.setProperty('--high', '0');
   root.style.setProperty('--energy', '0');
   root.style.setProperty('--beat', '0');
+  if (freestyleMode) stopFreestyle();
 }
 
-document.getElementById('btnStop').addEventListener('click', stopTrack);
+document.getElementById('btnStop').addEventListener('click', () => {
+  stopTrack();
+  overlay.classList.remove('hidden');
+});
 document.getElementById('btnSwitch').addEventListener('click', () => {
   stopTrack();
   overlay.classList.remove('hidden');
@@ -819,6 +986,350 @@ function triggerPattern() {
     patternOverlay.style.opacity = '0';
   }, 200);
 }
+
+// =====================================================
+// FREESTYLE MODE ENGINE
+// =====================================================
+const freestylePanel = document.getElementById('freestylePanel');
+const fsTextarea = document.getElementById('fsTextarea');
+const fsBeatSelect = document.getElementById('fsBeatSelect');
+const fsSpeedSelect = document.getElementById('fsSpeedSelect');
+const codeDisplay = document.getElementById('codeDisplay');
+const contentEl = document.getElementById('content');
+
+let fsLines = [];
+let fsCurrentLine = 0;
+let fsLineTimer = null;
+let fsTagGain = null;
+
+const FS_SAMPLES = {
+  classic: [
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    '<head>',
+    '  <meta charset="UTF-8">',
+    '  <title>My Cool Page</title>',
+    '  <link rel="stylesheet" href="style.css">',
+    '</head>',
+    '<body>',
+    '  <header>',
+    '    <nav>',
+    '      <a href="/">Home</a>',
+    '      <a href="/about">About</a>',
+    '      <a href="/contact">Contact</a>',
+    '    </nav>',
+    '    <h1>Welcome to My Site</h1>',
+    '  </header>',
+    '  <main>',
+    '    <article>',
+    '      <h2>Latest Post</h2>',
+    '      <p>This is my <strong>first</strong> blog post.</p>',
+    '      <p>It has <em>multiple</em> paragraphs.</p>',
+    '      <img src="photo.jpg" alt="A nice photo">',
+    '    </article>',
+    '    <aside>',
+    '      <h3>Sidebar</h3>',
+    '      <ul>',
+    '        <li>Link One</li>',
+    '        <li>Link Two</li>',
+    '        <li>Link Three</li>',
+    '      </ul>',
+    '    </aside>',
+    '  </main>',
+    '  <footer>',
+    '    <p>&copy; 2026 My Site</p>',
+    '  </footer>',
+    '</body>',
+    '</html>'
+  ].join('\n'),
+
+  divsoup: [
+    '<div class="wrapper">',
+    '  <div class="container">',
+    '    <div class="row">',
+    '      <div class="col-md-8">',
+    '        <div class="card">',
+    '          <div class="card-header">',
+    '            <div class="title-wrap">',
+    '              <h2>Div Soup</h2>',
+    '            </div>',
+    '          </div>',
+    '          <div class="card-body">',
+    '            <div class="content-wrap">',
+    '              <div class="text-block">',
+    '                <p>So many divs...</p>',
+    '              </div>',
+    '            </div>',
+    '            <div class="content-wrap">',
+    '              <div class="text-block">',
+    '                <p>...nesting deeper...</p>',
+    '              </div>',
+    '            </div>',
+    '          </div>',
+    '          <div class="card-footer">',
+    '            <div class="btn-group">',
+    '              <button class="btn">Click</button>',
+    '              <button class="btn">Cancel</button>',
+    '            </div>',
+    '          </div>',
+    '        </div>',
+    '      </div>',
+    '      <div class="col-md-4">',
+    '        <div class="sidebar">',
+    '          <div class="widget">',
+    '            <span>Widget</span>',
+    '          </div>',
+    '        </div>',
+    '      </div>',
+    '    </div>',
+    '  </div>',
+    '</div>'
+  ].join('\n'),
+
+  table: [
+    '<table border="1" cellpadding="8">',
+    '  <caption>H3 Artist Roster</caption>',
+    '  <thead>',
+    '    <tr>',
+    '      <th>Artist</th>',
+    '      <th>Genre</th>',
+    '      <th>Status</th>',
+    '    </tr>',
+    '  </thead>',
+    '  <tbody>',
+    '    <tr>',
+    '      <td>DJ Doctype</td>',
+    '      <td>Boom Bap</td>',
+    '      <td><strong>Active</strong></td>',
+    '    </tr>',
+    '    <tr>',
+    '      <td>MC Markup</td>',
+    '      <td>Conscious</td>',
+    '      <td><em>On Tour</em></td>',
+    '    </tr>',
+    '    <tr>',
+    '      <td>Lil &lt;div&gt;</td>',
+    '      <td>Trap</td>',
+    '      <td><strong>Nested</strong></td>',
+    '    </tr>',
+    '    <tr>',
+    '      <td>The Flex Boxx</td>',
+    '      <td>G-Funk</td>',
+    '      <td><em>Justified</em></td>',
+    '    </tr>',
+    '  </tbody>',
+    '  <tfoot>',
+    '    <tr>',
+    '      <td colspan="3">All rights reserved &copy; H3 Records</td>',
+    '    </tr>',
+    '  </tfoot>',
+    '</table>'
+  ].join('\n'),
+
+  form: [
+    '<form action="/submit" method="POST">',
+    '  <fieldset>',
+    '    <legend>Sign Up for H3</legend>',
+    '    <div class="field">',
+    '      <label for="name">Name</label>',
+    '      <input type="text" id="name" placeholder="MC Name" required>',
+    '    </div>',
+    '    <div class="field">',
+    '      <label for="email">Email</label>',
+    '      <input type="email" id="email" required>',
+    '    </div>',
+    '    <div class="field">',
+    '      <label for="pw">Password</label>',
+    '      <input type="password" id="pw" minlength="8">',
+    '    </div>',
+    '    <div class="field">',
+    '      <label for="role">Role</label>',
+    '      <select id="role" name="role">',
+    '        <option>Producer</option>',
+    '        <option>DJ</option>',
+    '        <option>MC</option>',
+    '        <option>Hype Person</option>',
+    '      </select>',
+    '    </div>',
+    '    <div class="field">',
+    '      <label for="bio">Bio</label>',
+    '      <textarea id="bio" rows="4"></textarea>',
+    '    </div>',
+    '    <button type="submit">Join the Crew</button>',
+    '  </fieldset>',
+    '</form>'
+  ].join('\n')
+};
+
+// Hash tag name to scale degree for musical mapping
+function tagToScaleDeg(tagName) {
+  let hash = 0;
+  for (let i = 0; i < tagName.length; i++) {
+    hash = ((hash << 5) - hash + tagName.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % MINOR_PENT.length;
+}
+
+function getDepth(line) {
+  const m = line.match(/^(\s*)/);
+  return m ? Math.floor(m[1].length / 2) : 0;
+}
+
+function escapeHTML(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function parseHTMLForDisplay(html) {
+  return html.split('\n').map(line => {
+    const tags = [];
+    const re = /<\/?([a-zA-Z][a-zA-Z0-9]*)[^>]*\/?>/g;
+    let m;
+    while ((m = re.exec(line)) !== null) {
+      tags.push({
+        full: m[0], name: m[1].toLowerCase(),
+        isClosing: m[0].startsWith('</'),
+        index: m.index, length: m[0].length
+      });
+    }
+    return { raw: line, tags, depth: getDepth(line) };
+  });
+}
+
+function renderCodeDisplay(parsedLines) {
+  codeDisplay.innerHTML = '';
+  parsedLines.forEach((line, i) => {
+    const el = document.createElement('div');
+    el.className = 'code-line';
+    el.dataset.line = i;
+    let html = '';
+    let last = 0;
+    line.tags.forEach((tag, ti) => {
+      if (tag.index > last) html += escapeHTML(line.raw.substring(last, tag.index));
+      html += `<span class="code-tag" data-idx="${ti}">${escapeHTML(tag.full)}</span>`;
+      last = tag.index + tag.length;
+    });
+    if (last < line.raw.length) html += escapeHTML(line.raw.substring(last));
+    el.innerHTML = `<span class="line-num">${String(i + 1).padStart(3)}</span>${html}`;
+    codeDisplay.appendChild(el);
+  });
+}
+
+function playTagTone(tagName, depth, isClosing) {
+  if (!audioCtx || !fsTagGain) return;
+  const deg = tagToScaleDeg(tagName);
+  const oct = Math.min(2 + Math.floor(depth / 2), 5);
+  const freq = getNote(currentTrack ? currentTrack.key : 0, deg, isClosing ? Math.max(1, oct - 1) : oct);
+  if (!freq || isNaN(freq)) return;
+
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.type = isClosing ? 'sine' : 'triangle';
+  osc.frequency.value = freq;
+
+  const vol = isClosing ? 0.04 : 0.08;
+  const dur = isClosing ? 0.08 : 0.15;
+  env.gain.setValueAtTime(0, now);
+  env.gain.linearRampToValueAtTime(vol, now + 0.005);
+  env.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+  osc.connect(env);
+  env.connect(fsTagGain);
+  osc.start(now);
+  osc.stop(now + dur + 0.01);
+}
+
+function startFreestyle() {
+  const html = fsTextarea.value.trim();
+  if (!html) return;
+
+  fsLines = parseHTMLForDisplay(html);
+  renderCodeDisplay(fsLines);
+
+  freestylePanel.classList.add('hidden');
+  contentEl.style.display = 'none';
+  codeDisplay.classList.remove('hidden');
+
+  if (!audioCtx) initAudio();
+  fsTagGain = audioCtx.createGain();
+  fsTagGain.gain.value = 0.8;
+  fsTagGain.connect(gainNode);
+
+  freestyleMode = true;
+  const beatIdx = parseInt(fsBeatSelect.value);
+  startTrack(beatIdx);
+  npTrack.textContent = `Freestyle \u25b6 ${currentTrack.title}`;
+
+  fsCurrentLine = 0;
+  advanceFreestyleLine();
+}
+
+function advanceFreestyleLine() {
+  if (!freestyleMode) return;
+  if (fsCurrentLine >= fsLines.length) {
+    fsCurrentLine = 0;
+    codeDisplay.querySelectorAll('.code-line.played').forEach(el => el.classList.remove('played'));
+  }
+
+  const prev = codeDisplay.querySelector('.code-line.active');
+  if (prev) {
+    prev.classList.remove('active');
+    prev.classList.add('played');
+    prev.querySelectorAll('.code-tag.lit').forEach(t => t.classList.remove('lit'));
+  }
+
+  const lineEl = codeDisplay.querySelector(`[data-line="${fsCurrentLine}"]`);
+  if (lineEl) {
+    lineEl.classList.add('active');
+    lineEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    const tagEls = lineEl.querySelectorAll('.code-tag');
+    const line = fsLines[fsCurrentLine];
+    const stagger = tagEls.length > 1 ? 100 : 0;
+
+    tagEls.forEach((el, i) => {
+      const tag = line.tags[i];
+      if (!tag) return;
+      setTimeout(() => {
+        if (!freestyleMode) return;
+        el.classList.add('lit');
+        playTagTone(tag.name, line.depth, tag.isClosing);
+      }, i * stagger);
+    });
+  }
+
+  const speedMult = parseFloat(fsSpeedSelect.value) || 1;
+  const msPerBeat = 60000 / currentTrack.bpm;
+  fsCurrentLine++;
+  fsLineTimer = setTimeout(advanceFreestyleLine, msPerBeat * speedMult);
+}
+
+function stopFreestyle() {
+  freestyleMode = false;
+  if (fsLineTimer) { clearTimeout(fsLineTimer); fsLineTimer = null; }
+  codeDisplay.classList.add('hidden');
+  contentEl.style.display = '';
+  fsTagGain = null;
+}
+
+// Freestyle panel wiring
+document.getElementById('fsDropBtn').addEventListener('click', startFreestyle);
+document.getElementById('fsBackBtn').addEventListener('click', () => {
+  freestylePanel.classList.add('hidden');
+  overlay.classList.remove('hidden');
+});
+document.querySelectorAll('.fs-sample-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.sample;
+    if (FS_SAMPLES[key]) {
+      fsTextarea.value = FS_SAMPLES[key];
+      document.querySelectorAll('.fs-sample-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  });
+});
+// Load default sample
+fsTextarea.value = FS_SAMPLES.classic;
 
 // =====================================================
 // MAIN ANIMATION LOOP
