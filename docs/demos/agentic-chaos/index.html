@@ -67,12 +67,15 @@
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const controls = document.getElementById('controls');
-let W, H, hudH, gameTop, gameBottom, ctrlH;
+let W, H, hudH, gameTop, gameBottom, ctrlH, S;
 
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
-  hudH = 56;
+  // Responsive scale factor (same approach as Div Vaders)
+  const minDim = Math.min(W, H);
+  S = Math.min(2.5, Math.max(1, 580 / minDim));
+  hudH = Math.round(56 * S);
   ctrlH = controls.classList.contains('visible') ? controls.offsetHeight : 0;
   gameTop = hudH + 4;
   gameBottom = H - ctrlH - 4;
@@ -243,12 +246,12 @@ const CD_TESTS = 22, CD_SPECS = 18, CD_REVIEW = 30;
 // =====================================================
 function getLevelParams() {
   return {
-    maxAgents: Math.min(20, 3 + Math.floor(level * 0.7)),
-    agentSpeed: 28 + level * 2.5,
-    rogueChance: 0.018 + level * 0.004,
-    rogueTimeout: Math.max(2.5, 5.5 - level * 0.18),
-    unstableTime: Math.max(0.8, 1.8 - level * 0.05),
-    spawnInterval: Math.max(1.2, 3.5 - level * 0.12),
+    maxAgents: Math.min(30, 6 + Math.floor(level * 1.2)),
+    agentSpeed: 55 + level * 4,
+    rogueChance: 0.045 + level * 0.008,
+    rogueTimeout: Math.max(2, 4.5 - level * 0.15),
+    unstableTime: Math.max(0.5, 1.2 - level * 0.04),
+    spawnInterval: Math.max(0.6, 2 - level * 0.1),
     actionsForRelease: Math.min(15, 6 + Math.floor(level * 0.4)),
   };
 }
@@ -314,7 +317,7 @@ function updateAgents(dt) {
       if (dist < 3) {
         a.state = 'working';
         a.action = GOOD_ACTIONS[Math.floor(Math.random() * GOOD_ACTIONS.length)];
-        a.actionTimer = 2 + Math.random() * 2;
+        a.actionTimer = 1 + Math.random() * 1.5;
       } else {
         const spd = a.speed * speedMult * dt;
         a.x += (dx / dist) * spd;
@@ -360,8 +363,8 @@ function updateAgents(dt) {
       a.rogueTimer -= dt;
       a.walkFrame += dt * 15;
       // Rogue agents jitter
-      a.x += (Math.random() - 0.5) * 2;
-      a.y += (Math.random() - 0.5) * 2;
+      a.x += (Math.random() - 0.5) * 4;
+      a.y += (Math.random() - 0.5) * 4;
       a.x = Math.max(20, Math.min(W - 20, a.x));
       a.y = Math.max(gameTop + 10, Math.min(gameBottom - 10, a.y));
 
@@ -370,7 +373,7 @@ function updateAgents(dt) {
         const dmg = 12 + Math.floor(level * 0.8);
         stability = Math.max(0, stability - dmg);
         techDebt = Math.min(100, techDebt + 8 + Math.floor(level * 0.5));
-        shakeMag = 8;
+        shakeMag = 12;
         addFloat(a.x, a.y - 20, '-' + dmg + ' STABILITY', '#f44');
         addFloat(a.x, a.y - 8, a.action, '#f88');
         // Agent dies/despawns after damage
@@ -408,7 +411,7 @@ function spawnParticles(x, y, color, count) {
       vy: Math.sin(angle) * speed - 30,
       life: 0.4 + Math.random() * 0.3,
       color,
-      size: 2 + Math.random() * 3,
+      size: (3 + Math.random() * 4) * S,
     });
   }
 }
@@ -545,7 +548,7 @@ function handleClick(cx, cy) {
   for (const a of agents) {
     if (a.state !== 'rogue' && a.state !== 'unstable') continue;
     const dx = cx - a.x, dy = cy - a.y;
-    if (Math.abs(dx) < 22 && Math.abs(dy) < 26) {
+    if (Math.abs(dx) < 28 * S && Math.abs(dy) < 34 * S) {
       killAgent(a);
       killed = true;
       break;
@@ -591,7 +594,7 @@ function startGame() {
   controls.classList.add('visible');
   resize();
   // Spawn initial agents
-  for (let i = 0; i < 3; i++) spawnAgent();
+  for (let i = 0; i < 6; i++) spawnAgent();
 }
 
 // =====================================================
@@ -601,8 +604,8 @@ function drawCodeBg() {
   ctx.fillStyle = '#0a0a0f';
   ctx.fillRect(0, 0, W, H);
 
-  ctx.font = '11px "Courier New", monospace';
-  const lineH = 16;
+  ctx.font = Math.round(11 * S) + 'px "Courier New", monospace';
+  const lineH = Math.round(16 * S);
   const startLine = Math.floor(codeScroll / lineH);
   const offsetY = -(codeScroll % lineH);
   const visible = Math.ceil((gameBottom - gameTop) / lineH) + 2;
@@ -615,7 +618,7 @@ function drawCodeBg() {
     // Line number
     ctx.fillStyle = '#222';
     ctx.textAlign = 'right';
-    ctx.fillText(String((startLine + i + 1) % 100).padStart(2, ' '), 22, y);
+    ctx.fillText(String((startLine + i + 1) % 100).padStart(2, ' '), 22 * S, y);
 
     // Code text
     const line = CODE_LINES[li];
@@ -627,12 +630,12 @@ function drawCodeBg() {
     } else {
       ctx.fillStyle = '#181818';
     }
-    ctx.fillText(line, 30, y);
+    ctx.fillText(line, 30 * S, y);
   }
 
   // Left gutter line
   ctx.fillStyle = '#151515';
-  ctx.fillRect(26, gameTop, 1, gameBottom - gameTop);
+  ctx.fillRect(26 * S, gameTop, 1, gameBottom - gameTop);
 }
 
 function drawAgent(a) {
@@ -641,22 +644,22 @@ function drawAgent(a) {
 
   // Rogue glow
   if (a.state === 'rogue') {
-    ctx.fillStyle = `rgba(255,0,0,${0.1 + Math.sin(t * 12) * 0.05})`;
+    ctx.fillStyle = `rgba(255,0,0,${0.15 + Math.sin(t * 12) * 0.08})`;
     ctx.beginPath();
-    ctx.arc(x, y, 25, 0, Math.PI * 2);
+    ctx.arc(x, y, 35 * S, 0, Math.PI * 2);
     ctx.fill();
   }
 
   // Highlight from review
   if (highlightTimer > 0 && (a.state === 'rogue' || a.state === 'unstable')) {
     ctx.strokeStyle = '#ff0';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x - 14, y - 18, 28, 38);
+    ctx.lineWidth = 2 * S;
+    ctx.strokeRect(x - 18 * S, y - 22 * S, 36 * S, 48 * S);
   }
 
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.fillRect(x - 7, y + 10, 14, 3);
+  ctx.fillRect(x - 9 * S, y + 12 * S, 18 * S, 4 * S);
 
   let bodyColor = a.color;
   if (a.state === 'unstable') {
@@ -669,59 +672,59 @@ function drawAgent(a) {
 
   // Body
   ctx.fillStyle = bodyColor;
-  ctx.fillRect(x - 6, y - 3, 12, 12);
+  ctx.fillRect(x - 8 * S, y - 4 * S, 16 * S, 16 * S);
 
   // Head
-  ctx.fillRect(x - 5, y - 11, 10, 9);
+  ctx.fillRect(x - 7 * S, y - 15 * S, 14 * S, 12 * S);
 
   // Eyes
   ctx.fillStyle = a.state === 'rogue' ? '#ff0' : '#fff';
-  ctx.fillRect(x - 3, y - 8, 2, 2);
-  ctx.fillRect(x + 1, y - 8, 2, 2);
+  ctx.fillRect(x - 4 * S, y - 11 * S, 3 * S, 3 * S);
+  ctx.fillRect(x + 1 * S, y - 11 * S, 3 * S, 3 * S);
   ctx.fillStyle = '#000';
-  ctx.fillRect(x - 2, y - 7, 1, 1);
-  ctx.fillRect(x + 2, y - 7, 1, 1);
+  ctx.fillRect(x - 3 * S, y - 10 * S, 2 * S, 2 * S);
+  ctx.fillRect(x + 2 * S, y - 10 * S, 2 * S, 2 * S);
 
   // Legs
-  const legAnim = a.state === 'idle' ? Math.sin(a.walkFrame) * 3 : 0;
+  const legAnim = a.state === 'idle' ? Math.sin(a.walkFrame) * 4 * S : 0;
   ctx.fillStyle = bodyColor;
-  ctx.fillRect(x - 4, y + 9, 3, 5 + legAnim);
-  ctx.fillRect(x + 1, y + 9, 3, 5 - legAnim);
+  ctx.fillRect(x - 5 * S, y + 12 * S, 4 * S, (7 + legAnim) * S);
+  ctx.fillRect(x + 1 * S, y + 12 * S, 4 * S, (7 - legAnim) * S);
 
   // Name
-  ctx.font = '8px "Courier New", monospace';
+  ctx.font = Math.round(10 * S) + 'px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillStyle = a.state === 'rogue' ? '#f44' : '#556';
-  ctx.fillText(a.name, x, y + 24);
+  ctx.fillStyle = a.state === 'rogue' ? '#f44' : '#778';
+  ctx.fillText(a.name, x, y + 30 * S);
 
   // Action label
   if (a.action && (a.state === 'working' || a.state === 'rogue')) {
-    ctx.font = '7px "Courier New", monospace';
+    ctx.font = Math.round(9 * S) + 'px "Courier New", monospace';
     if (a.state === 'rogue') {
       ctx.fillStyle = '#f44';
-      ctx.fillText('!! ' + a.action + ' !!', x, y - 16);
+      ctx.fillText('!! ' + a.action + ' !!', x, y - 20 * S);
     } else {
       ctx.fillStyle = '#3a5';
-      ctx.fillText(a.action, x, y - 16);
+      ctx.fillText(a.action, x, y - 20 * S);
     }
   }
 
   // Unstable warning
   if (a.state === 'unstable') {
-    ctx.font = 'bold 10px "Courier New", monospace';
+    ctx.font = 'bold ' + Math.round(14 * S) + 'px "Courier New", monospace';
     ctx.fillStyle = '#ff0';
-    ctx.fillText('\u26a0', x, y - 16);
+    ctx.fillText('\u26a0', x, y - 20 * S);
   }
 
   // Rogue timer bar
   if (a.state === 'rogue') {
     const p = getLevelParams();
     const pct = a.rogueTimer / p.rogueTimeout;
-    const bw = 20;
+    const bw = 28 * S;
     ctx.fillStyle = '#400';
-    ctx.fillRect(x - bw / 2, y - 20, bw, 3);
+    ctx.fillRect(x - bw / 2, y - 25 * S, bw, 4 * S);
     ctx.fillStyle = pct > 0.3 ? '#f80' : '#f00';
-    ctx.fillRect(x - bw / 2, y - 20, bw * pct, 3);
+    ctx.fillRect(x - bw / 2, y - 25 * S, bw * pct, 4 * S);
   }
 }
 
@@ -733,63 +736,75 @@ function drawHUD() {
   ctx.fillRect(0, hudH, W, 1);
 
   const pad = 12;
-  const barW = Math.min(120, (W - 40) / 4);
-  const barH = 8;
+  const barW = Math.min(140, (W - 40) / 4);
+  const barH = Math.round(10 * S);
+  const labelSize = Math.round(9 * S);
+  const valSize = Math.round(9 * S);
+  const versionSize = Math.round(14 * S);
+  const scoreSize = Math.round(9 * S);
   let cx = pad;
+  const row1 = Math.round(16 * S);
+  const row2 = row1 + Math.round(4 * S);
+  const row3 = row2 + barH + Math.round(4 * S);
 
   // Stability
-  ctx.font = '8px "Courier New", monospace';
+  ctx.font = labelSize + 'px "Courier New", monospace';
   ctx.textAlign = 'left';
   ctx.fillStyle = '#888';
-  ctx.fillText('STABILITY', cx, 14);
+  ctx.fillText('STABILITY', cx, row1);
   ctx.fillStyle = '#1a1a1a';
-  ctx.fillRect(cx, 18, barW, barH);
+  ctx.fillRect(cx, row2, barW, barH);
   const stabColor = stability > 50 ? '#0c0' : stability > 25 ? '#cc0' : '#f00';
   ctx.fillStyle = stabColor;
-  ctx.fillRect(cx, 18, barW * (stability / 100), barH);
+  ctx.fillRect(cx, row2, barW * (stability / 100), barH);
   ctx.fillStyle = '#888';
-  ctx.fillText(stability + '%', cx, 38);
+  ctx.font = valSize + 'px "Courier New", monospace';
+  ctx.fillText(stability + '%', cx, row3 + valSize);
 
   // Tech Debt
   cx += barW + 14;
+  ctx.font = labelSize + 'px "Courier New", monospace';
   ctx.fillStyle = '#888';
-  ctx.fillText('TECH DEBT', cx, 14);
+  ctx.fillText('TECH DEBT', cx, row1);
   ctx.fillStyle = '#1a1a1a';
-  ctx.fillRect(cx, 18, barW, barH);
+  ctx.fillRect(cx, row2, barW, barH);
   const debtColor = techDebt < 40 ? '#444' : techDebt < 70 ? '#c80' : '#f00';
   ctx.fillStyle = debtColor;
-  ctx.fillRect(cx, 18, barW * (techDebt / 100), barH);
+  ctx.fillRect(cx, row2, barW * (techDebt / 100), barH);
   ctx.fillStyle = '#888';
-  ctx.fillText(techDebt + '%', cx, 38);
+  ctx.font = valSize + 'px "Courier New", monospace';
+  ctx.fillText(techDebt + '%', cx, row3 + valSize);
 
   // Release progress
   cx += barW + 14;
   const p = getLevelParams();
   const relPct = Math.min(1, releaseProgress / p.actionsForRelease);
+  ctx.font = labelSize + 'px "Courier New", monospace';
   ctx.fillStyle = '#888';
-  ctx.fillText('RELEASE', cx, 14);
+  ctx.fillText('RELEASE', cx, row1);
   ctx.fillStyle = '#1a1a1a';
-  ctx.fillRect(cx, 18, barW, barH);
+  ctx.fillRect(cx, row2, barW, barH);
   ctx.fillStyle = '#08f';
-  ctx.fillRect(cx, 18, barW * relPct, barH);
+  ctx.fillRect(cx, row2, barW * relPct, barH);
   ctx.fillStyle = '#888';
-  ctx.fillText(Math.floor(relPct * 100) + '%', cx, 38);
+  ctx.font = valSize + 'px "Courier New", monospace';
+  ctx.fillText(Math.floor(relPct * 100) + '%', cx, row3 + valSize);
 
   // Version + score (right side)
   ctx.textAlign = 'right';
-  ctx.font = 'bold 12px "Courier New", monospace';
+  ctx.font = 'bold ' + versionSize + 'px "Courier New", monospace';
   ctx.fillStyle = '#0ff';
-  ctx.fillText('v' + version.join('.'), W - pad, 16);
-  ctx.font = '8px "Courier New", monospace';
+  ctx.fillText('v' + version.join('.'), W - pad, row1 + 2);
+  ctx.font = scoreSize + 'px "Courier New", monospace';
   ctx.fillStyle = '#666';
-  ctx.fillText('SCORE ' + score, W - pad, 28);
-  ctx.fillText('AGENTS ' + agents.filter(a => a.state !== 'dying').length, W - pad, 38);
+  ctx.fillText('SCORE ' + score, W - pad, row2 + barH);
+  ctx.fillText('AGENTS ' + agents.filter(a => a.state !== 'dying').length, W - pad, row3 + valSize);
 
   // Low stability warning
   if (stability <= 30) {
     const flash = Math.sin(performance.now() / 200) > 0;
     if (flash) {
-      ctx.fillStyle = 'rgba(255,0,0,0.04)';
+      ctx.fillStyle = 'rgba(255,0,0,0.06)';
       ctx.fillRect(0, 0, W, H);
     }
   }
@@ -807,7 +822,7 @@ function drawParticles() {
 function drawFloats() {
   for (const f of floats) {
     ctx.globalAlpha = Math.max(0, Math.min(1, f.life));
-    ctx.font = '9px "Courier New", monospace';
+    ctx.font = 'bold ' + Math.round(11 * S) + 'px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = f.color;
     ctx.fillText(f.text, f.x, f.y);
