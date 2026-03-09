@@ -50,7 +50,7 @@ content:
         type: string
 
   - name: demos
-    label: Demo Registry
+    label: Demos Registry
     type: file
     path: src/_data/demoMeta.json
     fields:
