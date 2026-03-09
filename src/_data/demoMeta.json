@@ -1,5 +1,16 @@
 [
   {
+    "slug": "agentic-chaos",
+    "title": "Agentic Chaos",
+    "description": "Wrangle rogue AI agents before they nuke your codebase — ship releases, manage tech debt, survive",
+    "date": "2026-03-09",
+    "url": "/demos/agentic-chaos/",
+    "preview": "preview-agenticchaos",
+    "tags": ["Canvas", "Game", "Satire"],
+    "tagTypes": ["canvas", "game", ""],
+    "order": 1
+  },
+  {
     "slug": "scream-void",
     "title": "Scream Into the Void",
     "description": "Use your mic to scream your rage away — drain the meter, find serenity, then watch it all fall apart",

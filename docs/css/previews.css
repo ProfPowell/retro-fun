@@ -1,3 +1,30 @@
+/* Agentic Chaos preview */
+.preview-agenticchaos {
+  background: #0a0a0f;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+}
+.preview-agenticchaos::before {
+  content: 'AGENTIC CHAOS';
+  font-family: monospace; font-size: 1rem; font-weight: bold;
+  color: #0ff;
+  text-shadow: 0 0 12px #0ff, 0 0 30px #0ff44;
+  letter-spacing: 0.1em;
+}
+.preview-agenticchaos::after {
+  content: '\26a0 \1f916 \26a0';
+  position: absolute; bottom: 14%; left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.9rem;
+  color: #f44;
+  text-shadow: 0 0 8px #f00;
+  animation: ac-blink 1s ease-in-out infinite alternate;
+}
+@keyframes ac-blink {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; color: #ff0; }
+}
+
 /* H3: Hip Hop HTML preview */
 .preview-h3 {
   background: #0a0510;
