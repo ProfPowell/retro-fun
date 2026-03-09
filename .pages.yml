@@ -8,7 +8,7 @@ content:
     type: collection
     path: src/posts
     exclude: posts.json
-    filename: '{fields.title}'
+    filename: '{fields.title}.md'
     view:
       fields: [title, description, date]
       primary: title
