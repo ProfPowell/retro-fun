@@ -1,0 +1,87 @@
+media:
+  input: src/img
+  output: /img
+
+content:
+  - name: posts
+    label: Posts
+    type: collection
+    path: src/posts
+    exclude: posts.json
+    filename: '{fields.title}'
+    view:
+      fields: [title, description, date]
+      primary: title
+      default:
+        sort: date
+        order: desc
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+      - name: description
+        label: Description
+        type: string
+      - name: date
+        label: Date
+        type: date
+        required: true
+      - name: image
+        label: Cover Image
+        type: image
+      - name: body
+        label: Body
+        type: rich-text
+
+  - name: site
+    label: Site Settings
+    type: file
+    path: src/_data/site.json
+    fields:
+      - name: name
+        label: Site Name
+        type: string
+      - name: subtitle
+        label: Subtitle
+        type: string
+      - name: url
+        label: Site URL
+        type: string
+
+  - name: demos
+    label: Demo Registry
+    type: file
+    path: src/_data/demoMeta.json
+    fields:
+      - name: slug
+        label: Slug
+        type: string
+        required: true
+      - name: title
+        label: Title
+        type: string
+        required: true
+      - name: description
+        label: Description
+        type: string
+      - name: date
+        label: Date
+        type: date
+      - name: url
+        label: URL
+        type: string
+      - name: preview
+        label: Preview Class
+        type: string
+      - name: tags
+        label: Tags
+        type: string
+        list: true
+      - name: tagTypes
+        label: Tag Types
+        type: string
+        list: true
+      - name: order
+        label: Order
+        type: number
