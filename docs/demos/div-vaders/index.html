@@ -102,6 +102,7 @@ let W, H;
 // RESPONSIVE SCALING
 // =====================================================================
 
+let gameInited = false;
 let S = 1;           // UI scale factor
 let gameBottom;      // effective bottom of play area (above touch controls)
 let touchH = 0;     // height of touch control bar
@@ -135,8 +136,8 @@ function resize() {
 
   gameBottom = H - touchH;
 
-  // Re-clamp enemy formation to new viewport bounds
-  if (enemies.length > 0) {
+  // Re-clamp enemy formation to new viewport bounds (skip before game init)
+  if (gameInited && enemies.length > 0) {
     let aliveMinLX = Infinity, aliveMaxLX = -Infinity, aliveMaxLY = -Infinity;
     for (const e of enemies) {
       if (!e.alive) continue;
@@ -422,6 +423,7 @@ let particles = [];
 let shakeX = 0, shakeY = 0, shakeMag = 0;
 
 let waveClearTimer = 0;
+gameInited = true;
 let titleBlink = 0;
 let titleStars = [];
 for (let i = 0; i < 120; i++) {
