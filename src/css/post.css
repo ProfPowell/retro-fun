@@ -12,7 +12,7 @@
 
 .post-header time {
   font-size: 0.65rem;
-  color: #444;
+  color: #33ff3388;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
@@ -119,11 +119,11 @@
   display: inline-block;
   margin-top: 2rem;
   font-size: 0.7rem;
-  color: #555;
+  color: #33ff33aa;
   text-decoration: none;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  border: 1px solid #333;
+  border: 1px solid #33ff3344;
   padding: 0.4rem 1rem;
   transition: all 0.3s ease;
 }

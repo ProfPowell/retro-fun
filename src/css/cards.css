@@ -56,13 +56,13 @@
 
 .card-info p {
   font-size: 0.7rem;
-  color: #555;
+  color: #33ff33aa;
   letter-spacing: 0.05em;
 }
 
 .card-date {
   font-size: 0.55rem;
-  color: #444;
+  color: #33ff3388;
   letter-spacing: 0.1em;
   margin-bottom: 0.4rem;
   text-transform: uppercase;

@@ -68,7 +68,7 @@ h1 a {
 }
 
 .subtitle {
-  color: #666;
+  color: #33ff33bb;
   font-size: 0.85rem;
   letter-spacing: 0.5em;
   margin-top: 0.5rem;
@@ -78,14 +78,14 @@ h1 a {
 footer {
   text-align: center;
   padding: 3rem 1rem;
-  color: #333;
+  color: #33ff3366;
   font-size: 0.65rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
 }
 
 footer a {
-  color: #555;
+  color: #33ff3388;
   text-decoration: none;
 }
 
