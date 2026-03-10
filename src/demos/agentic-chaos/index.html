@@ -170,17 +170,22 @@ const ROGUE_ACTIONS = [
 const CODE_LINES = [
   'import { Agent } from "@agentic/core";',
   'import { Pipeline } from "./pipeline";',
+  'import { Monitor } from "./telemetry";',
   '',
   'const config = {',
   '  maxAgents: 16,',
   '  rogueThreshold: 0.15,',
   '  deployTarget: "production",',
+  '  retryLimit: 3,',
   '};',
   '',
+  '// WARNING: do not increase maxAgents above 20',
   'async function orchestrate(agents) {',
   '  for (const agent of agents) {',
   '    await agent.assignTask(queue.next());',
+  '    monitor.track(agent.id, agent.status);',
   '    if (agent.status === "rogue") {',
+  '      console.error(`Agent ${agent.name} gone rogue!`);',
   '      await agent.terminate();',
   '      spawnReplacement(agent.role);',
   '    }',
@@ -191,14 +196,19 @@ const CODE_LINES = [
   '  constructor(stages) {',
   '    this.stages = stages;',
   '    this.version = "0.1.0";',
+  '    this.stable = true;',
   '  }',
   '',
   '  async run() {',
   '    for (const s of this.stages) {',
-  '      console.log(`Running ${s}...`);',
-  '      const r = await s.execute();',
-  '      if (!r.ok) throw new Error();',
+  '      console.log(`Running ${s.name}...`);',
+  '      const result = await s.execute();',
+  '      if (!result.ok) {',
+  '        this.stable = false;',
+  '        throw new PipelineError(s.name);',
+  '      }',
   '    }',
+  '    return { version: this.version };',
   '  }',
   '}',
   '',
@@ -206,11 +216,59 @@ const CODE_LINES = [
   '  return artifacts.every(a => a.hash);',
   '}',
   '',
+  'function calculateTechDebt(repo) {',
+  '  const issues = repo.scan();',
+  '  const debt = issues.reduce((sum, i) => {',
+  '    return sum + i.severity * i.age;',
+  '  }, 0);',
+  '  if (debt > 9000) {',
+  '    console.warn("TECH DEBT CRITICAL");',
+  '  }',
+  '  return debt;',
+  '}',
+  '',
+  'class AgentPool {',
+  '  constructor(size) {',
+  '    this.agents = [];',
+  '    this.maxSize = size;',
+  '  }',
+  '',
+  '  spawn(role) {',
+  '    if (this.agents.length >= this.maxSize)',
+  '      return null;',
+  '    const a = new Agent(role);',
+  '    this.agents.push(a);',
+  '    return a;',
+  '  }',
+  '',
+  '  killRogue(id) {',
+  '    const idx = this.agents.findIndex(',
+  '      a => a.id === id && a.rogue',
+  '    );',
+  '    if (idx >= 0) this.agents.splice(idx, 1);',
+  '  }',
+  '}',
+  '',
   '// TODO: fix that flaky test',
   '// FIXME: works but nobody knows why',
   '// HACK: do not touch this line',
   '// NOTE: Gandalf approved this',
-  'module.exports = { orchestrate };',
+  '// TODO: Yoda says refactor we must',
+  '// FIXME: Porkins can\'t hold it',
+  '',
+  'async function shipRelease(pipeline, pool) {',
+  '  const alive = pool.agents.filter(',
+  '    a => !a.rogue',
+  '  );',
+  '  if (alive.length < 3) {',
+  '    throw new Error("Not enough agents");',
+  '  }',
+  '  await pipeline.run();',
+  '  version.minor++;',
+  '  console.log(`Shipped v${version}`);',
+  '}',
+  '',
+  'module.exports = { orchestrate, shipRelease };',
 ];
 
 // =====================================================
@@ -612,42 +670,51 @@ function startGame() {
 // =====================================================
 // DRAWING
 // =====================================================
+function getCodeLineColor(line) {
+  if (line.startsWith('//') || line.startsWith('  //')) return '#3a6a3a';
+  if (line.includes('import ') || line.includes('module.')) return '#6a8fcc';
+  if (line.includes('function ') || line.includes('async ')) return '#cc8844';
+  if (line.includes('class ')) return '#ccaa44';
+  if (line.includes('const ') || line.includes('let ') || line.includes('var ')) return '#5599bb';
+  if (line.includes('if ') || line.includes('for ') || line.includes('return') || line.includes('throw')) return '#bb6688';
+  if (line.includes('console.') || line.includes('await ')) return '#7788aa';
+  if (line.includes('{') || line.includes('}') || line.includes('(') || line.includes(')')) return '#445566';
+  if (line.trim() === '') return '#222';
+  return '#4a5568';
+}
+
 function drawCodeBg() {
-  ctx.fillStyle = '#0a0a0f';
+  ctx.fillStyle = '#08080e';
   ctx.fillRect(0, 0, W, H);
 
-  ctx.font = Math.round(11 * S) + 'px "Courier New", monospace';
-  const lineH = Math.round(16 * S);
+  const fontSize = Math.round(12 * S);
+  ctx.font = fontSize + 'px "Courier New", monospace';
+  const lineH = Math.round(18 * S);
   const startLine = Math.floor(codeScroll / lineH);
   const offsetY = -(codeScroll % lineH);
   const visible = Math.ceil((gameBottom - gameTop) / lineH) + 2;
+  const gutterW = Math.round(32 * S);
 
   for (let i = 0; i < visible; i++) {
     const li = (startLine + i) % CODE_LINES.length;
-    const y = gameTop + offsetY + i * lineH + 12;
+    const y = gameTop + offsetY + i * lineH + Math.round(14 * S);
     if (y < gameTop - 5 || y > gameBottom + 5) continue;
 
     // Line number
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = '#334';
     ctx.textAlign = 'right';
-    ctx.fillText(String((startLine + i + 1) % 100).padStart(2, ' '), 22 * S, y);
+    ctx.fillText(String((startLine + i + 1) % 100).padStart(2, ' '), gutterW - 4, y);
 
-    // Code text
+    // Code text with syntax color
     const line = CODE_LINES[li];
     ctx.textAlign = 'left';
-    if (line.startsWith('//') || line.startsWith('  //')) {
-      ctx.fillStyle = '#2a3a2a';
-    } else if (line.includes('function') || line.includes('class') || line.includes('const') || line.includes('async') || line.includes('import') || line.includes('for') || line.includes('if') || line.includes('return') || line.includes('module')) {
-      ctx.fillStyle = '#1a2a2a';
-    } else {
-      ctx.fillStyle = '#181818';
-    }
-    ctx.fillText(line, 30 * S, y);
+    ctx.fillStyle = getCodeLineColor(line);
+    ctx.fillText(line, gutterW + 6, y);
   }
 
   // Left gutter line
-  ctx.fillStyle = '#151515';
-  ctx.fillRect(26 * S, gameTop, 1, gameBottom - gameTop);
+  ctx.fillStyle = '#1a2030';
+  ctx.fillRect(gutterW, gameTop, 1, gameBottom - gameTop);
 }
 
 function drawAgent(a) {
