@@ -1,5 +1,7 @@
 {
   "name": "Cyber Viber Ninja",
   "subtitle": "Cyberspace &bull; Vibe Code &bull; 8bit Retro &bull; Shit Posts",
-  "url": "https://profpowell.github.io/retro-fun/"
+  "description": "Retro demos, 8-bit games, and satirical dev experiments — all vibe coded with zero dependencies",
+  "url": "https://cyberviber.ninja",
+  "ogImage": "/img/og-default.png"
 }

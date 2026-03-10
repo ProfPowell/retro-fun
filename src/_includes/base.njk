@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% if title %}{{ title }} — {% endif %}{{ site.name }}</title>
+{% set pageTitle = title if title else site.name %}
+{% set pageDesc = description if description else site.description %}
+{% set pageImage = (site.url + image) if image else (site.url + site.ogImage) %}
+{% set pageUrl = site.url + page.url %}
+<meta name="description" content="{{ pageDesc }}">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ pageTitle }}">
+<meta property="og:description" content="{{ pageDesc }}">
+<meta property="og:image" content="{{ pageImage }}">
+<meta property="og:url" content="{{ pageUrl }}">
+<meta property="og:site_name" content="{{ site.name }}">
+<!-- Twitter / Mastodon Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ pageTitle }}">
+<meta name="twitter:description" content="{{ pageDesc }}">
+<meta name="twitter:image" content="{{ pageImage }}">
 <link rel="stylesheet" href="{{ '/css/theme.css' | url }}">
 <link rel="stylesheet" href="{{ '/css/nav.css' | url }}">
 <link rel="stylesheet" href="{{ '/css/cards.css' | url }}">
