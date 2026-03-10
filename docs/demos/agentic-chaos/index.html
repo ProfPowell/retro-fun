@@ -246,13 +246,14 @@ const CD_TESTS = 22, CD_SPECS = 18, CD_REVIEW = 30;
 // =====================================================
 function getLevelParams() {
   return {
-    maxAgents: Math.min(30, 6 + Math.floor(level * 1.2)),
-    agentSpeed: 55 + level * 4,
-    rogueChance: 0.045 + level * 0.008,
-    rogueTimeout: Math.max(2, 4.5 - level * 0.15),
-    unstableTime: Math.max(0.5, 1.2 - level * 0.04),
-    spawnInterval: Math.max(0.6, 2 - level * 0.1),
-    actionsForRelease: Math.min(15, 6 + Math.floor(level * 0.4)),
+    maxAgents: Math.min(35, 8 + Math.floor(level * 1.5)),
+    agentSpeed: 65 + level * 5,
+    rogueChance: 0.35 + level * 0.06,       // per-second chance (high!)
+    rogueTimeout: Math.max(1.5, 3.5 - level * 0.12),
+    unstableTime: Math.max(0.3, 0.8 - level * 0.03),
+    spawnInterval: Math.max(0.4, 1.4 - level * 0.08),
+    actionsForRelease: Math.min(18, 6 + Math.floor(level * 0.5)),
+    passiveDebtRate: 2 + level * 0.8,       // debt/sec from idle rogues
   };
 }
 
@@ -324,6 +325,12 @@ function updateAgents(dt) {
         a.y += (dy / dist) * spd;
         a.walkFrame += dt * 8;
       }
+      // Can go rogue even while walking
+      if (Math.random() < p.rogueChance * dt * 0.5) {
+        a.state = 'unstable';
+        a.unstableTimer = p.unstableTime;
+        sfxWarn();
+      }
     }
 
     // Working
@@ -368,18 +375,23 @@ function updateAgents(dt) {
       a.x = Math.max(20, Math.min(W - 20, a.x));
       a.y = Math.max(gameTop + 10, Math.min(gameBottom - 10, a.y));
 
+      // Continuous tech debt bleed while rogue
+      techDebt = Math.min(100, techDebt + p.passiveDebtRate * dt);
+      // Continuous stability drain
+      stability = Math.max(0, stability - (1.5 + level * 0.3) * dt);
+
       if (a.rogueTimer <= 0) {
-        // Damage!
-        const dmg = 12 + Math.floor(level * 0.8);
+        // Big burst damage on timeout
+        const dmg = 18 + Math.floor(level * 1.5);
         stability = Math.max(0, stability - dmg);
-        techDebt = Math.min(100, techDebt + 8 + Math.floor(level * 0.5));
-        shakeMag = 12;
+        techDebt = Math.min(100, techDebt + 12 + Math.floor(level * 1));
+        shakeMag = 15;
         addFloat(a.x, a.y - 20, '-' + dmg + ' STABILITY', '#f44');
         addFloat(a.x, a.y - 8, a.action, '#f88');
         // Agent dies/despawns after damage
         a.state = 'dying';
         a.deathTimer = 0.3;
-        spawnParticles(a.x, a.y, '#f44', 8);
+        spawnParticles(a.x, a.y, '#f44', 12);
       }
     }
   }
@@ -594,7 +606,7 @@ function startGame() {
   controls.classList.add('visible');
   resize();
   // Spawn initial agents
-  for (let i = 0; i < 6; i++) spawnAgent();
+  for (let i = 0; i < 8; i++) spawnAgent();
 }
 
 // =====================================================
@@ -961,13 +973,14 @@ function frame(now) {
     updateCooldowns(dt);
     checkRelease();
 
-    // Tech debt makes things worse
-    if (techDebt > 60) {
-      // Extra rogue chance from debt
+    // Tech debt makes things worse — cascading failures
+    if (techDebt > 35) {
+      // Extra rogue chance from debt, scales hard
+      const debtFactor = (techDebt - 35) / 65; // 0 to 1
       for (const a of agents) {
-        if (a.state === 'working' && Math.random() < 0.003 * dt * techDebt) {
+        if ((a.state === 'working' || a.state === 'idle') && Math.random() < 0.15 * debtFactor * dt) {
           a.state = 'unstable';
-          a.unstableTimer = p.unstableTime;
+          a.unstableTimer = p.unstableTime * 0.6;
           sfxWarn();
         }
       }
