@@ -838,7 +838,7 @@ function drawHUD() {
   ctx.fillRect(cx, row2, barW * (stability / 100), barH);
   ctx.fillStyle = '#888';
   ctx.font = valSize + 'px "Courier New", monospace';
-  ctx.fillText(stability + '%', cx, row3 + valSize);
+  ctx.fillText(Math.round(stability) + '%', cx, row3 + valSize);
 
   // Tech Debt
   cx += barW + 14;
@@ -852,7 +852,7 @@ function drawHUD() {
   ctx.fillRect(cx, row2, barW * (techDebt / 100), barH);
   ctx.fillStyle = '#888';
   ctx.font = valSize + 'px "Courier New", monospace';
-  ctx.fillText(techDebt + '%', cx, row3 + valSize);
+  ctx.fillText(Math.round(techDebt) + '%', cx, row3 + valSize);
 
   // Release progress
   cx += barW + 14;
@@ -989,7 +989,7 @@ function drawGameOver() {
     'Releases Shipped: ' + releasesShipped,
     'Rogues Killed: ' + roguesKilled,
     'Score: ' + score,
-    'Tech Debt at Death: ' + techDebt + '%',
+    'Tech Debt at Death: ' + Math.round(techDebt) + '%',
   ];
   stats.forEach((s, i) => {
     ctx.fillText(s, cx, cy + 35 + i * 20);
