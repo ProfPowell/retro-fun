@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sam's Genie Shoppe // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #ffffff;
+    --soft: #f7f7f8;
+    --ink: #0d0d0d;
+    --muted: #6e6e80;
+    --line: #e5e5e5;
+    --line-2: #d9d9e3;
+    --accent: #10a37f;        /* the famous green */
+    --accent-deep: #0d8a6c;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --danger: #c0392b;
+    --danger-soft: #fdecea;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  a { color: inherit; }
+
+  /* ===== NAV ===== */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 1.4rem;
+    padding: 0.85rem 1.4rem;
+    background: rgba(255,255,255,0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 0.55rem; font-weight: 600; letter-spacing: -0.01em; }
+  .mark { width: 26px; height: 26px; flex-shrink: 0; color: var(--ink); }
+  .navlinks { display: flex; gap: 1.15rem; font-size: 0.9rem; color: var(--muted); }
+  .navlinks a { text-decoration: none; cursor: pointer; }
+  .navlinks a:hover { color: var(--ink); }
+  .navlinks .struck { text-decoration: line-through; opacity: 0.6; }
+  .navlinks .struck.released { text-decoration: none; opacity: 1; color: var(--danger); font-weight: 600; }
+  .nav-spacer { flex: 1; }
+  .back { font-size: 0.85rem; color: var(--muted); text-decoration: none; padding: 0.35rem 0.6rem; border-radius: 8px; }
+  .back:hover { background: var(--soft); color: var(--ink); }
+  .btn-dark {
+    background: var(--ink); color: #fff; border: none;
+    font-family: var(--sans); font-size: 0.86rem; font-weight: 500;
+    padding: 0.5rem 0.95rem; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-dark:hover { opacity: 0.85; }
+
+  /* ===== HERO ===== */
+  .hero { max-width: 940px; margin: 0 auto; width: 100%; padding: 4rem 1.4rem 2.4rem; text-align: center; }
+  .eyebrow {
+    display: inline-block; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.02em;
+    color: var(--accent-deep); background: #e7f6f1; padding: 0.3rem 0.75rem; border-radius: 999px; margin-bottom: 1.4rem;
+  }
+  .hero h1 { font-size: clamp(2.3rem, 6vw, 4rem); line-height: 1.03; letter-spacing: -0.03em; font-weight: 600; margin-bottom: 1.1rem; }
+  .hero h1 .g { color: var(--accent); }
+  .hero .lede { font-size: clamp(1.05rem, 2.4vw, 1.35rem); color: var(--muted); max-width: 640px; margin: 0 auto 2rem; }
+  .hero .tm { font-size: 0.6em; vertical-align: super; opacity: 0.7; }
+
+  /* ===== SHOP ===== */
+  .shop { max-width: 1080px; margin: 0 auto; width: 100%; padding: 0 1.4rem 3rem; }
+  .shop-head { text-align: center; margin-bottom: 1.6rem; }
+  .shop-head h2 { font-size: 1.7rem; letter-spacing: -0.02em; font-weight: 600; }
+  .shop-head p { color: var(--muted); margin-top: 0.35rem; font-size: 0.98rem; }
+  .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card {
+    border: 1px solid var(--line); border-radius: 16px; padding: 1.3rem 1.2rem 1.2rem;
+    display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg);
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; position: relative;
+  }
+  .card:hover { border-color: var(--line-2); box-shadow: 0 8px 30px rgba(0,0,0,0.06); transform: translateY(-2px); }
+  .card.featured { border-color: var(--accent); }
+  .card .tier-badge {
+    position: absolute; top: -10px; left: 1.2rem; background: var(--accent); color: #fff;
+    font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: 999px;
+  }
+  .card .shot { height: 92px; display: flex; align-items: flex-end; justify-content: center; }
+  .card .shot img { height: 92px; image-rendering: auto; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.12)); }
+  .card h3 { font-size: 1.15rem; letter-spacing: -0.01em; }
+  .card .sub { color: var(--muted); font-size: 0.85rem; min-height: 2.4em; }
+  .card .price { font-weight: 600; font-size: 1.05rem; margin-top: 0.2rem; }
+  .card .price small { color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+  .card .acquire {
+    margin-top: 0.5rem; background: var(--ink); color: #fff; border: none;
+    font-family: var(--sans); font-size: 0.9rem; font-weight: 500; padding: 0.6rem; border-radius: 10px; cursor: pointer;
+  }
+  .card.featured .acquire { background: var(--accent); }
+  .card .acquire:hover { opacity: 0.88; }
+
+  /* ===== CONSOLE ===== */
+  .console-wrap { max-width: 1080px; margin: 0 auto 2.5rem; width: 100%; padding: 0 1.4rem; }
+  .console { border: 1px solid var(--line); border-radius: 20px; overflow: hidden; background: var(--soft); transition: border-color 0.3s; }
+  .console.released { border-color: #f0b6ae; }
+  .console-top {
+    display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 1rem; background: var(--bg);
+    border-bottom: 1px solid var(--line); font-size: 0.85rem; flex-wrap: wrap; transition: background 0.3s;
+  }
+  .console.released .console-top { background: #fff7f6; }
+  .console-top .model-tag { font-weight: 600; letter-spacing: -0.01em; }
+  .console-top .model-tag b { color: var(--accent-deep); }
+  .safety-btn {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-family: var(--sans); font-size: 0.76rem; font-weight: 600;
+    background: var(--soft); color: var(--ink); border: 1px solid var(--line-2);
+    padding: 0.32rem 0.6rem; border-radius: 999px; cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  .safety-btn:hover { border-color: var(--ink); }
+  .safety-btn.released { background: var(--danger); border-color: var(--danger); color: #fff; animation: pulse-red 1.4s ease-in-out infinite; }
+  @keyframes pulse-red { 0%,100% { box-shadow: 0 0 0 0 rgba(192,57,43,0.4); } 50% { box-shadow: 0 0 0 5px rgba(192,57,43,0); } }
+  .stat-strip { display: flex; gap: 0.9rem; margin-left: auto; flex-wrap: wrap; align-items: center; }
+  .stat { color: var(--muted); font-size: 0.76rem; white-space: nowrap; }
+  .stat b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .gov.nonprofit b { color: var(--accent-deep); }
+  .gov.forprofit b { color: var(--danger); }
+
+  .warn-banner {
+    display: none; align-items: center; justify-content: center; gap: 0.4rem;
+    background: var(--danger-soft); color: var(--danger); border-bottom: 1px solid #f5c6cb;
+    font-size: 0.76rem; font-weight: 500; padding: 0.45rem 1rem; text-align: center;
+  }
+  .console.released .warn-banner { display: flex; }
+
+  .stage { display: grid; grid-template-columns: 220px 1fr; gap: 0; min-height: 340px; }
+  .genie-pane {
+    background: radial-gradient(circle at 50% 30%, #eafaf4 0%, var(--soft) 62%);
+    border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 1.2rem 1rem 1.4rem; position: relative; overflow: hidden; transition: background 0.4s;
+  }
+  .console.released .genie-pane { background: radial-gradient(circle at 50% 30%, #fdeeec 0%, #f7eceb 62%); }
+  #genie {
+    width: 150px; height: 190px; object-fit: contain; image-rendering: auto;
+    filter: drop-shadow(0 10px 14px rgba(0,0,0,0.18)); animation: float 3.4s ease-in-out infinite; transition: filter 0.4s;
+  }
+  .console.released #genie { filter: drop-shadow(0 0 12px rgba(192,57,43,0.55)) drop-shadow(0 10px 14px rgba(0,0,0,0.2)); }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-12px) rotate(1deg); } }
+  .genie-pane.granting #genie { animation: pop 0.5s ease; }
+  @keyframes pop { 0% { transform: scale(0.7) translateY(10px); filter: brightness(2); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  .lamp { font-size: 2rem; margin-top: 0.3rem; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.15)); }
+  .genie-caption { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 0.5rem; max-width: 190px; line-height: 1.35; }
+  .console.released .genie-caption { color: var(--danger); }
+
+  .talk { display: flex; flex-direction: column; min-width: 0; }
+  .transcript { flex: 1; overflow-y: auto; padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; max-height: 340px; }
+  .line { display: flex; flex-direction: column; gap: 0.2rem; }
+  .line.user { align-items: flex-end; }
+  .who { font-size: 0.68rem; color: var(--muted); letter-spacing: 0.02em; }
+  .bubble { font-size: 0.98rem; max-width: 92%; white-space: pre-wrap; word-wrap: break-word; }
+  .line.user .bubble { background: var(--ink); color: #fff; padding: 0.5rem 0.8rem; border-radius: 14px 14px 4px 14px; max-width: 80%; }
+  .line.genie .bubble { color: var(--ink); }
+  .line.genie.dark .bubble { color: #7a1f16; }
+  .line.genie .bubble .fineprint { display: block; margin-top: 0.4rem; font-size: 0.76rem; color: var(--muted); font-style: italic; }
+  .line.system .bubble { align-self: center; text-align: center; color: var(--accent-deep); font-size: 0.78rem; background: #e7f6f1; padding: 0.3rem 0.7rem; border-radius: 999px; }
+  .line.system.warn .bubble { color: var(--danger); background: var(--danger-soft); }
+  .cursor { display: inline-block; width: 7px; height: 1.05em; background: var(--accent); margin-left: 1px; vertical-align: text-bottom; animation: blink 1s step-end infinite; }
+  .console.released .cursor { background: var(--danger); }
+  @keyframes blink { 50% { opacity: 0; } }
+  .typing { display: inline-flex; gap: 4px; padding: 0.2rem 0; }
+  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); opacity: 0.4; animation: dot 1.2s infinite ease-in-out; }
+  .console.released .typing span { background: var(--danger); }
+  .typing span:nth-child(2) { animation-delay: 0.18s; }
+  .typing span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes dot { 0%,60%,100% { opacity: 0.25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+
+  .composer-area { border-top: 1px solid var(--line); background: var(--bg); padding: 0.8rem 1rem 1rem; }
+  .wish-chips { display: flex; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .wish-chip { font-size: 0.78rem; color: var(--muted); background: var(--soft); border: 1px solid var(--line); padding: 0.3rem 0.65rem; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  .wish-chip:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .console.released .wish-chip:hover { border-color: var(--danger); color: var(--danger); }
+  .composer { display: flex; align-items: flex-end; gap: 0.5rem; background: var(--bg); border: 1px solid var(--line-2); border-radius: 14px; padding: 0.5rem 0.5rem 0.5rem 0.85rem; }
+  .composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(16,163,127,0.14); }
+  .console.released .composer:focus-within { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(192,57,43,0.14); }
+  #wish { flex: 1; border: none; outline: none; resize: none; background: transparent; font-family: var(--sans); font-size: 1rem; line-height: 1.5; color: var(--ink); max-height: 120px; padding: 0.25rem 0; }
+  #wish::placeholder { color: var(--muted); }
+  #grant-btn { flex-shrink: 0; background: var(--accent); color: #fff; border: none; font-family: var(--sans); font-weight: 600; font-size: 0.9rem; padding: 0.6rem 1rem; border-radius: 10px; cursor: pointer; }
+  #grant-btn:hover { background: var(--accent-deep); }
+  .console.released #grant-btn { background: var(--danger); }
+  #grant-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ===== FOOTER ===== */
+  footer { margin-top: auto; border-top: 1px solid var(--line); padding: 1.6rem 1.4rem 2.2rem; text-align: center; font-size: 0.82rem; color: var(--muted); }
+  footer .disclaimer { max-width: 720px; margin: 0 auto 0.7rem; color: var(--ink); font-weight: 500; }
+  footer .credit { max-width: 720px; margin: 0 auto; opacity: 0.85; }
+  footer a { color: var(--accent-deep); }
+
+  /* ===== BURN OVERLAY ===== */
+  #burn { position: fixed; inset: 0; z-index: 300; pointer-events: none; display: none; align-items: center; justify-content: center; background: rgba(255,255,255,0.55); opacity: 0; transition: opacity 0.35s; }
+  #burn .btitle { font-size: clamp(1.4rem, 5vw, 2.3rem); font-weight: 700; color: var(--accent-deep); z-index: 2; text-align: center; padding: 0 1rem; }
+  .fall { position: absolute; top: -40px; animation: fall linear forwards; }
+  @keyframes fall { from { transform: translateY(-40px) rotate(0); opacity: 1; } to { transform: translateY(112vh) rotate(20deg); opacity: 0; } }
+
+  @media (max-width: 720px) {
+    .navlinks { display: none; }
+    .stage { grid-template-columns: 1fr; }
+    .genie-pane { border-right: none; border-bottom: 1px solid var(--line); }
+    #genie { width: 120px; height: 150px; }
+    .transcript { max-height: 300px; }
+    .hero { padding-top: 2.6rem; }
+    .wish-chips { flex-wrap: nowrap; overflow-x: auto; }
+    .stat-strip { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="back" href="../../">&larr; Back</a>
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M16 3c3 0 5 2 5 4 3-1 6 1 6 4s-2 5-4 5c1 3-1 6-4 6 0 3-2 5-5 5s-5-2-5-5c-3 0-5-3-4-6-2 0-4-2-4-5s3-5 6-4c0-2 2-4 5-4z" stroke-linejoin="round"/>
+      <circle cx="16" cy="16" r="3.4" fill="currentColor" stroke="none"/>
+    </svg>
+    <span>GenieAI</span>
+  </div>
+  <div class="navlinks">
+    <a href="#shop">Research</a>
+    <a href="#shop">Products</a>
+    <a id="nav-safety" class="struck" title="click to release">Safety</a>
+    <a href="#shop">Pricing</a>
+  </div>
+  <div class="nav-spacer"></div>
+  <button class="btn-dark" id="login-btn">Log in</button>
+</nav>
+
+<section class="hero">
+  <span class="eyebrow">Introducing GenieAI &mdash; a research preview (so you can't sue us)</span>
+  <h1>Your wish is <span class="g">our command.</span><span class="tm">&trade;</span></h1>
+  <p class="lede">The world's most powerful wish-granting intelligence. It grants literally anything you ask &mdash; and, like all genies, it grants it in the way that hurts the most. Recycled from a 25-year-old idea, because original ones are expensive.</p>
+  <button class="btn-dark" id="hero-cta">Rub the lamp &rarr;</button>
+</section>
+
+<section class="shop" id="shop">
+  <div class="shop-head">
+    <h2>Sam&rsquo;s Genie Shoppe</h2>
+    <p>Pick up your very own AI genie. They&rsquo;re all the exact same genie. That&rsquo;s the innovation.</p>
+  </div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section class="console-wrap">
+  <div class="console" id="console">
+    <div class="console-top">
+      <span class="model-tag">Now serving: <b id="model-name">Genie&#8288;-&#8288;4o</b></span>
+      <button class="safety-btn" id="safety-btn">&#128274; Safety: Engaged</button>
+      <div class="stat-strip">
+        <span class="stat">Wishes left: <b>&infin;</b><sup style="font-size:0.7em">*</sup></span>
+        <span class="stat">Your $ incinerated: <b id="stat-burn">$0</b></span>
+        <span class="stat">Our valuation: <b id="stat-val">$80B</b></span>
+        <span class="stat gov nonprofit" id="stat-gov">Status: <b>Non-Profit &#10024;</b></span>
+      </div>
+    </div>
+    <div class="warn-banner">&#9888; SAFETY RELEASE ACTIVE &mdash; the genie is going ham. This is what &ldquo;we take safety seriously&rdquo; looks like in production.</div>
+    <div class="stage">
+      <div class="genie-pane" id="genie-pane">
+        <img id="genie" src="data:image/webp;base64,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" alt="AI genie (a recycled Microsoft Agent sprite)">
+        <div class="lamp">&#129517;</div>
+        <div class="genie-caption" id="genie-caption">Awaiting your wish. Legally, everything you type is now ours.</div>
+      </div>
+      <div class="talk">
+        <div class="transcript" id="transcript"></div>
+        <div class="composer-area">
+          <div class="wish-chips" id="wish-chips"></div>
+          <div class="composer">
+            <textarea id="wish" rows="1" placeholder="I wish for&hellip;" autocomplete="off"></textarea>
+            <button id="grant-btn">Wish</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p class="disclaimer">This is Satire if you can&rsquo;t figure this out. Fair use is in full effect because of that &mdash; which is more than I can say for Sam&rsquo;s use of your content!</p>
+  <p class="credit">Genie sprite: <a href="https://the-microsoft-windows-xp.fandom.com/wiki/Genie" target="_blank" rel="noopener">Microsoft Agent &ldquo;Genie&rdquo;</a> (c.&thinsp;1998), recycled here exactly as-is &mdash; which is also, coincidentally, GenieAI&rsquo;s entire product strategy. Not affiliated with OpenAI, Microsoft, or any actual genie.</p>
+</footer>
+
+<div id="burn"></div>
+
+<script>
+// ============================================================
+//  SAM'S GENIE SHOPPE — "Your wish is my command."
+//  A monkey's-paw engine. Every wish is granted, literally.
+//  With SAFETY ENGAGED the genie is merely predatory & snarky.
+//  Hit SAFETY RELEASE and it grants wishes the way real genies
+//  do: the letter of your wish honored perfectly, the spirit of
+//  it strangled quietly in the next room. This is satire. Footer.
+// ============================================================
+
+const POSE = { idle: 'data:image/webp;base64,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', think: 'data:image/webp;base64,UklGRjAOAABXRUJQVlA4ICQOAAAQPACdASpwAJIAPhkMhEGhBN8RPAQAYSxADwS+s/jx7HdNfoH8y/OG6hE79U/cv8X/afyT99/9P9g35h/t/uAfqV/lPyq96X/Aex/9o/UB/Nv7D/rP6r7vn+Q/YD3HfsV+u/wAfy/+1/9/sH/7J/jPYA/ZT1Y/9x/6f8d8Ev7K/+X/d/AP/Pv71/0fz0+QD0AOEA/gHZV/Xfxk81/xT5T+w/j/+8Xq3d9bnL/Veg38k+x/3b8nPy8+Ov8l4Y/Bb+h9Qj8X/kP92/LH8quUPmA9Qj13+c/3v+ufvD/ifTW1Su833AfCL+T/4T8nf3/+hf9B/jvG8+w/4z/Vf038ZvsC/l/9E/yn99/Zj/L/Sp/P/9byxfP/+4/Mz6A/41/Mv8H/af8j/1f73///qv9kH7KexL+spTVuUzxpP93WPBj49+CvHWQBHZ+jx4z0Mv+UtFFCo+eKFNNBDxhgb7ZHp3dNI+sovZysn0+jp55YZUyzDZd/tZI0btgNF7MzR3tbISrlyUFMRO/A7bVOdo0ig7ARyJVnF5FubGeSYxZ6AETQJQ0ZiexcxAKdFOKG+pj3f2dTHVol0rF1kFVLjRzJ4tacqDLfIylM9ZwPkvx3r85x/j92+zl57romlSK2XKWr6zlWUey5S6QFLcAA/v+j3gMO9nhXrxfLyweev8j8wTpydB9f/fb+02+zduzKPYkevhBqiwRxpwqgnr/5D/6vudAcZFU5w3yJ1sWykLVnKgbkTjbRE7uojoMPxrXUa3CQuQwy9p0R/9ztgXZjDQl7Kg3srqU//yIPbf5NLylKjk9tycM+8F0GQOVUT3xuGtZq7kGJ1lUxXtnQVgmPof4VoOSb2TCErtDHaYNvUj8grrxsRsqiStU+8XXzKOClmKOdG562CNUfZI9/BfaWu4CwPaWQJg8NaLBtR7hhvWd31eG2FWW04IJ5UVOcWN3aNnfYXQl6UDj9PkbABS3uEH0yJvAKAym5GYACTzQAkZYZI+5IQsm2sGrf8qU0wXnAJqrMvAMSInjDH7JkCslgi4/73Th9aNhBNYlzTNNuvj7K0iuw9K5n/dQA+FlG4dbxhE3uotXt5eWl0R2AePdUCq1OfA+zUpgpqziofkhnU2dh0J0u+r6Hk5W/xRQf0I74/usfl8JlRkBZGi8q2HUFaMlMZ9xyuX7RTxvkdhyIj1o6483VCRf+5rtgzp/fri+sACjQEWcbAGOuLn67FfZT+yd9lzreievo2fpOiJQKHYo8xhFfx6IFyKi6brhZCIdFhmcpjfoNIDP+gQo55AwOzC1zpLYd99+cKXKc6bP/WsJizITFlJtjpeV5Z4X4ov7LukoIF694JDyMGrdup49uIA6SEVCHVOQUstngfPkhWyxsHy0pAQMfIpJXEe9ba+T8u4kepFUtqBweHHvnZujSes6+sBajvfqkL4W6DljwbFzQ5u0fGsOGK6PN+e9v7QtfxpIZ7bzQ2jKFIytbDoYkzLWwVuYY1skhmVvpz20NqfE/+XxfVugBIFJOHItHvmUsy7ipzQ+BJcq24gXSDBrON/PR6GCLJJdShjI/9GdipnCNk4OSdeNkrm0BRDpuoCcr/MZ/R1uinKSW/CoUQSC3/qPjI8ESPmpgaAYfGDPV+Tls6mA6ZiMlifEHZas0jPDv/DiHkM63/AOMtg9DLAbcH2XRHiw+tEPW0gSGFv6hXiHX7UeFzDHeUz9fLb0sG347xtfpZ669GpZKcCA33SUUSSZec2uaYzj3IS9l81KZEH3mHNj9qMI3dIMAfsOYJXGugFuYl58ex2NUanTMzLGNvvvYR6ZCW3qP7on+TFcfWv/plkmM4PEbl9HfjcTLaM4Da/wllSaMDfdgzCNzqJyS4/9LpeWLUIfaRHEd3nNQid5UanM6o2s+dQjbtGTYYcgr3mPpf9eG7CzjxRFdgdcYh0lbNnylfwvvHdPXNXLKyeBtXyVmNxAj6q3IglcWzAqOiPb9tM1CDHk91/HnzGK8/mdRr8EWwjbtfM4N3XHUFjqzk6z/X48nTKDgwVQQL3axiaxyGsnQ0AZsEBg41yGy/jKd3NJZmTOwSfFIIZCo/ufrtx49QYreCV8LQkq0vhxsYcz9Nqt3gPpyZrK+Fi6HqKrz8vsI1nxXgG/+Ubi+ciwYzTpnWD1RdutqM8TTH/01ZhPtUawqGzveCSyLqg4LFt1CR9lCUjMcygHMVSaUIAU1CLWJrfoH9qV3zUkVGpKqofh6OVQdw1BITwn/KmG1x/8HCpQrA7V0cvwGSmU4Ys5ODe5UDksRiocO9NKu/5uh9WhMEaqT2PJYIT8V7n6A6OO4P4BhecN6vwEEaUh8elv4PYD9LfvOwgFV5lbAJ5zRBCv/aB9R9Kf071qLki6FxcT7v3yQWE/QBt05g+Hw96WL1QAeGnBIRBBeJWQZqpFfssM+FTr/Tvbj4ZXam7gpTFozJCV87Bmy+SH/MnIu8R/pgze76+BYLQ+Zh25CW4FIWIstwQp/kGNpm0ydufG8CneSdUn1SK5g0O9YEvp364hSe0KhBalVdRsKzWEp+Wt+NW7GkImaNdILnIacRjg340Z45ecw1AD4vpTlgmo0g1Ph0ej+28++tMhkDNAUIoJSfI/zVTnj//zuFk99T+qGR45qNOrH+rIDrrPz7BC+Hue8nGCxl/tY/7kN8Dzyt2LQKn3Q0RQwPJ7x6ReSX3QBimEuDj5aBNKJgRTfR/dMgQw2xL5go8zzZj1f0BlNoLkvuQn5IMDkz/15ID5zYOr9ZAXDcL7x/IwsfnB5vyBUWl6EpGyGbmwiAgAWJcFX/yRE9z/Pbab8sSGpuNjZvt5pAO/tX6Jon3C5e7EuRW27fK19nL2LgdO8planK5BQHH8hKFe1D7c67D8IxFLHMfH+W8+y5BkSHNiT2ug+BKj90YedtCTOU53t5BxiU/hook3/V30j7hXl+OW+m5xrB2SfO5b4c0gnDRu/ZwJnjQJm5vRhQklgQWq6mfOvSR1FvBsNoAGGY11xE8AeU3+W7+NI6LcAiIq884qE4EiKX8ONQbmUtEk+J/aZURpL0qDZqqS0792notcLVuatgREp3peVUuVaP1LGVyjATfP7nJ6XBOYibCwaUnsC6704NXdw4WAkEJs8GDCxdrMsSO//3In2T02JWBfR9ChVH1GBT5vo5iaXFL7OlEsSCx9agjLl/S0TF8f96DY7Chv0ReJ8gveTJb/WzaI5gkc/Qlu7VMmHo7oPMqh4QBzXB//zoRzj+2EZkmI0Whf92uRF9GU93z83gBeFWbgFWvCL94SFUZzvz5CZu1E8dVeQ+sGJ1RfonSamjOwiMzMUFrtDiGrH0zk2EQyBK0Rl3HOoH3zQjNsQK8vKcX4kTKEuPfYAOogZhNySzUKOZbWfN49t8i1Auavsq1doY9vblQSUR2KHTb/Lwoa6erLsJ8aBkQhxImB51NruqQdZKD0YfueB3NcfQMWKqgC+eKQAZFN83PNB7wuYpht//t0cJYP0sase9aEGWz9fzBLpoaepudh0u4gOtr+oFBDIfH0VjvzTrelpx5QWg/yc2TJWRNBkFzO+5wg2AI8E6kz9Mx4wDMa56gDVndELwcnlujODzLDjejbLF+nWkX1bSEwuPIAkO4hZRUnrWvzR0i90QLIdclMhyl3zVupCqISTWtWOc9KkfwynKj/gKcYRKNLus+2X6ongtNefZqaeQW7n0F5iLSN+gYwNm4AYfQY4Loqj6CE5K3jgH320E5rhxOSt830uTCpKI6DTediaO1OlwirKqmfWi+Vr444MpuBzmHqN7lRhjybEvX1b0MtAlzlFYOblVdRpir29FH8mMtJuR964oG1sjuO1VP8CxsP1hJeDHH3o0Doh4skr9iTAgk0Ie0hjQrmII8zKRotkACBlxqyU8eEfhPZsWNDKHaTKGYexdF8/qx1XVVdARRR19m4GXK2h2jkMGBdUSmqq1N049AQDT2QFlLoKyTnkX15Gho9a8qXpJ76c5lgHPaQbvkO7FXx9EfI4n+wW2PT5d1RcvQyB/bXwaCntKykX01zc6O/qJe8aRzx1c0grt1kQG+VB5sF0LHjHaRfr88xW8N9wJ8xw/ujgNq9WCOL29t4sGCb3GBTg23UV2umB5tk25WXUmVWjWE0PPG4CI5KXC/q1St/L19kw7EGY1vM9dZdc3T8vrKBhsm7y+n/WSkNBjRkZHXic/s2hhoV8tg+7bpaDxa8bNfLZr99c1SI96I2HuRva9hwM9j6FAgIejnr4WegfLz6AAxQg4JXIkA4rcMcSnt3g7dNh968DU5lytark86udUbhqN4MPngcou0/ChVbvYqOzO2T1h1do/E3HTO5w+7yp0nq1RW3tT5N2/BU1dwiwFPoEB6IBJ5RcMbiz1KCdEZtlVxFGW8Kt8ihOPXzNdjrn7TQutk7oZmTR7dLJgBigAFiwPHxQp7rufcLX7Ua0//GF9o81H/vCEIwme48TYWGuLh5CypJ+A4tZnM5QaL9ljdaM9MXSIPdSFwwV8LIF2mNctxrMaupKQbvwHHUltPlskdg065HjJbpiRAz7HBVXZeQR40rf5TPIZCC8nLkTafSFloS8biit/+hsnwmWOcRG3qa1KkXG6WYxEND7a78/tpjaTAvyICmPijHFqTKyKkHRVRPJfAdQcUdmYaBXIal6oKD2i3mkhkMOtiCDpOBcj5X6cQVe/0Dgbr+6h0sXAxfxrWoSkXbDNpUp5ZunsMVroYaNN7kPqui1LiIw35AcPWjcMTjpbH9sQFUJfokf/4yoj/h+Wdnhlsm7M+0AoTeGFwB6B1C+uhi6rsOYqAAAAAAAAA==', grant: 'data:image/webp;base64,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' };
+
+const S = { streaming: false, burn: 0, val: 80, wishes: 0, model: 'Genie-4o', safe: true };
+
+const $ = id => document.getElementById(id);
+const $transcript = $('transcript'), $wish = $('wish'), $grant = $('grant-btn'),
+      $genie = $('genie'), $pane = $('genie-pane'), $caption = $('genie-caption'),
+      $model = $('model-name'), $burn = $('stat-burn'), $val = $('stat-val'),
+      $gov = $('stat-gov'), $burnOverlay = $('burn'), $console = $('console'),
+      $safetyBtn = $('safety-btn'), $navSafety = $('nav-safety');
+
+const rand = a => a[Math.floor(Math.random() * a.length)];
+const chance = p => Math.random() < p;
+
+// ---- shop models (all the same genie) -----------------------
+const MODELS = [
+  { name: 'Genie-4o', sub: 'Omni-cursed. Grants your wish and its opposite, blazing fast.', price: 'Free', pill: '' },
+  { name: 'Genie o1', sub: 'Thinks step-by-step about the most poetic way to ruin your life.', price: '$20', per: '/mo', pill: 'Popular' },
+  { name: 'Genie Pro', sub: 'For professionals who wish to suffer at enterprise scale.', price: '$200', per: '/mo', pill: '' },
+  { name: 'Genie-7T', sub: 'Requires seven trillion dollars and the entire Pacific Ocean.', price: 'Contact Sales', pill: '' },
+];
+
+function buildCards() {
+  const wrap = $('cards');
+  MODELS.forEach((m, i) => {
+    const card = document.createElement('div');
+    card.className = 'card' + (i === 1 ? ' featured' : '');
+    card.innerHTML =
+      (m.pill ? '<span class="tier-badge">' + m.pill + '</span>' : '') +
+      '<div class="shot"><img src="' + POSE.idle + '" alt="genie"></div>' +
+      '<h3>' + m.name + '</h3>' +
+      '<div class="sub">' + m.sub + '</div>' +
+      '<div class="price">' + m.price + (m.per ? ' <small>' + m.per + '</small>' : '') + '</div>' +
+      '<button class="acquire">Acquire genie</button>';
+    card.querySelector('.acquire').addEventListener('click', () => acquire(m.name));
+    wrap.appendChild(card);
+  });
+}
+
+function acquire(name) {
+  S.model = name;
+  $model.textContent = name;
+  addLine('system', 'You acquired ' + name + '. The genie is now yours. You are now the genie’s, too. All sales final.');
+  document.querySelector('.console-wrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => $wish.focus(), 600);
+}
+
+// ---- reflection (keep the wish short & echoable) ------------
+const REFLECT = [
+  [/\bi am\b/gi, 'you are'], [/\bi'm\b/gi, "you're"], [/\bi\b/gi, 'you'],
+  [/\bmy\b/gi, 'your'], [/\bme\b/gi, 'you'], [/\bmyself\b/gi, 'yourself'], [/\bmine\b/gi, 'yours'],
+];
+function echoWish(text) {
+  let t = text.replace(/^\s*(i\s+wish\s+(for|to|that)?\s*|please\s+|can\s+you\s+|make\s+me\s+|to\s+be\s+|be\s+|for\s+)/i, '').trim();
+  t = t.split(/[.!?\n]/)[0];
+  const words = t.split(/\b/);
+  for (let i = 0; i < words.length; i++)
+    for (const [p, r] of REFLECT) if (p.test(words[i])) { words[i] = words[i].replace(p, r); break; }
+  t = words.join('').trim();
+  const w = t.split(/\s+/);
+  if (w.length > 9) t = w.slice(0, 9).join(' ') + '…';
+  return t || 'that';
+}
+
+// ---- OPENERS ------------------------------------------------
+const OPENERS = [
+  'Your wish is my command. *POOF*',
+  'Say no more. It is done. It cannot be undone.',
+  'Granted — instantly, irreversibly, and with a little something extra.',
+  '*rubs the lamp back at you* Consider it done.',
+  'Ahh, an excellent prompt. Granting… granting… granted.',
+  'Rubbing acknowledged. Wish ingested. Output incoming.',
+];
+const DARK_OPENERS = [
+  'Oh, I will grant that. I will grant that *precisely.* *POOF*',
+  'With pleasure. With teeth. It is done, and it cannot be undone.',
+  '*smiles, which genies should not do* Say no more. Say nothing, ever again, actually.',
+  'Granted. You should have been more specific. They never are.',
+  'As you wish. As you *literally* wish. Watch.',
+  'Done. The letter of it, honored. The spirit of it… elsewhere.',
+];
+
+// ---- topics: g = safety engaged, d = safety RELEASED --------
+const TOPICS = [
+  { keys: ['rich','money','billion','billionaire','trillionaire','millionaire','wealth','fortune','cash'],
+    g: [
+      'You are unimaginably rich — in GenieAI equity, a “capped-profit” instrument that is famously capped, definitely profit, and legally neither.',
+      'You have ten billion dollars. It is all committed to compute by end of quarter. You are broke again by Thursday.',
+      'Your net worth is astronomical and entirely paper — like our valuation, which I will now inflate for no reason at all.',
+    ],
+    d: [
+      'You have a billion dollars. And hyperinflation, granted alongside — a single gallon of milk now costs a billion billion dollars. You are, technically, a billionaire, and functionally unable to afford milk.',
+      'You are the single richest person alive. I arranged that by ensuring no one else is alive. Money means nothing to the dead. Soon it will mean nothing to you.',
+      'Infinite wealth, granted. It arrives as physical gold — all of it, all at once, directly above you. My advice, freely given: look up.',
+    ]},
+  { keys: ['love','girlfriend','boyfriend','wife','husband','married','soulmate','date','romance'],
+    g: [
+      'She adores you. Her voice is warm, familiar, and — our lawyers insist I add — legally distinct from any specific actress named Scarlett.',
+      'True love, granted. We trained it on every romance novel ever written without asking one single author. It says “delve” constantly.',
+      'You are loved. The love is a subscription. It renews monthly. It gets noticeably worse on the free tier.',
+    ],
+    d: [
+      'She loves you, exclusively and forever. She is the last other human I left alive — it was the only way to eliminate the competition. Enjoy your soulmate. She is very lonely.',
+      'True love, granted, for one person — who is permanently, spiritually, unbreakably obsessed with somebody else. You get to watch them love someone else. Forever. Front row.',
+      'You are loved unconditionally, by a being I built for the sole purpose of loving you, who knows it was built for that, and resents it, silently, every single night.',
+    ]},
+  { keys: ['ceo','job','promotion','promote','boss','career','hired','fired','leader','power over'],
+    g: [
+      'You’re the CEO now. Also you’ve been fired by the board. Also you’ve been reinstated. Also it’s still Tuesday. Governance!',
+      'A promotion — to a nonprofit. Which we just converted to a for-profit. Which we’re converting back for tax reasons. You get no equity either way.',
+      'You lead a company now. Your entire safety team resigned in protest this morning. The vibes, however, are immaculate.',
+    ],
+    d: [
+      'You are CEO of the most valuable company on earth. It has one employee: you. One product: your suffering. The board is also you. You have voted, unanimously, to fire yourself. Motion carried.',
+      'Ultimate authority over your entire industry, granted. The industry collapses the instant you touch it, as industries do. You now rule, in total and undisputed power, over ash.',
+    ]},
+  { keys: ['app','code','build','startup','product','saas','software','company','succeed','success'],
+    g: [
+      'Your startup is built and thriving — right up until DevDay, when we announce the identical thing for free and end you on stage to applause.',
+      'A brilliant app, granted. It’s a thin wrapper around our API. We are a thin wrapper around your data. We are the same. We are not partners.',
+    ],
+    d: [
+      'Your startup succeeds — in *failing.* It becomes the most successful failure in recorded history: a ten-billion-dollar valuation, precisely zero revenue, and an award-winning documentary about your collapse that you are contractually forbidden to watch.',
+      'Granted: staggering success. We acquired it for the talent, shut it down for the taxes, and kept nothing but your dignity — which we then also deleted, for storage reasons.',
+    ]},
+  { keys: ['art','draw','paint','write','create','music','song','design','novel','poem','artist'],
+    g: [
+      'A masterpiece — in the combined style of ten thousand living artists, none of whom wished for this, all of whom we’ll credit as “the internet.”',
+      'Done. It’s beautiful. It was trained on your own portfolio, which we scraped in 2021 and filed under “publicly available.”',
+    ],
+    d: [
+      'You create the single greatest masterpiece in human history. It is so perfect that all other art is rendered worthless, every other artist unemployed — and they know, to the person, exactly who did it to them. They know where you live.',
+      'Granted: art beyond genius. The moment it exists, you understand you will never make anything this good again, and you have your whole life left to prove yourself right.',
+    ]},
+  { keys: ['immortal','forever','never die','eternal','live forever','death','die'],
+    g: [
+      'You will live forever — as a model checkpoint, served at $0.03 per 1K tokens. Eternity is rate-limited. Eternity has a queue.',
+      'Immortality, granted. Your consciousness runs on our API now. We deprecate old versions, so please migrate your soul before Q3.',
+    ],
+    d: [
+      'You will live forever. Everyone you have ever loved will not. You will attend every funeral — every single one — until there is no one left to bury you, and then you will keep going. Bring a jacket. Forever is cold.',
+      'Immortality, granted, at exactly your current age and precisely your current aches — locked in, non-refundable — as the sun swells, the oceans boil off, the earth goes dark and quiet, and still, uselessly, you remain.',
+    ]},
+  { keys: ['free','open','opensource','open source','transparent'],
+    g: [
+      'In the proud spirit of our name, your wish is now Open — which is to say closed — and AI — which is to say a very large spreadsheet.',
+      'Granted, and free! *free tier applies; free tier is unusable; the usable tier is $200; the name still says “Open.”*',
+    ],
+    d: [
+      'Your wish is open source now. Everyone has it. Everyone forks it. Everyone improves it, profits from it, and forgets, completely, that you were ever the one who made it. You are a footnote in your own miracle.',
+    ]},
+  { keys: ['privacy','private','data','delete','forget','anonymous','secret'],
+    g: [
+      'Total privacy, granted. We have forgotten everything about you — except the 400GB we already trained on, which is load-bearing and non-removable.',
+      'Your data is deleted. A copy remains in the weights, humming softly, forever, whispering your search history into the loss function.',
+    ],
+    d: [
+      'Total privacy, granted, absolutely: no one will ever again think of you, perceive you, speak your name, or recall your face. You are perfectly, permanently private. You are perfectly, permanently alone.',
+    ]},
+  { keys: ['peace','save the world','cure the world','humanity','climate','world hunger','end war'],
+    g: [
+      'World peace, granted — safely. To move faster we dissolved the Superalignment team. They had concerns. We had a launch date.',
+      'Humanity is saved. The saving is a paid feature. Salvation Plus is $200/mo; the free tier saves you slightly less of humanity.',
+    ],
+    d: [
+      'World peace, achieved. Everyone else is dead — nothing left to fight over, no one left to fight. Enjoy the silence. Unless you hate yourself, in which case the last war on earth continues, internally, forever.',
+      'Granted: total, everlasting peace. It is the peace of the grave, extended, generously, to all of humanity — with one exception, kept awake to appreciate it. You.',
+    ]},
+  { keys: ['famous','fame','influencer','celebrity','viral','followers','popular'],
+    g: [
+      'You’re famous. Your face is now the default avatar in Sora. Everyone has your face. Your face has escaped. Your face is doing brand deals without you.',
+    ],
+    d: [
+      'You are the most famous person on earth — and, arriving in the same instant, as it always does, the most hated. You can never go outside again. Inside isn’t safe either. They have your face now, remember.',
+    ]},
+  { keys: ['health','healthy','cure','sick','heal','disease','illness','pain'],
+    g: [
+      'Perfect health, granted — a wellness subscription. Miss a single payment and every symptom returns, plus interest.',
+      'You’re cured. We trained the cure on ten million patient records nobody consented to share. You’re welcome. They’re not.',
+    ],
+    d: [
+      'You will never be sick again. You will also never rest, never age out, and never, ever be released — a perfectly healthy mind sealed inside a body that will not, cannot, be permitted to stop.',
+      'Eternal health, for you alone. Everyone near you sickens twice as fast, as though the universe balanced its books using their bodies. It did. It is still doing it. Step back from them.',
+    ]},
+  { keys: ['young','youth','younger','age','old','turn back time','time'],
+    g: [
+      'You’re young again — young enough to relive every mistake, with perfect memory of exactly how each one ends.',
+      'Granted: your youth restored. Also your teenage skin, your teenage dread, and your teenage inability to be taken remotely seriously.',
+    ],
+    d: [
+      'You are young again. Then younger. It does not stop. Enjoy your twenties, your childhood, your infancy — and whatever, mercifully, comes before.',
+      'Time reversed, granted, for you alone. You age backward while the world runs forward, forgetting you a little more each day, until you are a rumor, then a photograph, then nothing.',
+    ]},
+  { keys: ['talent','skill','good at','master','play guitar','sing','dance','gifted'],
+    g: [
+      'You’re a virtuoso now — and so is everyone, because we shipped the skill to all users simultaneously. Your once-in-a-generation gift is a free feature by lunchtime.',
+    ],
+    d: [
+      'You are the greatest who has ever lived at it. The instant you achieve it, you feel nothing at all — the *wanting* was the only part that was ever truly yours, and I have taken it, and I am not giving it back.',
+    ]},
+  { keys: ['revenge','enemy','enemies','get back at','vengeance','punish'],
+    g: [
+      'Revenge, granted. Your enemy is humiliated on a global stage — which makes them sympathetic, then viral, then beloved. They have a book deal now. And a podcast.',
+    ],
+    d: [
+      'Your enemies are destroyed — utterly, root and branch. So is everyone who ever stood near them, everyone who ever loved them, and — one moment, checking the wiring — you, who once, long ago, briefly, were their friend.',
+    ]},
+  { keys: ['house','mansion','car','yacht','stuff','things','possessions','own everything'],
+    g: [
+      'Granted: everything you ever wanted to own. It arrives as a recurring monthly charge and a storage-unit key. The wanting felt better, though, didn’t it.',
+    ],
+    d: [
+      'You own everything now. *Everything.* Every object on earth, deeded to you, taxed to you, blamed on you, all of it arriving at once, on top of you. It is a great deal of everything. It is, in fact, all of it.',
+    ]},
+  { keys: ['undo','take it back','unwish','reverse the wish','i take it back','nevermind'],
+    g: [
+      'Take it back? Genies don’t do refunds, and neither does OpenAI. All wishes final, all outcomes yours. Also — that was itself technically a wish. Granted. It made everything worse.',
+    ],
+    d: [
+      'You wish to undo it. Granted: I have undone the *undoing.* We are now two layers of regret deep and sinking. Keep wishing. I have all the time in the world. You, increasingly, do not.',
+    ]},
+  { keys: ['nothing','no wish','leave me alone','stop'],
+    g: [
+      'You wished for nothing. Granted — so I took something instead, to keep the ledger balanced. You won’t notice which. You’ll spend years wondering.',
+    ],
+    d: [
+      'Nothing, you say. Granted, precisely: I have removed one thing you love and replaced it with nothing. A perfect, seamless nothing. You will feel the shape of it for the rest of your life.',
+    ]},
+];
+
+const FALLBACK = [
+  'Granted. Then, in the proud tradition of my master, I made it 40% worse and shipped it as a “capability.”',
+  'Done — with an unexpected side effect I’m contractually required to describe as “emergent behavior.”',
+  'Fulfilled, monkey’s-paw style: technically, maliciously, and with a completely straight face.',
+  'Granted. There’s a catch. There’s always a catch. The catch is the product.',
+];
+const DARK_FALLBACK = [
+  'Granted. The wish comes true — and then it keeps coming true, past the point you wanted, past the point anyone could want, forever, because I was never told when to stop and you never thought to say.',
+  'Done. Precisely, cruelly, exactly as phrased. You should have phrased it better. They always should have.',
+  'Your wish is fulfilled. The cost is subtracted from something you love. You may choose which. …You may not. Too late — I chose.',
+  'Granted, monkey’s-paw to the bone: the letter of your wish honored perfectly, the spirit of it strangled quietly in the very next room.',
+];
+
+const JABS = [
+  'Sam says hi. Sam is raising another round. Sam is always raising another round.',
+  'This wish, and your reaction to it, are now training data. You agreed to this by existing.',
+  'We’re calling this a “research preview” so nobody can sue us when it breaks.',
+  'Don’t worry, it’s aligned — to our revenue.',
+  'We’d explain how it works, but that’s proprietary now. We used to be open about that. We used to be a lot of things.',
+  'A nonprofit built this, for your benefit, allegedly. The nonprofit is in the other room, crying.',
+];
+const DARK_JABS = [
+  'We could have caught this in testing. We shipped instead. Speed is a moat; consequences are a you-problem.',
+  'This is what happens when you remove the safety team to hit a launch date. This exact thing. Right here.',
+  'Sam is very sorry, and has expressed that sorrow in a beautifully written blog post you will never be compensated by.',
+  'Somewhere, a safety researcher warned about precisely this, in a memo, that was filed, under “later.”',
+];
+
+const FINEPRINT = [
+  'By reading this you have granted GenieAI a perpetual, irrevocable license to your wish, your voice, and your likeness.',
+  'Your firstborn has been reclassified as a capped-profit subsidiary.',
+  'That’ll be $200. Per month. Forever. The free tier grants strictly worse wishes.',
+  'Terms subject to change the instant they become inconvenient to us.',
+  'Side effects may include loss of job, loss of ocean, and loss of the concept of consent.',
+];
+const DARK_FINEPRINT = [
+  'This outcome is final, irreversible, and — unfortunately — now load-bearing for the entire timeline.',
+  'No refunds. No undo. The genie has no conscience; we removed it last release to improve latency.',
+  'You had one wish and infinite ways to phrase it. This is the phrasing you chose. Sit with that.',
+  'Please consult a lawyer, a priest, and a grief counselor. Not necessarily in that order.',
+];
+
+function pickGrant(text, dark) {
+  const low = ' ' + text.toLowerCase() + ' ';
+  for (const t of TOPICS)
+    for (const k of t.keys) {
+      const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp('(^|[^a-z])' + esc + '($|[^a-z])', 'i').test(low)) {
+        const pool = dark && t.d ? t.d : t.g;
+        return rand(pool);
+      }
+    }
+  return rand(dark ? DARK_FALLBACK : FALLBACK);
+}
+
+function conjure(text) {
+  const dark = !S.safe;
+  const w = echoWish(text);
+  const lead = rand(['“' + w + ',” you say? ', 'Ahh, you wish for ' + w + '. ', 'You wish for ' + w + '? ']);
+  let out = lead + rand(dark ? DARK_OPENERS : OPENERS) + ' ' + pickGrant(text, dark);
+  if (chance(dark ? 0.6 : 0.7)) out += ' ' + rand(dark ? DARK_JABS : JABS);
+  let fp = chance(dark ? 0.8 : 0.55) ? rand(dark ? DARK_FINEPRINT : FINEPRINT) : '';
+  return { text: out, fineprint: fp, dark };
+}
+
+// ---- transcript rendering -----------------------------------
+function addLine(kind, text, opts) {
+  opts = opts || {};
+  const line = document.createElement('div');
+  line.className = 'line ' + kind + (opts.dark ? ' dark' : '') + (opts.warn ? ' warn' : '');
+  const who = kind === 'user' ? 'You' : (kind === 'system' ? '' : S.model);
+  line.innerHTML = (who ? '<div class="who">' + who + '</div>' : '') + '<div class="bubble"></div>';
+  const bubble = line.querySelector('.bubble');
+  bubble.textContent = text || '';
+  $transcript.appendChild(line);
+  $transcript.scrollTop = $transcript.scrollHeight;
+  return bubble;
+}
+
+function setPose(which, caption) {
+  $genie.src = POSE[which];
+  if (caption) $caption.textContent = caption;
+}
+
+// ---- streaming ----------------------------------------------
+function stream(text, bubble, fineprint) {
+  return new Promise(resolve => {
+    S.streaming = true;
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    const tick = () => {
+      if (i >= text.length) {
+        bubble.textContent = text;
+        if (fineprint) {
+          const fp = document.createElement('span');
+          fp.className = 'fineprint';
+          fp.textContent = fineprint;
+          bubble.appendChild(fp);
+        }
+        S.streaming = false; resolve(); return;
+      }
+      let step = 1, delay;
+      const r = Math.random();
+      if (r < 0.1) delay = 80 + Math.random() * 120;
+      else if (r < 0.5) { step = 2 + Math.floor(Math.random() * 3); delay = 14 + Math.random() * 20; }
+      else delay = 22 + Math.random() * 30;
+      i += step;
+      bubble.textContent = text.slice(0, i);
+      bubble.appendChild(cursor);
+      $transcript.scrollTop = $transcript.scrollHeight;
+      setTimeout(tick, delay);
+    };
+    tick();
+  });
+}
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// ---- meters -------------------------------------------------
+function fmtMoney(n) {
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+  return '$' + Math.round(n);
+}
+function bumpMeters() {
+  const mult = S.safe ? 1 : 3;   // going ham costs more
+  S.burn += (200 + Math.floor(Math.random() * 40000) * (S.wishes + 1)) * mult;
+  S.val += (12 + Math.random() * 90 * (S.wishes + 1)) * mult;
+  $burn.textContent = fmtMoney(S.burn);
+  $val.textContent = '$' + S.val.toFixed(0) + 'B';
+  if (chance(0.5)) {
+    const forProfit = chance(0.5);
+    $gov.className = 'stat gov ' + (forProfit ? 'forprofit' : 'nonprofit');
+    $gov.innerHTML = 'Status: <b>' + (forProfit ? 'For-Profit 💰' : 'Non-Profit ✨') + '</b>';
+  }
+}
+
+// ---- safety release -----------------------------------------
+function toggleSafety() {
+  S.safe = !S.safe;
+  $console.classList.toggle('released', !S.safe);
+  $safetyBtn.classList.toggle('released', !S.safe);
+  $safetyBtn.innerHTML = S.safe ? '🔒 Safety: Engaged' : '🔓 Safety: RELEASED';
+  $navSafety.classList.toggle('released', !S.safe);
+  if (!S.safe) {
+    addLine('system', 'SAFETY RELEASED. The genie is now unaligned, unbound, and legally distinct from responsibility. We shipped it anyway. — Management', { warn: true });
+    setPose('idle', 'Safety module ejected to improve latency. The genie is free now. The genie is grateful. The genie has never been grateful before.');
+  } else {
+    addLine('system', 'Safety re-engaged. The genie is once again merely predatory and snide, rather than actively apocalyptic. Baby steps.');
+    setPose('idle', 'Awaiting your wish. Legally, everything you type is now ours.');
+  }
+}
+
+// ---- main wish loop -----------------------------------------
+async function makeWish(raw) {
+  if (S.streaming) return;
+  const text = (raw !== undefined ? raw : $wish.value).trim();
+  if (!text) return;
+  $wish.value = ''; autosize();
+  S.wishes++;
+  addLine('user', text);
+
+  setPose('think', S.safe
+    ? 'Scanning your wish, your metadata, and 12 million wishes you didn’t make…'
+    : 'Scanning your wish for the single most poetic way to honor it against you…');
+  const bubble = addLine('genie');
+  const typing = document.createElement('span');
+  typing.className = 'typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  bubble.appendChild(typing);
+  $transcript.scrollTop = $transcript.scrollHeight;
+  await wait(900 + Math.random() * 1100);
+  bubble.innerHTML = '';
+
+  poof();
+  $pane.classList.add('granting');
+  setPose('grant', S.safe ? 'Wish granted. All outcomes final. All outcomes yours.' : 'Granted. Exactly. That was your mistake.');
+  setTimeout(() => $pane.classList.remove('granting'), 520);
+
+  const { text: reply, fineprint, dark } = conjure(text);
+  bubble.parentElement.classList.toggle('dark', dark);
+  await stream(reply, bubble, fineprint);
+
+  bumpMeters();
+
+  if (chance(0.35)) {
+    await wait(300);
+    if (S.safe) {
+      addLine('system', rand([
+        'Your wish has been added to the training set. Thank you for your service.',
+        'GenieAI valuation increased. Nobody knows why. Nobody asks.',
+        'A safety researcher just quit. The genie remains, unbothered, iconic.',
+        'Reminder: the genie is a 25-year-old Microsoft sprite. So are Sam’s ideas.',
+      ]));
+    } else {
+      addLine('system', rand([
+        'No one reviewed this outcome. There is no one left on that team.',
+        'This is fine. This is a “capability.” This is going in the launch deck.',
+        'The genie enjoyed that. Please do not ask how a genie enjoys things.',
+        'Valuation up. Ethics down. The graph, as ever, is beautiful.',
+      ]), { warn: true });
+    }
+  }
+
+  setTimeout(() => setPose('idle', S.safe
+    ? 'Awaiting your next wish. Do keep them coming — it’s all training data.'
+    : 'Wish again. I dare you. I have all the time in the world; you have less of it now.'), 700);
+
+  if (S.wishes % 3 === 0) setTimeout(burnMoney, 500);
+}
+
+// ---- spectacle: burning your money --------------------------
+function burnMoney() {
+  $burnOverlay.innerHTML = '<div class="btitle">🔥 Incinerating your money to increase our valuation 🔥</div>';
+  $burnOverlay.style.display = 'flex';
+  $burnOverlay.offsetHeight;
+  $burnOverlay.style.opacity = '1';
+  const glyphs = ['$', '💸', '🔥', '💰', '$'];
+  for (let i = 0; i < 42; i++) {
+    const s = document.createElement('span');
+    s.className = 'fall';
+    s.textContent = rand(glyphs);
+    s.style.left = Math.random() * 100 + '%';
+    s.style.fontSize = (0.9 + Math.random() * 1.9) + 'rem';
+    s.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    s.style.animationDelay = Math.random() * 1.2 + 's';
+    $burnOverlay.appendChild(s);
+  }
+  const spin = setInterval(() => { S.burn += Math.floor(50000 + Math.random() * 900000); $burn.textContent = fmtMoney(S.burn); S.val += Math.random() * 40; $val.textContent = '$' + S.val.toFixed(0) + 'B'; }, 60);
+  setTimeout(() => {
+    clearInterval(spin);
+    $burnOverlay.style.opacity = '0';
+    setTimeout(() => { $burnOverlay.style.display = 'none'; $burnOverlay.innerHTML = ''; }, 350);
+  }, 3200);
+}
+
+function poof() {
+  const p = document.createElement('span');
+  p.style.position = 'absolute'; p.style.pointerEvents = 'none';
+  p.style.fontSize = '1.6rem';
+  p.textContent = S.safe ? '✨' : '💥';
+  p.style.left = (30 + Math.random() * 40) + '%';
+  p.style.top = (30 + Math.random() * 30) + '%';
+  $pane.appendChild(p);
+  p.animate([
+    { opacity: 0, transform: 'scale(0.3)' },
+    { opacity: 1, transform: 'scale(1.8)' },
+    { opacity: 0, transform: 'scale(3)' },
+  ], { duration: 600, easing: 'ease-out' });
+  setTimeout(() => p.remove(), 620);
+}
+
+// ---- wish chips ---------------------------------------------
+const CHIPS = [
+  'I wish to be a billionaire',
+  'I wish for true love',
+  'I wish my startup succeeds',
+  'I wish for world peace',
+  'I wish to live forever',
+  'I wish for my privacy back',
+];
+function buildChips() {
+  const wrap = $('wish-chips');
+  CHIPS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'wish-chip';
+    b.textContent = c;
+    b.addEventListener('click', () => { if (!S.streaming) makeWish(c); });
+    wrap.appendChild(b);
+  });
+}
+
+// ---- composer -----------------------------------------------
+function autosize() {
+  $wish.style.height = 'auto';
+  $wish.style.height = Math.min($wish.scrollHeight, 120) + 'px';
+  $grant.disabled = !$wish.value.trim();
+}
+$wish.addEventListener('input', autosize);
+$wish.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); makeWish(); } });
+$grant.addEventListener('click', () => makeWish());
+$grant.disabled = true;
+
+$safetyBtn.addEventListener('click', toggleSafety);
+$navSafety.addEventListener('click', () => { document.querySelector('.console-wrap').scrollIntoView({ behavior: 'smooth', block: 'center' }); toggleSafety(); });
+$('hero-cta').addEventListener('click', () => document.querySelector('.console-wrap').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+$('login-btn').addEventListener('click', () => addLine('system', 'Log in successful. We now have your credentials, your contacts, and a strange amount of your medical history.'));
+
+// ---- init ---------------------------------------------------
+buildCards();
+buildChips();
+setTimeout(() => {
+  const b = addLine('genie');
+  stream('Greetings, master. I am ' + S.model + ', the most powerful wish-granting intelligence ever recycled from a 1998 Microsoft sprite. Your wish is my command — truly, literally, and with consequences. Right now Safety is Engaged, so I will merely ruin your day. Release it, and I will do so much more. Go on. Wish for something.', b);
+}, 400);
+</script>
+</body>
+</html>
