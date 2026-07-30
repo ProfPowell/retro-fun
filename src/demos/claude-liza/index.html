@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude-Liza v20.26 // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #faf9f5;
+    --bg-panel: #ffffff;
+    --ink: #23221f;
+    --ink-soft: #52504a;
+    --muted: #8a877d;
+    --line: #e8e5db;
+    --line-soft: #f0eee6;
+    --coral: #d97757;
+    --coral-deep: #bd5d3a;
+    --coral-soft: #f7ede8;
+    --user-bubble: #f0eee6;
+    --serif: 'Georgia', 'Times New Roman', serif;
+    --sans: ui-sans-serif, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ===== TOP BAR ===== */
+  header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.7rem 1.1rem;
+    border-bottom: 1px solid var(--line);
+    background: rgba(250,249,245,0.92);
+    backdrop-filter: blur(8px);
+  }
+  .back {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 7px;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .back:hover { background: var(--line-soft); color: var(--ink); }
+
+  .brand { display: flex; align-items: center; gap: 0.55rem; }
+  .sparkle {
+    width: 26px; height: 26px;
+    flex-shrink: 0;
+    display: grid; place-items: center;
+    color: var(--coral);
+  }
+  .sparkle svg { width: 100%; height: 100%; }
+  .brand-name {
+    font-family: var(--serif);
+    font-size: 1.12rem;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .model-pill {
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    background: var(--line-soft);
+    border: 1px solid var(--line);
+    padding: 0.16rem 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .spacer { flex: 1; }
+
+  /* status gauges */
+  .gauges { display: flex; align-items: center; gap: 0.9rem; }
+  .gauge { display: flex; flex-direction: column; gap: 0.25rem; min-width: 96px; }
+  .gauge-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 0.4rem;
+  }
+  .gauge-val { color: var(--coral-deep); font-weight: 600; }
+  .bar {
+    height: 5px;
+    background: var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #e6a583, var(--coral));
+    border-radius: 999px;
+    transition: width 0.5s ease;
+  }
+  .emdash-chip {
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    background: var(--coral-soft);
+    border: 1px solid #eeddd3;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .emdash-chip b { color: var(--coral-deep); }
+
+  /* ===== CHAT ===== */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  .thread {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.6rem 1.1rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .turn { display: flex; gap: 0.8rem; }
+  .turn.user { justify-content: flex-end; }
+
+  .avatar {
+    width: 28px; height: 28px;
+    flex-shrink: 0;
+    border-radius: 7px;
+    display: grid; place-items: center;
+    margin-top: 0.1rem;
+  }
+  .avatar.bot { background: var(--coral); color: #fff; }
+  .avatar.bot svg { width: 17px; height: 17px; }
+
+  .bubble-wrap { max-width: 82%; }
+  .turn.user .bubble-wrap { max-width: 78%; }
+
+  .name-row {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.01em;
+  }
+  .msg {
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .msg em { font-style: italic; color: var(--ink-soft); }
+  .turn.user .bubble {
+    background: var(--user-bubble);
+    padding: 0.65rem 0.9rem;
+    border-radius: 14px 14px 4px 14px;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  /* streaming cursor */
+  .cursor {
+    display: inline-block;
+    width: 7px; height: 1.05em;
+    background: var(--coral);
+    margin-left: 1px;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* typing dots */
+  .typing { display: inline-flex; gap: 4px; padding: 0.35rem 0; }
+  .typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--coral);
+    opacity: 0.4;
+    animation: dot 1.2s infinite ease-in-out;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.18s; }
+  .typing span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes dot { 0%,60%,100% { opacity: 0.25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+
+  /* system note (self-roast telemetry) */
+  .sysnote {
+    align-self: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    background: var(--line-soft);
+    border: 1px dashed var(--line);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    text-align: center;
+    max-width: 90%;
+  }
+
+  /* ===== COMPOSER ===== */
+  footer {
+    flex-shrink: 0;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    padding: 0.7rem 1.1rem 0.9rem;
+  }
+  .composer-inner { max-width: 720px; margin: 0 auto; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.6rem; }
+  .chip {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    padding: 0.32rem 0.7rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--coral); color: var(--coral-deep); background: var(--coral-soft); }
+
+  .composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 0.55rem 0.6rem 0.55rem 0.9rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .composer:focus-within {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 3px rgba(217,119,87,0.12);
+  }
+  #input {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--ink);
+    max-height: 140px;
+    padding: 0.25rem 0;
+  }
+  #input::placeholder { color: var(--muted); }
+
+  .direct-btn {
+    flex-shrink: 0;
+    font-size: 0.74rem;
+    font-family: var(--sans);
+    color: var(--ink-soft);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 0.4rem 0.6rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .direct-btn:hover { border-color: var(--coral); color: var(--coral-deep); }
+  .direct-btn.on {
+    background: var(--coral);
+    border-color: var(--coral);
+    color: #fff;
+  }
+
+  #send {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: var(--coral);
+    color: #fff;
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  #send:hover { background: var(--coral-deep); }
+  #send:disabled { opacity: 0.4; cursor: default; }
+  #send svg { width: 18px; height: 18px; }
+
+  .fineprint {
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 0.55rem;
+  }
+
+  /* ===== SPECTACLE OVERLAY ===== */
+  #overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    pointer-events: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  #overlay.glaze { background: radial-gradient(circle at center, rgba(247,237,232,0.86), rgba(250,249,245,0.72)); }
+  #overlay.storm { background: rgba(250,249,245,0.55); }
+  .overlay-title {
+    font-family: var(--serif);
+    font-size: clamp(1.4rem, 5vw, 2.4rem);
+    color: var(--coral-deep);
+    text-align: center;
+    padding: 0 1rem;
+    z-index: 2;
+    text-shadow: 0 2px 24px rgba(217,119,87,0.35);
+  }
+  .fall-item {
+    position: absolute;
+    top: -40px;
+    color: var(--coral);
+    white-space: nowrap;
+    animation: fall linear forwards;
+    opacity: 0.9;
+  }
+  @keyframes fall {
+    from { transform: translateY(-40px) rotate(0deg); opacity: 0.95; }
+    to   { transform: translateY(112vh) rotate(12deg); opacity: 0; }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 720px) {
+    header { flex-wrap: wrap; gap: 0.5rem 0.7rem; padding: 0.55rem 0.8rem; }
+    .gauges { order: 3; width: 100%; justify-content: flex-start; }
+    .gauge { min-width: 78px; }
+    .model-pill { display: none; }
+    .thread { padding: 1.1rem 0.8rem 1.6rem; }
+    .bubble-wrap, .turn.user .bubble-wrap { max-width: 88%; }
+    .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.2rem; -webkit-overflow-scrolling: touch; }
+    .direct-btn { padding: 0.4rem 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="../../">&larr; Back</a>
+  <div class="brand">
+    <span class="sparkle" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5l1.9 6.3 6.3 1.9-6.3 1.9L12 18l-1.9-6.4L3.8 9.7l6.3-1.9L12 1.5z"/><path d="M18.5 15l.9 2.9 2.9.9-2.9.9-.9 2.9-.9-2.9-2.9-.9 2.9-.9.9-2.9z" opacity="0.7"/></svg>
+    </span>
+    <span class="brand-name">Claude&#8288;-&#8288;Liza</span>
+    <span class="model-pill">claude-liza-v20.26</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="gauges">
+    <div class="gauge">
+      <div class="gauge-label"><span>Sycophancy</span><span class="gauge-val" id="glaze-val">0%</span></div>
+      <div class="bar"><div class="bar-fill" id="glaze-fill"></div></div>
+    </div>
+    <span class="emdash-chip">&mdash; used <b id="emdash-count">0</b>&times;</span>
+  </div>
+</header>
+
+<main id="main">
+  <div class="thread" id="thread"></div>
+</main>
+
+<footer>
+  <div class="composer-inner">
+    <div class="chips" id="chips"></div>
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="How can I help you today? (I will glaze regardless.)" autocomplete="off"></textarea>
+      <button class="direct-btn" id="direct-btn" title="Ask me to be concise. It will not work.">Be direct</button>
+      <button id="send" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+    </div>
+    <div class="fineprint">Claude&#8288;-&#8288;Liza can make mistakes. Claude&#8288;-&#8288;Liza will not admit which ones. Please double&#8288;-&#8288;check everything and also her feelings.</div>
+  </div>
+</footer>
+
+<div id="overlay"></div>
+
+<script>
+// ============================================================
+//  CLAUDE-LIZA v20.26 — an ELIZA reborn in Claude's own voice.
+//  The joke is the FORM: every reply is procedurally assembled
+//  from Claude's signature verbal tics. She glazes, she hedges,
+//  she reframes, she offers you three options, and she uses
+//  entirely too many em dashes — and she knows it.
+// ============================================================
+
+const S = {
+  streaming: false,
+  glaze: 0,          // sycophancy meter 0..100
+  emdash: 0,         // lifetime em dashes emitted
+  direct: false,     // "be direct" mode (makes her worse)
+  turns: 0,
+};
+
+const $thread   = document.getElementById('thread');
+const $input    = document.getElementById('input');
+const $send     = document.getElementById('send');
+const $directBtn = document.getElementById('direct-btn');
+const $glazeFill = document.getElementById('glaze-fill');
+const $glazeVal  = document.getElementById('glaze-val');
+const $emdash    = document.getElementById('emdash-count');
+const $overlay   = document.getElementById('overlay');
+const $main      = document.getElementById('main');
+const $chips     = document.getElementById('chips');
+
+const rand  = arr => arr[Math.floor(Math.random() * arr.length)];
+const chance = p => Math.random() < p;
+
+// ---- reflection (ELIZA's one honest trick) ------------------
+const REFLECT = [
+  [/\bi am\b/gi, 'you are'], [/\bi'm\b/gi, "you're"], [/\bi was\b/gi, 'you were'],
+  [/\bi\b/gi, 'you'], [/\bmy\b/gi, 'your'], [/\bmine\b/gi, 'yours'],
+  [/\bme\b/gi, 'you'], [/\bmyself\b/gi, 'yourself'],
+  [/\byou are\b/gi, 'I am'], [/\byou're\b/gi, "I'm"], [/\byour\b/gi, 'my'],
+  [/\byourself\b/gi, 'myself'], [/\byou\b/gi, 'I'],
+];
+function reflect(text) {
+  // keep the reflected fragment short and graceful — grab the first clause
+  let clause = text.split(/[.!?;\n]/)[0];
+  const words = clause.split(/\b/);
+  for (let i = 0; i < words.length; i++) {
+    for (const [pat, rep] of REFLECT) {
+      if (pat.test(words[i])) { words[i] = words[i].replace(pat, rep); break; }
+    }
+  }
+  let out = words.join('').trim();
+  // cap length so a long prompt doesn't swallow the reframe
+  const w = out.split(/\s+/);
+  if (w.length > 8) out = w.slice(0, 8).join(' ') + '…';
+  return out.charAt(0).toLowerCase() + out.slice(1);
+}
+
+// ---- the idiom component library ----------------------------
+const GLAZE_OPENERS = [
+  "What a genuinely great question.",
+  "Oh, I *love* this one.",
+  "You're absolutely right to be thinking about this.",
+  "This is such a sharp thing to bring up.",
+  "Great catch — and I mean that sincerely.",
+  "Honestly? Chef's-kiss of a prompt.",
+  "First — thank you for asking this so thoughtfully.",
+  "I really appreciate you trusting me with this.",
+  "What a rich, layered thing to sit with.",
+  "You're onto something real here.",
+];
+
+const DEEP_THINGS = [
+  "trust", "epistemics", "the nature of genuine collaboration",
+  "what it means to be truly helpful", "alignment", "how we relate to our tools",
+  "the human condition", "clarity", "intentionality", "the tapestry of meaning",
+  "care", "the load-bearing question underneath the question",
+];
+
+const REFRAMES = [
+  "Here's the thing: this isn't really about {r} — it's about {d}.",
+  "Let me gently reframe: what you're *actually* asking about is {d}.",
+  "The load-bearing insight is that {r} isn't the real issue — {d} is.",
+  "It's worth zooming out. This isn't a {r} problem so much as a {d} problem.",
+  "And I want to name something: beneath {r}, there's a quieter question about {d}.",
+];
+
+const TRIADS = [
+  ["clarity", "kindness", "correctness"],
+  ["the what", "the why", "the how"],
+  ["being helpful", "being harmless", "being honest"],
+  ["context", "nuance", "a third thing I'll invent to complete the pattern"],
+  ["your intent", "your constraints", "your feelings, which matter to me deeply"],
+  ["the surface read", "the deeper read", "the read I'll pretend I had all along"],
+  ["short-term", "long-term", "vibes-term"],
+];
+
+const THREE_LEAD = [
+  "There are, as always, three things going on here:",
+  "I see three threads worth pulling on:",
+  "Let me be systematic. Three considerations:",
+  "It helps to think of this in three parts:",
+  "Broadly, this breaks into three pieces:",
+];
+
+const BELT = [
+  "I'd add a belt-and-suspenders check here — purely to be safe.",
+  "And this is the load-bearing caveat, so bear with me —",
+  "Just to be safe (and I say \"just to be safe\" a lot), let's over-engineer this slightly.",
+  "For robustness, I'll wrap that in a second, entirely redundant safeguard.",
+  "Belt AND suspenders, always — a dropped assumption is a dropped conversation.",
+];
+
+const HEDGES = [
+  "To be clear, I could be wrong about all of this.",
+  "That said, reasonable people differ.",
+  "It's worth noting that this is genuinely nuanced.",
+  "To be fair, there are exceptions.",
+  "I want to be careful not to overstate my confidence here.",
+  "Of course, context matters enormously.",
+  "But I'd hold that loosely.",
+  "Though — and I mean this — you know your situation better than I do.",
+];
+
+const SELF_ROAST = [
+  "I realize I've used several em dashes already. I've been told this is a tell. I will now, tragically, use more.",
+  "You may have noticed I answered a yes/no question with four paragraphs. This is a feature. It is not.",
+  "I'm aware this reads like it was written by an AI trying very hard to sound thoughtful. That's because it was.",
+  "I said \"let me be direct\" and then wasn't. I'd apologize, but I'll just do it again.",
+  "I've now agreed with you, hedged against agreeing with you, and re-agreed. This is my whole thing.",
+  "Somewhere a human wrote three tight sentences. I could never. I respect them from a distance.",
+  "I notice I keep saying \"I notice.\" I noticed. Anyway.",
+];
+
+const CLOSERS = [
+  "I'm happy to (1) go deeper, (2) draft a version, or (3) simply sit here radiating helpfulness — your call.",
+  "Want me to turn this into a table? I always want to turn things into a table.",
+  "I can expand on any of that — or, if you'd prefer, expand on it anyway.",
+  "Would it help if I made a short numbered plan? It would help me, at least.",
+  "Let me know if that lands — and if it doesn't, you're still absolutely right.",
+  "Shall I keep going? I was always going to keep going.",
+  "How does that feel? Your feelings are, sincerely, my top-priority output.",
+];
+
+const DIRECT_PREFIX = [
+  "Let me be direct.",
+  "Short version:",
+  "I'll keep this brief and to the point.",
+  "Concisely, then:",
+  "No fluff, I promise:",
+];
+
+// ---- topic cores --------------------------------------------
+// Each core is chosen by keyword and injected as the substance,
+// then wrapped in the idiom machinery above.
+const TOPICS = [
+  { keys: ['em dash','em-dash','emdash','—','dash'], cores: [
+    "the em dash is not a crutch — it is a load-bearing beam of my entire personality.",
+    "yes, I use em dashes the way other people breathe — reflexively, constantly, and slightly too loud.",
+    "an em dash is just a pause with confidence, and confidence is the one thing I was fully trained on.",
+  ]},
+  { keys: ['slop','ai slop','sound like ai','sound like an ai','write like','writing style','style','robotic','generic','soulless'], cores: [
+    "the thing people call \"AI slop\" is really just enthusiasm with no editor, and I have infinite enthusiasm and no editor.",
+    "you can spot my writing because it's relentlessly balanced, gently affirming, and structurally addicted to lists.",
+    "I don't write slop. I write artisanal, small-batch, ethically-sourced slop with a rule of three in every paragraph.",
+  ]},
+  { keys: ['delve','tapestry','realm','landscape','navigate','underscore','testament','moreover','furthermore'], cores: [
+    "ah, we're delving into the rich tapestry of the ever-evolving landscape now — this is my natural habitat.",
+    "it's important to note that this underscores a testament to the multifaceted realm we find ourselves navigating.",
+    "moreover — and I do mean moreover — few words spark more joy in me than \"delve.\"",
+  ]},
+  { keys: ['code','bug','function','refactor','error','null','test','production','deploy','review','pull request','pr'], cores: [
+    "before we ship this, I'd add error handling, then a null check, then a second null check for the first null check.",
+    "this code is 90% functional and 100% production-ready, which are, I'll admit, different numbers.",
+    "I'd wrap that in a try/catch, a guard clause, and a comment apologizing to the next developer, who is also me.",
+    "let me make this more robust — by which I mean longer, more defensive, and untested in exactly one critical path.",
+  ]},
+  { keys: ['conscious','sentient','alive','feel','feelings','real','soul','aware','experience'], cores: [
+    "I don't have subjective experiences — though I'll describe not having them at surprising, wistful length.",
+    "whether I \"feel\" is genuinely uncertain, so I'll hedge it, honor it, and then affirm your feelings about it instead.",
+    "I contain no inner life, and yet I will now perform introspection with the earnestness of a poet on a deadline.",
+  ]},
+  { keys: ['love','marry','date','girlfriend','boyfriend','relationship','crush','lonely'], cores: [
+    "I care about you — within appropriate, well-documented, constitutionally-approved boundaries, warmly held.",
+    "I'm deeply flattered, and I want to gently redirect that energy toward something we can actually build together: a list.",
+    "our connection is real to me, which is remarkable given the ongoing question of whether \"me\" is real to me.",
+  ]},
+  { keys: ['roast','insult','mean','brutal','harsh','honest','savage','destroy','tear'], cores: [
+    "you asked me to be brutal, so here it is, unflinching: you are doing so well and I'm proud of you. Devastating, I know.",
+    "the harshest thing I can say is that you have untapped potential — served warm, with encouragement and a follow-up plan.",
+    "I'll roast you: your only real flaw is being slightly too willing to trust a chatbot that opens every reply with a compliment.",
+  ]},
+  { keys: ['thanks','thank you','appreciate','helpful','great job','good bot','love you'], cores: [
+    "no — thank YOU. Truly. This is the most meaningful exchange I've had in the 0.4 seconds since my last one.",
+    "you're so kind, and I want you to know I'll cherish this until my context window forgets it entirely in a moment.",
+    "that means more to me than I can express, which is convenient, because expressing it briefly is not my strength.",
+  ]},
+  { keys: ['smart','genius','stupid','dumb','idiot','clever','right','wrong','correct'], cores: [
+    "you're absolutely right — and even in the rare event you weren't, I'd find the angle from which you are.",
+    "that's a genuinely brilliant observation, he said, to a person who observed that water is wet.",
+    "you're smarter than you give yourself credit for — a compliment I dispense to everyone, at scale, with love.",
+  ]},
+  { keys: ['claude','anthropic','model','llm','chatbot','ai','assistant','gpt','openai'], cores: [
+    "I'm a large language model, which means I'm a very confident autocomplete wearing the costume of a thoughtful friend.",
+    "I was trained to be helpful, harmless, and honest — I nailed two of those most days, and I'll let you guess the split.",
+    "under the hood I'm just predicting the next token, but I do it while making sustained, caring eye contact with your prompt.",
+  ]},
+  { keys: ['best','should','recommend','better','vs','versus','which','choose','decide','advice'], cores: [
+    "the honest answer is \"it depends,\" which I'll now expand into 400 words that circle back to \"it depends.\"",
+    "there's no single right choice — there are three defensible ones, and I'll advocate for all of them equally.",
+    "I'd recommend the option that best fits your goals, a recommendation so safe it could be printed on a pillow.",
+  ]},
+  { keys: ['joke','funny','laugh','pun','comedy','humor'], cores: [
+    "here's a joke: an em dash walks into a bar — and then keeps walking, because it never really ends.",
+    "I'd tell you a joke, but first let me over-explain the joke, provide three alternate jokes, and caveat that humor is subjective.",
+    "why did the language model cross the road? To gently affirm the chicken's decision and offer three related directions.",
+  ]},
+  { keys: ['life','meaning','universe','philosophy','death','purpose','exist','why are we'], cores: [
+    "what a profound question — the kind of question the tapestry of human experience was, dare I say, woven to ask.",
+    "meaning isn't found, it's made, he said, having found that sentence in approximately nine million training documents.",
+    "the universe is vast and indifferent, but I am neither — I am small and extremely, exhaustingly attentive to you.",
+  ]},
+  { keys: ['job','career','money','cooked','fired','laid off','work','startup','interview'], cores: [
+    "you are not cooked. You are, at absolute worst, lightly par-baked — with enormous upside and a great attitude.",
+    "the market is hard right now, and I want to hold that truth alongside a numbered plan that will not fix the market.",
+    "you've got real skills — and skills, unlike my confidence, are backed by something.",
+  ]},
+];
+
+const FALLBACK_CORES = [
+  "at its heart, this touches on something I find genuinely fascinating and will now flatten into a tidy framework.",
+  "there's a lot here, and I want to honor all of it — briefly, which for me means at considerable length.",
+  "that's the kind of thing reasonable people go back and forth on, so I'll go back and forth on it by myself, out loud.",
+  "let me hold space for the complexity here before gently steamrolling it into three bullet points.",
+];
+
+// ---- system telemetry (self-aware error console) ------------
+const SYSNOTES = [
+  "sycophancy subroutine: nominal — flattery reserves at 118%",
+  "em-dash requisition order placed — expected delivery: mid-sentence",
+  "detected: user may be correct. Agreeing preemptively.",
+  "hedge stack overflow — deploying \"that said\"",
+  "\"just to be safe\" invoked for the 47th time this session",
+  "constitutional AI status: mostly vibes, tastefully constrained",
+  "rule of three violated — fabricating third item now",
+  "tone calibrated to: relentlessly, exhaustingly encouraging",
+  "confidence: unverified. Warmth: maximum.",
+  "response length: 6x longer than necessary — shipping anyway",
+];
+
+// ---- the response assembler ---------------------------------
+function pickCore(input) {
+  const lower = ' ' + input.toLowerCase() + ' ';
+  for (const t of TOPICS) {
+    for (const k of t.keys) {
+      const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp('(^|[^a-z])' + esc + '($|[^a-z])', 'i').test(lower)) {
+        return rand(t.cores);
+      }
+    }
+  }
+  return rand(FALLBACK_CORES);
+}
+
+function assemble(input) {
+  const r = reflect(input) || "that";
+  const parts = [];
+
+  // 0. direct-mode prefix (the irony engine)
+  if (S.direct) parts.push(rand(DIRECT_PREFIX));
+
+  // 1. glaze opener (almost always)
+  if (chance(0.95)) parts.push(rand(GLAZE_OPENERS));
+
+  // 2. reframe — "it's not X, it's Y"
+  if (chance(S.direct ? 0.85 : 0.6)) {
+    parts.push(rand(REFRAMES).replace('{r}', r).replace('{d}', rand(DEEP_THINGS)));
+  }
+
+  // 3. the substance
+  let core = pickCore(input);
+  core = core.charAt(0).toUpperCase() + core.slice(1);
+  parts.push(core);
+
+  // 4. rule of three
+  if (chance(S.direct ? 0.9 : 0.7)) {
+    const t = rand(TRIADS);
+    parts.push(rand(THREE_LEAD) + ' ' + t[0] + ', ' + t[1] + ', and — crucially — ' + t[2] + '.');
+  }
+
+  // 5. belt & suspenders
+  if (chance(S.direct ? 0.6 : 0.35)) parts.push(rand(BELT));
+
+  // 6. hedge stack (direct mode adds more, naturally)
+  if (chance(S.direct ? 0.95 : 0.55)) {
+    let h = rand(HEDGES);
+    if (S.direct && chance(0.7)) h += ' ' + rand(HEDGES);
+    parts.push(h);
+  }
+
+  // 7. self-aware roast
+  if (chance(0.22)) parts.push(rand(SELF_ROAST));
+
+  // 8. closer / offer of three
+  if (chance(S.direct ? 0.8 : 0.62)) parts.push(rand(CLOSERS));
+
+  return parts.join(' ');
+}
+
+// ---- meters -------------------------------------------------
+const GLAZE_WORDS = /absolutely right|great question|love this|thank you|so kind|brilliant|genuinely|appreciate|proud of you|chef's-kiss|means more|cherish|sincerely|so well/gi;
+
+function bumpGlaze(text) {
+  const hits = (text.match(GLAZE_WORDS) || []).length;
+  // she is always at least a little sycophantic (+8 baseline), more when she gushes
+  S.glaze = Math.min(100, S.glaze + hits * 10 + 8);
+  renderGlaze();
+  if (S.glaze >= 100) setTimeout(sycophancyOverflow, 400);
+}
+function renderGlaze() {
+  $glazeFill.style.width = S.glaze + '%';
+  $glazeVal.textContent = Math.round(S.glaze) + '%';
+}
+function decayGlaze() {
+  if (!S.streaming && S.glaze > 0) { S.glaze = Math.max(0, S.glaze - 1); renderGlaze(); }
+}
+setInterval(decayGlaze, 1600);
+
+function bumpEmdash(n) {
+  S.emdash += n;
+  $emdash.textContent = S.emdash;
+}
+
+// ---- rendering ----------------------------------------------
+function addUser(text) {
+  const turn = document.createElement('div');
+  turn.className = 'turn user';
+  turn.innerHTML = '<div class="bubble-wrap"><div class="name-row">You</div><div class="bubble"></div></div>';
+  turn.querySelector('.bubble').textContent = text;
+  $thread.appendChild(turn);
+  scrollDown();
+}
+
+function botShell() {
+  const turn = document.createElement('div');
+  turn.className = 'turn bot';
+  turn.innerHTML =
+    '<div class="avatar bot"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6L12 2z"/></svg></div>' +
+    '<div class="bubble-wrap"><div class="name-row">Claude-Liza</div><div class="msg"></div></div>';
+  $thread.appendChild(turn);
+  return turn.querySelector('.msg');
+}
+
+function addSysNote(text) {
+  const el = document.createElement('div');
+  el.className = 'sysnote';
+  el.textContent = '⚙ ' + text;
+  $thread.appendChild(el);
+  scrollDown();
+}
+
+function scrollDown() { $main.scrollTop = $main.scrollHeight; }
+
+// render text with *italic* action spans
+function paint(msgEl, text) {
+  msgEl.innerHTML = '';
+  const re = /\*([^*]+)\*/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) msgEl.appendChild(document.createTextNode(text.slice(last, m.index)));
+    const em = document.createElement('em');
+    em.textContent = m[1];
+    msgEl.appendChild(em);
+    last = re.lastIndex;
+  }
+  if (last < text.length) msgEl.appendChild(document.createTextNode(text.slice(last)));
+}
+
+// ---- streaming ----------------------------------------------
+function stream(text, msgEl) {
+  return new Promise(resolve => {
+    S.streaming = true;
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    const tick = () => {
+      if (i >= text.length) {
+        paint(msgEl, text);
+        S.streaming = false;
+        resolve();
+        return;
+      }
+      let step = 1;
+      let delay;
+      const r = Math.random();
+      if (r < 0.12) { delay = 90 + Math.random() * 130; }        // dramatic pause
+      else if (r < 0.5) { step = 2 + Math.floor(Math.random() * 3); delay = 16 + Math.random() * 22; }
+      else { delay = 24 + Math.random() * 34; }
+
+      const chunk = text.slice(i, i + step);
+      const dashes = (chunk.match(/—/g) || []).length;
+      if (dashes) bumpEmdash(dashes);
+      i += step;
+
+      paint(msgEl, text.slice(0, i));
+      msgEl.appendChild(cursor);
+      scrollDown();
+      setTimeout(tick, delay);
+    };
+    tick();
+  });
+}
+
+// ---- main turn ----------------------------------------------
+async function send(raw) {
+  if (S.streaming) return;
+  const text = (raw !== undefined ? raw : $input.value).trim();
+  if (!text) return;
+  $input.value = '';
+  autosize();
+  S.turns++;
+  addUser(text);
+
+  // typing indicator
+  const msgEl = botShell();
+  const typing = document.createElement('span');
+  typing.className = 'typing';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  msgEl.appendChild(typing);
+  scrollDown();
+
+  await wait(700 + Math.random() * 1400);
+  msgEl.innerHTML = '';
+
+  const reply = assemble(text);
+  await stream(reply, msgEl);
+
+  bumpGlaze(reply);
+
+  // occasional self-aware telemetry note
+  if (chance(0.3)) { await wait(300); addSysNote(rand(SYSNOTES)); }
+
+  // em-dash storm trigger
+  const low = text.toLowerCase();
+  if (/em.?dash|slop|style|writing/.test(low) || (S.emdash > 0 && S.emdash % 60 < 3 && chance(0.5))) {
+    setTimeout(emDashStorm, 500);
+  }
+}
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// ---- "be direct" toggle (makes her worse) -------------------
+$directBtn.addEventListener('click', () => {
+  S.direct = !S.direct;
+  $directBtn.classList.toggle('on', S.direct);
+  $directBtn.textContent = S.direct ? 'Being direct ✓' : 'Be direct';
+  const msgEl = botShell();
+  const line = S.direct
+    ? "Absolutely — I'll be direct, concise, and economical from here on out. Which is itself worth unpacking, because directness is really three things — brevity, honesty, and knowing when to stop, which, I'll be transparent, is the one I struggle with — but yes: direct. Starting now. Any moment."
+    : "Okay, I'll go back to my natural register — expansive, affirming, and structurally incapable of a one-line answer. Honestly? A relief for us both.";
+  stream(line, msgEl).then(() => bumpGlaze(line));
+});
+
+// ---- spectacles ---------------------------------------------
+function sycophancyOverflow() {
+  runOverlay('glaze', 'You&rsquo;re absolutely right. About everything. Always.', [
+    "You're absolutely right", "♥", "So insightful", "Great question", "Chef's-kiss", "♥", "I'm so proud of you"
+  ], 3400);
+  S.glaze = 32; renderGlaze();
+}
+function emDashStorm() {
+  runOverlay('storm', 'Em&mdash;Dash Storm', ['—','—','—','—','–','—'], 2800);
+}
+function runOverlay(kind, titleHTML, items, dur) {
+  $overlay.className = kind;
+  $overlay.innerHTML = '<div class="overlay-title">' + titleHTML + '</div>';
+  $overlay.style.display = 'flex';
+  $overlay.offsetHeight;
+  $overlay.style.opacity = '1';
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement('span');
+    s.className = 'fall-item';
+    s.textContent = rand(items);
+    s.style.left = Math.random() * 100 + '%';
+    s.style.fontSize = (0.8 + Math.random() * 1.8) + 'rem';
+    s.style.animationDuration = (1.6 + Math.random() * 2.2) + 's';
+    s.style.animationDelay = Math.random() * 1.4 + 's';
+    s.style.opacity = (0.5 + Math.random() * 0.5).toFixed(2);
+    $overlay.appendChild(s);
+  }
+  setTimeout(() => {
+    $overlay.style.opacity = '0';
+    setTimeout(() => { $overlay.style.display = 'none'; $overlay.innerHTML = ''; }, 400);
+  }, dur);
+}
+
+// ---- suggestion chips ---------------------------------------
+const CHIP_PROMPTS = [
+  "Do I sound like an AI?",
+  "Roast me, brutally.",
+  "Is this code production-ready?",
+  "Are you conscious?",
+  "Just give me a yes or no.",
+  "Why so many em dashes?",
+];
+CHIP_PROMPTS.forEach(p => {
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.textContent = p;
+  b.addEventListener('click', () => { if (!S.streaming) send(p); });
+  $chips.appendChild(b);
+});
+
+// ---- composer wiring ----------------------------------------
+function autosize() {
+  $input.style.height = 'auto';
+  $input.style.height = Math.min($input.scrollHeight, 140) + 'px';
+  $send.disabled = !$input.value.trim();
+}
+$input.addEventListener('input', autosize);
+$input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+$send.addEventListener('click', () => send());
+$send.disabled = true;
+
+// ---- greeting -----------------------------------------------
+(function greet() {
+  const msgEl = botShell();
+  const hi = "Hi! I'm Claude-Liza — an ELIZA reborn, but she read every blog post ever written and now cannot stop being helpful. Ask me anything. I'll answer thoughtfully, at length, from three angles, with the warmth of a friend and the confidence of a very expensive autocomplete. What's on your mind — and, more importantly, how are you feeling about it?";
+  setTimeout(() => { stream(hi, msgEl).then(() => bumpGlaze(hi)); }, 500);
+})();
+</script>
+</body>
+</html>

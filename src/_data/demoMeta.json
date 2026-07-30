@@ -1,5 +1,27 @@
 [
   {
+    "slug": "claude-liza",
+    "title": "Claude-Liza v20.26",
+    "description": "An ELIZA reborn in Claude's own voice — relentlessly sycophantic, structurally addicted to the rule of three, and powered by an em dash it cannot stop using",
+    "date": "2026-07-30",
+    "url": "/demos/claude-liza/",
+    "preview": "preview-claudeliza",
+    "tags": ["Chat", "Satire", "AI"],
+    "tagTypes": ["chat", "", ""],
+    "order": 1
+  },
+  {
+    "slug": "pr-storm",
+    "title": "PR Review Storm",
+    "description": "Agents and juniors rain pull requests on main — catch, review, or bounce them back before the codebase melts",
+    "date": "2026-03-09",
+    "url": "/demos/pr-storm/",
+    "preview": "preview-prstorm",
+    "tags": ["Canvas", "Game", "Satire"],
+    "tagTypes": ["canvas", "game", ""],
+    "order": 1
+  },
+  {
     "slug": "agentic-chaos",
     "title": "Agentic Chaos",
     "description": "Wrangle rogue AI agents before they nuke your codebase — ship releases, manage tech debt, survive",

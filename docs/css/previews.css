@@ -1,3 +1,69 @@
+/* Claude-Liza preview — fake Claude UI, cream + coral */
+.preview-claudeliza {
+  background:
+    /* animated coral "typing" bar (bottom) */
+    linear-gradient(90deg, #e6a583, #d97757) 14px calc(100% - 20px) / 42% 7px no-repeat,
+    /* two faux assistant message lines */
+    linear-gradient(#ebe8dd, #ebe8dd) 14px 54% / 78% 7px no-repeat,
+    linear-gradient(#ebe8dd, #ebe8dd) 14px calc(54% + 14px) / 60% 7px no-repeat,
+    #faf9f5;
+  position: relative;
+  overflow: hidden;
+  animation: cl-type 2.6s ease-in-out infinite;
+}
+.preview-claudeliza::before {
+  content: '\2733 Claude-Liza';
+  position: absolute;
+  top: 16px;
+  left: 14px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.95rem;
+  color: #bd5d3a;
+  letter-spacing: -0.01em;
+}
+.preview-claudeliza::after {
+  content: '\2014\2009\2014\2009\2014';
+  position: absolute;
+  top: 15px;
+  right: 12px;
+  font-size: 0.85rem;
+  color: #d97757;
+  opacity: 0.5;
+}
+@keyframes cl-type {
+  0%, 100% { background-size: 32% 7px, 78% 7px, 60% 7px, auto; }
+  50%      { background-size: 60% 7px, 78% 7px, 60% 7px, auto; }
+}
+
+/* PR Review Storm preview */
+.preview-prstorm {
+  background: #06100a;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+}
+.preview-prstorm::before {
+  content: 'PR STORM';
+  font-family: monospace; font-size: 1.1rem; font-weight: bold;
+  color: #0f8;
+  text-shadow: 0 0 12px #0f8, 0 0 30px #0f844;
+  letter-spacing: 0.12em;
+}
+.preview-prstorm::after {
+  content: '#1024 #1025 #1026';
+  position: absolute; top: 18%; left: 50%;
+  transform: translateX(-50%);
+  font-family: monospace; font-size: 0.55rem; font-weight: bold;
+  color: #ffaa00;
+  letter-spacing: 0.15em;
+  animation: prs-fall 1.6s linear infinite;
+}
+@keyframes prs-fall {
+  0%   { transform: translate(-50%, 0); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; color: #ff3355; }
+  100% { transform: translate(-50%, 220%); opacity: 0; color: #ff3355; }
+}
+
 /* Agentic Chaos preview */
 .preview-agenticchaos {
   background: #0a0a0f;
