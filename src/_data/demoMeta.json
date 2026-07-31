@@ -1,5 +1,16 @@
 [
   {
+    "slug": "div-o-matic",
+    "title": "The <div> o' Matic 9000",
+    "description": "Feed it HTML and this As-Seen-On-TV machine bakes the semantics right out — maximum <div> soup, before/after stats, and JS that heroically re-implements the tags it just deleted. But wait, there's more!",
+    "date": "2026-07-31",
+    "url": "/demos/div-o-matic/",
+    "preview": "preview-divomatic",
+    "tags": ["Web", "Satire", "CSS"],
+    "tagTypes": ["web", "", "css"],
+    "order": 1
+  },
+  {
     "slug": "genie-shoppe",
     "title": "Sam's Genie Shoppe",
     "description": "Pick up your very own AI genie — a recycled 25-year-old Microsoft sprite — that grants any wish, monkey's-paw style, with maximum OpenAI snark. Your wish is our command.™",
