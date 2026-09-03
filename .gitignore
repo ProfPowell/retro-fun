@@ -1,1 +1,8 @@
 node_modules/
+.venv-video/
+promo/frames/
+promo/rframes/
+promo/*.mp4
+promo/*.wav
+promo/*.png
+__pycache__/
