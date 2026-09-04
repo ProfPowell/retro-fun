@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The &lt;fart&gt; Tag // RETRO FUN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0f06;
+    color: #cfe8b8;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+  .back {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.7rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 10;
+  }
+  .back:hover { color: #9f6; }
+  main { max-width: 780px; margin: 0 auto; }
+  h1 {
+    font-size: clamp(2rem, 7vw, 3.6rem);
+    color: #9f6;
+    text-shadow: 0 0 18px rgba(153, 255, 102, 0.5);
+    margin: 1.2rem 0 0.4rem;
+  }
+  .tagline { color: #7a9; font-style: italic; }
+  .warning {
+    border: 2px dashed #c93;
+    color: #fc6;
+    padding: 0.6rem 0.9rem;
+    margin: 1.2rem 0;
+    font-size: 0.85rem;
+  }
+  marquee { color: #6a4; font-size: 0.8rem; margin: 0.8rem 0; }
+  section { margin: 2.6rem 0; }
+  h2 {
+    color: #6cf;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid #234;
+    padding-bottom: 0.3rem;
+    margin-bottom: 1rem;
+  }
+  p { line-height: 1.55; margin: 0.6rem 0; }
+  .bigbtn {
+    display: block;
+    width: 100%;
+    padding: 1.6rem;
+    margin: 1rem 0;
+    background: #1a2410;
+    border: 3px solid #9f6;
+    border-radius: 12px;
+    color: #9f6;
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 0.1em;
+    box-shadow: 0 0 24px rgba(153, 255, 102, 0.25);
+    transition: transform 0.08s;
+  }
+  .bigbtn:active { transform: scale(0.97); }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .chips fart {
+    padding: 0.55rem 1rem;
+    border: 2px solid #465;
+    border-radius: 999px;
+    background: #131a0d;
+    font-size: 0.9rem;
+  }
+  .chips fart:hover { border-color: #9f6; color: #9f6; }
+  .couch {
+    display: block;
+    text-align: center;
+    font-size: 1rem;
+    padding: 1.8rem;
+    border: 2px dotted #465;
+    border-radius: 12px;
+    background: #10160b;
+  }
+  .couch b { font-size: 2.2rem; display: block; }
+  label.toggle { display: flex; gap: 0.6rem; align-items: center; cursor: pointer; }
+  input[type=checkbox] { width: 1.2rem; height: 1.2rem; accent-color: #9f6; }
+  pre {
+    background: #050805;
+    border: 1px solid #234;
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #ade;
+  }
+  .attr { color: #fc6; }
+  .dl {
+    display: inline-block;
+    padding: 1rem 1.6rem;
+    border: 3px double #9f6;
+    color: #9f6;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+  .dl:hover { background: #16200e; }
+  .fine { color: #567; font-size: 0.78rem; margin-top: 0.5rem; }
+  footer { margin-top: 3rem; color: #567; font-size: 0.8rem; line-height: 1.6; }
+  footer a { color: #6a9; }
+</style>
+</head>
+<body>
+<a class="back" href="../../">&larr; Back</a>
+<main>
+  <h1>the &lt;fart&gt; tag</h1>
+  <p class="tagline">the lowest of the low-class web components. reborn from the ashes of
+  fart.js for the modern web. no repo. no npm. no build step. just gas.</p>
+
+  <div class="warning">⚠ AUDIO WARNING: this page makes fart noises. that is the entire
+  point of the page. maybe don't open it during a funeral or a standup.</div>
+
+  <marquee>~ NOW WITH 100% MORE METHANE ~ EVERY RIP SYNTHESIZED LIVE, NO TWO ALIKE ~
+  WEB STANDARDS COMMITTEE NOT CONSULTED ~ SHOULD IT HAVE A -wc? YES. IS IT GETTING ONE? NO ~</marquee>
+
+  <section>
+    <h2>Exhibit A: the button</h2>
+    <fart class="bigbtn" type="random">💨 LET ONE RIP 💨</fart>
+    <p class="fine">every press is a unique, artisanal, small-batch synthesis. collect them all.</p>
+  </section>
+
+  <section>
+    <h2>Exhibit B: the full bouquet</h2>
+    <div class="chips">
+      <fart type="classic">the classic</fart>
+      <fart type="squeak">squeaky sneaker</fart>
+      <fart type="bomber">💣 the bomber</fart>
+      <fart type="machinegun">machine gun</fart>
+      <fart type="question">the question mark?</fart>
+      <fart type="random">chef's choice</fart>
+    </div>
+  </section>
+
+  <section>
+    <h2>Exhibit C: the trap</h2>
+    <fart on="hover" type="squeak" class="couch"><b>🛋️</b>a suspicious couch cushion. go on, hover it.</fart>
+  </section>
+
+  <section>
+    <h2>Exhibit D: ambush mode</h2>
+    <p>the crown jewel. it lurks invisibly in the background and lets one rip when you
+    least expect it. random spot on screen, random moment, zero remorse.</p>
+    <label class="toggle">
+      <input type="checkbox" id="ambush-toggle">
+      arm the ambush (rips every 10–40 seconds while you mind your own business)
+    </label>
+    <p class="fine">note: browsers require one click anywhere before any audio can play.
+    there is no farting without consent. them's the rules.</p>
+  </section>
+
+  <section>
+    <h2>How to fart (at home)</h2>
+    <pre>&lt;script src="fart.js"&gt;&lt;/script&gt;
+
+&lt;fart&gt;click me&lt;/fart&gt;
+&lt;fart <span class="attr">on</span>="hover" <span class="attr">type</span>="squeak"&gt;hover me&lt;/fart&gt;
+&lt;fart <span class="attr">on</span>="ambush" <span class="attr">lurk</span>="15-60"&gt;&lt;/fart&gt;
+&lt;fart <span class="attr">type</span>="bomber" <span class="attr">volume</span>="1" <span class="attr">no-cloud</span>&gt;silent but deadly&lt;/fart&gt;
+
+<span class="attr">// or go manual:</span>
+FART.rip("machinegun");</pre>
+  </section>
+
+  <section>
+    <h2>Take it home</h2>
+    <a class="dl" href="fart.js" download>💾 DOWNLOAD fart.js</a>
+    <p class="fine">one file. ~9KB. zero dependencies. zero tracking. your supply chain
+    cannot be compromised because there is no supply chain. there is only gas.</p>
+  </section>
+
+  <footer>
+    a loving rebirth of <a href="https://github.com/74656c/fart.js">fart.js</a> (gone but
+    not forgotten — much like its subject matter). this page is deliberately not linked
+    from the homepage because it is too childish for the ninja. and yet… here you are.
+    <br><br>
+    &lt;fart&gt; v2.0.0 "Dutch Oven" · cyberviber.ninja · hee hee
+  </footer>
+</main>
+
+<script src="fart.js"></script>
+<script>
+  // ambush toggle wiring
+  const box = document.getElementById('ambush-toggle');
+  let lurker = null;
+  box.addEventListener('change', () => {
+    if (box.checked) {
+      lurker = document.createElement('fart');
+      lurker.setAttribute('on', 'ambush');
+      lurker.setAttribute('lurk', '10-40');
+      document.body.appendChild(lurker);
+    } else if (lurker) {
+      lurker.remove();
+      lurker = null;
+    }
+  });
+</script>
+</body>
+</html>
